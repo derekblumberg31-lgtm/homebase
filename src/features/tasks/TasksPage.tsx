@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useData, useNow, useStore } from '../../data/DataProvider';
 import type { Task } from '../../data/types';
@@ -31,8 +31,8 @@ export function TasksPage() {
   const [params, setParams] = useSearchParams();
   const view = (params.get('view') as View) || 'list';
   const [query, setQuery] = useState('');
-  // Other areas open a prefilled form with ?new=1 (Assistant, rooms, inventory items).
-  const [form, setForm] = useState<TaskDraft | null>(
+  // Other areas (Home, quick add, the Assistant, rooms, inventory) open a prefilled form with ?new=1.
+  const draftFromParams = (): TaskDraft | null =>
     params.get('new')
       ? {
           kind: (params.get('kind') as Task['kind']) ?? 'maintenance',
@@ -41,8 +41,13 @@ export function TasksPage() {
           itemId: params.get('itemId') ?? undefined,
           notes: params.get('notes') ?? undefined,
         }
-      : null,
-  );
+      : null;
+  const [form, setForm] = useState<TaskDraft | null>(draftFromParams);
+  const newKey = params.get('new') ? params.toString() : '';
+  useEffect(() => {
+    if (newKey) setForm(draftFromParams());
+    // Only a new ?new= link should open the form; draftFromParams reads the same params.
+  }, [newKey]);
 
   const open = useMemo(() => data.tasks.filter((task) => task.status === 'open'), [data.tasks]);
   const items = useMemo(() => withInfo(open, now).sort(compareUrgency), [open, now]);
@@ -145,7 +150,17 @@ export function TasksPage() {
       {view === 'schedule' && <ScheduleView items={items} now={now} onDone={(t) => complete(t)} />}
       {view === 'costs' && <CostsView tasks={open} now={now} />}
 
-      {form && <TaskForm draft={form} onClose={() => setForm(null)} onSave={save} />}
+      {form && (
+        <TaskForm
+          key={newKey || 'form'}
+          draft={form}
+          onClose={() => {
+            setForm(null);
+            if (params.get('new')) setParams({}, { replace: true });
+          }}
+          onSave={save}
+        />
+      )}
     </Page>
   );
 }

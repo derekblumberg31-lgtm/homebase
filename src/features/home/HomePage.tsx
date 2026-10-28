@@ -1,64 +1,94 @@
 import { useMemo } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { useData, useNow, useStore } from '../../data/DataProvider';
-import { formatCurrency, formatRelativeTime } from '../../lib/dates';
+import { Link } from 'react-router-dom';
+import { QuickAdd } from '../../app/QuickAdd';
+import { useData, useNow } from '../../data/DataProvider';
+import { formatCurrency } from '../../lib/dates';
 import { useSession } from '../../session/session';
-import { EmptyState, Group, Page, Row, Section } from '../../ui/layout';
+import { EmptyState, Group, Page } from '../../ui/layout';
 import { TaskRow } from '../tasks/components';
 import { annualCost, compareUrgency, withInfo } from '../tasks/taskMath';
 import { useTaskActions } from '../tasks/useTaskActions';
-import { alertsFor, healthCheckFor, recommendationsFor } from './insights';
+import { ActivityFeed, HealthModule, HomeOverview, MaintenanceTimeline, SeasonalSection } from './HomeSections';
+import { alertsFor, currentSeason, healthCheckFor, seasonalTipsFor, snapshotFor, timelineFor } from './insights';
+
+const UP_NEXT = 3;
 
 function greeting(now: number) {
   const hour = new Date(now).getHours();
-  return hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
+  return hour < 5 ? 'Good evening' : hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
 }
 
-/** Home: a calm overview of what needs you, what's next, and what's been done. */
+const PROPERTY_TYPE: Record<string, string> = { house: 'House', townhouse: 'Townhouse', condo: 'Condo', apartment: 'Apartment', other: 'Home' };
+
+/**
+ * Home: one overview panel that says how the home is doing, then the work (up next, coming up,
+ * this season) on the left and setup progress and activity on the right.
+ */
 export function HomePage() {
   const data = useData();
-  const store = useStore();
   const session = useSession();
-  const navigate = useNavigate();
   const now = useNow();
   const { complete } = useTaskActions();
 
   const alerts = useMemo(() => alertsFor(data, now), [data, now]);
-  const tips = useMemo(() => recommendationsFor(data, now), [data, now]);
   const health = useMemo(() => healthCheckFor(data, now), [data, now]);
+  const facts = useMemo(() => snapshotFor(data, now, health), [data, now, health]);
+  const { tips, snoozed } = useMemo(() => seasonalTipsFor(data, now), [data, now]);
   const upNext = useMemo(
-    () => withInfo(data.tasks.filter((t) => t.status === 'open'), now).sort(compareUrgency).filter((i) => i.info.status !== 'overdue').slice(0, 3),
+    () => withInfo(data.tasks.filter((t) => t.status === 'open'), now).sort(compareUrgency).filter((i) => i.info.status !== 'overdue').slice(0, UP_NEXT),
     [data.tasks, now],
   );
+  const months = useMemo(() => {
+    const shown = new Set(upNext.map((i) => `task-${i.task.id}`));
+    // Overdue items already lead the overview, and Up next has the soonest three.
+    return timelineFor(data, now)
+      .filter((m) => m.key !== 'overdue')
+      .map((m) => ({ ...m, entries: m.entries.filter((e) => !shown.has(e.id)) }))
+      .filter((m) => m.entries.length > 0);
+  }, [data, now, upNext]);
   const yearly = data.tasks.filter((t) => t.status === 'open').reduce((sum, t) => sum + annualCost(t), 0);
-  const firstName = session.member?.name;
-  const summary = alerts.length
-    ? `${alerts.length} ${alerts.length === 1 ? 'thing needs' : 'things need'} you`
-    : data.tasks.length
-      ? 'Everything is on track'
-      : 'Let’s set up your home';
+
+  const overdue = alerts.filter((a) => a.tone === 'overdue').length;
+  const headline = overdue
+    ? `${overdue} ${overdue === 1 ? 'job is' : 'jobs are'} overdue`
+    : alerts.length
+      ? `${alerts.length} ${alerts.length === 1 ? 'thing' : 'things'} to look at soon`
+      : data.tasks.length
+        ? 'Your home is on track'
+        : 'Let’s get your home set up';
+  const place = [data.property?.nickname, data.property?.type ? PROPERTY_TYPE[data.property.type] : null, data.property?.ownership === 'rent' ? 'Rented' : null]
+    .filter(Boolean)
+    .join(' · ');
+  const today = new Date(now).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
 
   return (
-    <Page title={`${greeting(now)}${firstName ? `, ${firstName}` : ''}`} subtitle={[data.property?.nickname, summary].filter(Boolean).join(' · ')} profile wide>
-      <div className="home-grid">
-        <div>
-          {alerts.length > 0 && (
-            <Section title="Needs attention">
-              <Group>
-                {alerts.map((alert) => (
-                  <Row key={alert.id} title={alert.title} sub={alert.detail} to={alert.href} lead={<span className={`alert-dot is-${alert.tone}`} aria-hidden="true" />} />
-                ))}
-              </Group>
-            </Section>
-          )}
+    <Page title={`${greeting(now)}, ${session.firstName ?? 'there'}`} subtitle={today} profile wide actions={<span className="mobile-only"><QuickAdd variant="header" /></span>}>
+      <HomeOverview headline={headline} place={place || undefined} facts={facts} alerts={alerts} />
 
-          <Section title="Up next" aside={data.tasks.length ? <Link to="/tasks">All tasks</Link> : undefined}>
+      <div className="home-columns">
+        <div className="home-main">
+          <section className="module" aria-labelledby="upnext-title">
+            <header className="module-head">
+              <h2 id="upnext-title" className="module-title">
+                Up next
+              </h2>
+              {data.tasks.length > 0 && (
+                <Link className="module-aside is-link" to="/tasks">
+                  All tasks
+                </Link>
+              )}
+            </header>
             {upNext.length === 0 ? (
-              <EmptyState
-                title={data.tasks.length ? 'Nothing else coming up' : 'No tasks yet'}
-                body={data.tasks.length ? 'Overdue items are above. Everything else is done or far off.' : 'Add the jobs your home needs and Homebase counts down to each one.'}
-                action={data.tasks.length ? undefined : { label: 'Add a task', to: '/tasks?new=1' }}
-              />
+              data.tasks.length ? (
+                <p className="module-empty">Nothing else is coming up soon. Anything overdue is listed above.</p>
+              ) : (
+                <EmptyState
+                  inline
+                  title="Start with the jobs you always forget"
+                  body="Furnace filters, smoke alarm batteries, the dryer vent. Add one and Homebase counts down to it."
+                  action={{ label: 'Add a maintenance reminder', to: '/tasks?new=1&kind=maintenance' }}
+                />
+              )
             ) : (
               <Group>
                 {upNext.map(({ task, info }, index) => (
@@ -67,70 +97,20 @@ export function HomePage() {
               </Group>
             )}
             {yearly > 0 && (
-              <p className="section-foot">
-                Upkeep runs about {formatCurrency(Math.round(yearly))} a year. <Link to="/tasks?view=costs">See costs</Link>
+              <p className="module-note">
+                Recurring upkeep runs about {formatCurrency(Math.round(yearly))} a year. <Link to="/tasks?view=costs">See costs</Link>
               </p>
             )}
-          </Section>
+          </section>
 
-          {tips.length > 0 && (
-            <Section title="For this season">
-              <Group>
-                {tips.map((tip) => (
-                  <div className="row-wrap" key={tip.id}>
-                    <div className="row">
-                      <span className="row-main">
-                        <span className="row-title">{tip.title}</span>
-                        <span className="row-sub">{tip.why}</span>
-                      </span>
-                      <span className="row-actions">
-                        <button type="button" className="button is-quiet" onClick={() => navigate(`/tasks?new=1&name=${encodeURIComponent(tip.taskName)}`)}>
-                          Plan it
-                        </button>
-                        <button type="button" className="button is-danger-quiet" aria-label={`Hide: ${tip.title}`} onClick={() => store.updateSettings({ dismissedTips: [...data.settings.dismissedTips, tip.id] })}>
-                          Hide
-                        </button>
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              </Group>
-            </Section>
-          )}
+          {data.tasks.length > 0 && <MaintenanceTimeline months={months} />}
+
+          <SeasonalSection season={currentSeason(now)} tips={tips} snoozed={snoozed} />
         </div>
 
-        <div>
-          <Section title="Home Health Check">
-            <div className="group">
-              <div className="health">
-                <p className="row-title">{health.score === 100 ? 'Your home’s record is complete' : `${health.done} of ${health.total} steps done`}</p>
-                <p className="row-sub">The more Homebase knows about your home, the better it can remind you.</p>
-              </div>
-              {health.next.map((step) => (
-                <Row key={step.title} title={step.title} to={step.href} />
-              ))}
-            </div>
-          </Section>
-
-          <Section title="Recent activity">
-            {data.activity.length === 0 ? (
-              <div className="group">
-                <EmptyState inline title="Nothing yet" body="Tasks you finish and things you add will show here." />
-              </div>
-            ) : (
-              <Group>
-                {data.activity.slice(0, 6).map((entry) => (
-                  <Row key={entry.id} title={entry.text} sub={formatRelativeTime(entry.at, now)} to={entry.href} />
-                ))}
-              </Group>
-            )}
-          </Section>
-
-          <Section title="Ask Assistant">
-            <Group>
-              <Row title="Something broken or leaking?" sub="Step-by-step help, offline" to="/assistant" />
-            </Group>
-          </Section>
+        <div className="home-side">
+          <HealthModule health={health} />
+          <ActivityFeed now={now} health={health} />
         </div>
       </div>
     </Page>

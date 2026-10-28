@@ -131,6 +131,21 @@ export interface Item {
 
 export type TaskKind = 'maintenance' | 'repair' | 'project';
 
+export type TaskPriority = 'low' | 'normal' | 'high';
+
+/** Matches the Maintenance Planner preset categories. */
+export type TaskCategory =
+  | 'cleaning'
+  | 'maintenance'
+  | 'outdoor'
+  | 'safety'
+  | 'air'
+  | 'water'
+  | 'appliance'
+  | 'vehicle'
+  | 'pool'
+  | 'other';
+
 export interface Task {
   id: ID;
   kind: TaskKind;
@@ -150,6 +165,12 @@ export interface Task {
   status: 'open' | 'done';
   /** Estimated cost each time, in dollars. */
   cost?: number;
+  /** Missing on older tasks: treated as normal. */
+  priority?: TaskPriority;
+  /** Missing on older tasks: taken from the preset, or 'other'. */
+  category?: TaskCategory;
+  /** Planned from a seasonal recommendation, or marked as a seasonal job. */
+  seasonal?: boolean;
   notes?: string;
   createdAt: Timestamp;
   updatedAt: Timestamp;
@@ -178,6 +199,8 @@ export type RecordKind =
   | 'inspection'
   | 'warranty'
   | 'insurance'
+  | 'contractor'
+  | 'note'
   | 'other';
 
 export interface HomeRecord {
@@ -189,6 +212,9 @@ export interface HomeRecord {
   expiresAt?: DateString;
   amount?: number;
   vendor?: string;
+  /** Contractors and vendors. */
+  phone?: string;
+  email?: string;
   itemId?: ID;
   taskId?: ID;
   notes?: string;
@@ -225,12 +251,23 @@ export interface Activity {
   href?: string;
 }
 
+export interface TipState {
+  state: 'planned' | 'snoozed' | 'done' | 'hidden';
+  /** Snoozed recommendations come back on this date. */
+  until?: DateString;
+  /** The task created when it was planned. */
+  taskId?: ID;
+  at: Timestamp;
+}
+
 export interface Settings {
   id: 'settings';
   theme: ThemePreference;
   reminders: boolean;
-  /** Dismissed Home recommendations, by id. */
+  /** Dismissed Home recommendations, by id. Kept for older data; new choices go in tipStates. */
   dismissedTips: string[];
+  /** What the homeowner did with each seasonal recommendation, by id. */
+  tipStates?: Record<string, TipState>;
   /** KeyFinder's debug view. */
   keyDebug: boolean;
 }

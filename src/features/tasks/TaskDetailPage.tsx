@@ -9,6 +9,8 @@ import { removeTask } from './actions';
 import { CompleteSheet } from './CompleteSheet';
 import { Countdown, DayStrip } from './components';
 import { TaskForm } from './TaskForm';
+import { PRIORITY_LABEL, taskCategory, taskPriority } from './meta';
+import { CATEGORY_META } from './presets';
 import { annualCost, getTaskInfo } from './taskMath';
 import { useTaskActions } from './useTaskActions';
 
@@ -61,6 +63,8 @@ export function TaskDetailPage() {
           )}
           {task.cost != null && <Row title={task.recurring ? 'Cost each time' : 'Estimated cost'} value={formatCurrency(task.cost)} />}
           {yearly > 0 && <Row title="Per year" value={formatCurrency(Math.round(yearly))} />}
+          <Row title="Priority" value={PRIORITY_LABEL[taskPriority(task)].replace(' priority', '')} />
+          <Row title="Category" value={`${CATEGORY_META[taskCategory(task)].label}${task.seasonal ? ' · Seasonal' : ''}`} />
           {room && <Row title="Room" value={room.name} to={`/property/rooms/${room.id}`} />}
           {item && <Row title="For" value={item.name} to={`/property/items/${item.id}`} />}
         </Group>
@@ -74,7 +78,7 @@ export function TaskDetailPage() {
         </Section>
       )}
 
-      <Section title="Service history" aside={history.length ? <Link to="/records/service-history">All</Link> : undefined}>
+      <Section title="Service History" aside={history.length ? <Link to="/records/service-history">All</Link> : undefined}>
         {history.length === 0 ? (
           <div className="group">
             <EmptyState inline title="Not done in Homebase yet" body="Each time you mark it done, the date, cost and note are kept here." />

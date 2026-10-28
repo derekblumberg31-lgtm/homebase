@@ -1,15 +1,7 @@
 /** Maintenance Planner presets: typical jobs with how often they repeat and a typical cost. */
-export type Category =
-  | 'cleaning'
-  | 'maintenance'
-  | 'outdoor'
-  | 'safety'
-  | 'air'
-  | 'water'
-  | 'appliance'
-  | 'vehicle'
-  | 'pool'
-  | 'other';
+import type { TaskCategory } from '../../data/types';
+
+export type Category = TaskCategory;
 
 export interface CategoryMeta {
   label: string;

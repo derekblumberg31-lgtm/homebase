@@ -6,7 +6,7 @@ import { Camera } from '../../../ui/Icons';
 import { EmptyState, Group, Page, Row, Section } from '../../../ui/layout';
 import { CodeTag, useKeyways } from './CodeTag';
 
-/** Keys and locks: every saved key, led by the code you'd need to get it copied. */
+/** Keys and Locks: every saved key, led by the code you'd need to get it copied. */
 export function KeysPage() {
   const { items } = useData();
   const rows = useKeyways();
@@ -14,7 +14,7 @@ export function KeysPage() {
 
   return (
     <Page
-      title="Keys and locks"
+      title="Keys and Locks"
       subtitle={keys.length ? `${keys.length} ${keys.length === 1 ? 'key' : 'keys'} saved` : undefined}
       back={{ to: '/property', label: 'Property' }}
       actions={

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import type { ThemePreference } from '../data/types';
 
-const GROUND = { light: '#f4f3f0', dark: '#171716' } as const;
+const GROUND = { light: '#f4f3f0', dark: '#141312' } as const;
 
 function systemTheme(): 'light' | 'dark' {
   return window.matchMedia?.('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';

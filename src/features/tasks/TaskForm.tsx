@@ -1,11 +1,12 @@
 import { useMemo, useState } from 'react';
 import { useData } from '../../data/DataProvider';
 import { uid } from '../../data/ids';
-import type { Task, TaskKind } from '../../data/types';
+import type { Task, TaskCategory, TaskKind, TaskPriority } from '../../data/types';
 import { isRealDate, toDateInput } from '../../lib/dates';
-import { Chips, FormGroup, Segmented, SelectField, TextArea, TextField } from '../../ui/controls';
+import { Chips, FormGroup, Segmented, SelectField, Switch, TextArea, TextField } from '../../ui/controls';
 import { Section } from '../../ui/layout';
 import { Sheet } from '../../ui/overlays';
+import { taskCategory } from './meta';
 import { CATEGORY_META, CATEGORY_ORDER, TASK_PRESETS, findType } from './presets';
 
 const INTERVALS = [
@@ -23,6 +24,12 @@ export interface TaskDraft {
   itemId?: string;
   roomId?: string;
   notes?: string;
+  category?: TaskCategory;
+  seasonal?: boolean;
+  priority?: TaskPriority;
+  /** Recurring drafts: when it was last done and how often, e.g. a yearly seasonal job due soon. */
+  lastDoneAt?: string;
+  intervalDays?: number;
 }
 
 interface TaskFormProps {
@@ -41,11 +48,14 @@ export function TaskForm({ initial, draft, onClose, onSave }: TaskFormProps) {
   const [roomId, setRoomId] = useState(initial?.roomId ?? draft?.roomId ?? '');
   const [location, setLocation] = useState(initial?.location ?? '');
   const [itemId, setItemId] = useState(initial?.itemId ?? draft?.itemId ?? '');
-  const [lastDoneAt, setLastDoneAt] = useState(initial?.lastDoneAt ?? toDateInput());
-  const [interval, setInterval] = useState(String(initial?.intervalDays ?? 90));
+  const [lastDoneAt, setLastDoneAt] = useState(initial?.lastDoneAt ?? draft?.lastDoneAt ?? toDateInput());
+  const [interval, setInterval] = useState(String(initial?.intervalDays ?? draft?.intervalDays ?? 90));
   const [dueDate, setDueDate] = useState(initial?.dueDate ?? '');
   const [cost, setCost] = useState(initial?.cost != null ? String(initial.cost) : '');
   const [notes, setNotes] = useState(initial?.notes ?? draft?.notes ?? '');
+  const [priority, setPriority] = useState<TaskPriority>(initial?.priority ?? draft?.priority ?? 'normal');
+  const [category, setCategory] = useState<TaskCategory>(initial ? taskCategory(initial) : draft?.category ?? 'other');
+  const [seasonal, setSeasonal] = useState(initial?.seasonal ?? draft?.seasonal ?? false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const recurring = kind === 'maintenance';
@@ -57,6 +67,7 @@ export function TaskForm({ initial, draft, onClose, onSave }: TaskFormProps) {
     if (id !== 'custom') {
       if (!name || TASK_PRESETS.some((p) => p.label === name)) setName(preset.label);
       setInterval(String(preset.lifespanDays));
+      setCategory(preset.category);
       if (!cost) setCost(String(preset.cost));
     }
   }
@@ -89,6 +100,9 @@ export function TaskForm({ initial, draft, onClose, onSave }: TaskFormProps) {
       dueDate: recurring ? undefined : dueDate || toDateInput(),
       status: initial?.status === 'done' && !recurring ? 'done' : 'open',
       cost: price,
+      priority,
+      category,
+      seasonal: seasonal || undefined,
       notes: notes.trim() || undefined,
       createdAt: initial?.createdAt ?? now,
       updatedAt: now,
@@ -183,6 +197,40 @@ export function TaskForm({ initial, draft, onClose, onSave }: TaskFormProps) {
           )}
           <TextField label={recurring ? 'Cost each time' : 'Estimated cost'} optional inputMode="decimal" prefix="$" value={cost} onChange={(e) => setCost(e.target.value)} error={errors.cost} />
           <TextArea label="Notes" optional value={notes} onChange={(e) => setNotes(e.target.value)} placeholder={recurring ? 'Filter size, part number…' : 'What needs doing, who to call…'} />
+        </FormGroup>
+      </Section>
+
+      <Section title="Details">
+        <div className="form-segment">
+          <span className="field-label" aria-hidden="true">
+            Priority
+          </span>
+          <Segmented<TaskPriority>
+            label="Priority"
+            value={priority}
+            onChange={setPriority}
+            options={[
+              { value: 'low', label: 'Low' },
+              { value: 'normal', label: 'Normal' },
+              { value: 'high', label: 'High' },
+            ]}
+          />
+        </div>
+        <FormGroup>
+          <SelectField label="Category" value={category} onChange={(e) => setCategory(e.target.value as TaskCategory)}>
+            {CATEGORY_ORDER.map((c) => (
+              <option key={c} value={c}>
+                {CATEGORY_META[c].label}
+              </option>
+            ))}
+          </SelectField>
+          <div className="field is-switch">
+            <span className="row-main">
+              <span className="field-label">Seasonal job</span>
+              <span className="field-hint">Shown with this season’s recommendations on Home.</span>
+            </span>
+            <Switch checked={seasonal} onChange={setSeasonal} label="Seasonal job" />
+          </div>
         </FormGroup>
       </Section>
     </Sheet>

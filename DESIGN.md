@@ -217,6 +217,12 @@ The palette is Replacely's, listed in the front matter and in `src/styles/app.cs
 - **The Status Hue Rule.** Green means done, amber means due soon or "check this" (for example a restricted key), and brick means overdue. None is used for category colour.
 - **The No Pure Extremes Rule.** Text is #2b2926, never #000. The page is #f4f3f0, never #fff.
 - **Code tags** have a neutral `--line` rim, and an accent rim when a match is confirmed. They never get a coloured fill.
+- **The Cool Information Rule.** Dusty blue (`--cool`: #3b687a light, #8fb6c5 dark) is the one cool accent. It's for information, never for actions:
+  - snapshot icons
+  - the health progress bar and completed steps
+  - timeline markers
+  - activity and menu icons
+- **Dark ground.** Warm charcoal #141312, surfaces #1c1a18, raised panels #201d1a, warm off-white ink #f1ece4.
 
 ## Typography
 
@@ -241,12 +247,18 @@ One family: `-apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Robot
 
 - **Phone (below 768px):**
   - The page column has a 16px gutter.
-  - A bottom tab bar shows five areas (Home, Property, Tasks, Assistant, Records); the Tasks tab carries the overdue count.
-  - Settings opens from the round profile button beside the title. A sixth tab would crowd the bar.
-- **Tablet and desktop (768px and up):**
-  - A sticky left sidebar holds all six areas in the same order, with Settings pinned at the bottom.
-  - Pages are max 760px, or 1080px for `Page wide`.
-- **Wide (1100px and up):** Home splits into two columns: Needs attention, Up next and For this season on the left; Home Health Check, Recent activity and Ask Assistant on the right.
+  - A bottom tab bar shows five areas (Home, Property, Tasks, Assistant, Records). The active tab gets a short accent bar above its icon, not a pill.
+  - Count badges: overdue tasks on Tasks, warranties ending soon on Records.
+  - Settings opens from the round profile button beside the title. Home's header also has a round + for quick add.
+- **Tablet (768–1099px):** an 88px icon rail with small labels, a + button, and Settings below a rule. Badges become dots.
+- **Desktop (1100px and up):**
+  - A 244px sidebar: brand, a coral Add button (the one persistent primary), the five areas, and Settings set apart at the bottom.
+  - The active item has a 3px accent bar at the edge.
+  - Pages are max 760px, or 1120px for `Page wide`.
+- **Home:**
+  - One raised overview panel spans the page: status headline, a five-fact snapshot strip and Needs attention.
+  - Below it, two columns from 1100px: Up next, Coming up and the season's jobs on the left; Home Health Check and Activity on the right.
+- **Launcher lane:** from 768px the main column keeps a 72px lane on the right for the Ask Homebase launcher, so it never covers content.
 - **Sheets:**
   - Bottom-anchored on phones, with drag to dismiss.
   - Centred panels from 768px.
@@ -256,7 +268,9 @@ One family: `-apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Robot
 
 | Surface | Shadow |
 |---|---|
-| Groups | `0 1px 2px rgba(22,21,20,0.04)` |
+| Groups and modules | 1px `--line` border plus `0 1px 2px` shadow |
+| Overview panel, launcher | `--shadow-raised`: a faint inner top highlight and a long soft drop |
+| Menus | the alert shadow |
 | Sheets | `0 -18px 60px rgba(22,21,20,0.22)` |
 | Alerts | `0 24px 70px rgba(0,0,0,0.32)` |
 | Toast | `0 12px 30px rgba(0,0,0,0.24)` |
@@ -281,6 +295,20 @@ All of these live in `src/ui/` and `src/features/*/components`.
   - Task rows swipe left for Done.
   - The day strip appears only on the most urgent task and on task detail: up to 25 squares of 9px.
 - **CodeTag, ReplacementCard, ProfileChart** (`features/property/keys`): KeyFinder's key visuals, drawn with Homebase tokens.
+- **HomeOverview, HealthModule, MaintenanceTimeline, SeasonalSection, ActivityFeed** (`features/home/HomeSections.tsx`): each Home section has its own form, not the same card:
+  - overview: a snapshot strip with hairline dividers
+  - health: score, progress bar, steps that explain why, and Continue setup
+  - timeline: dated entries on a vertical rule, grouped by month
+  - seasonal: Plan, plus a menu with Snooze, Already done and Hide
+  - activity: a 30-day tally over a feed
+- **Menu** (`ui/menu.tsx`): a popover for quick add and row actions.
+  - Arrow keys, Home and End move between items; Escape closes and returns focus.
+  - It opens upwards when there's no room below.
+- **QuickAdd** (`app/QuickAdd.tsx`): task, maintenance reminder, record, receipt or household note. Each opens the area's own form through its `?new=` link.
+- **AssistantLauncher** (`app/AssistantLauncher.tsx`):
+  - A 50px docked button with an "Ask Homebase" tooltip.
+  - A coral dot and two slow pulses only when there's a new suggestion; it never loops.
+  - It opens a 400px panel with the shared `AssistantChat`.
 - **Chat** (`features/assistant`):
   - User bubbles are brick with white text.
   - Answers are white groups with the guide name, numbered steps, an amber safety note and up to two text actions.
@@ -311,7 +339,7 @@ Every list has four states:
 - Give every new list an empty, loading and error state.
 
 **Don't:**
-- Add dashboards of metric tiles, progress rings, ticking seconds or "coming soon" panels.
+- Add dashboards of metric tiles, progress rings, ticking seconds or "coming soon" panels. The snapshot is one strip inside the overview, not a row of cards.
 - Add a second typeface, uppercase labels, gradients or saturated colour.
-- Add decorative icon tiles beside rows or extra badges. The Tasks overdue count is the only badge.
+- Add decorative icon tiles beside rows or extra badges. The only badges are the overdue count on Tasks and the ending-soon count on Records.
 - Use bounce or overshoot easing, or give in-page rows more than the group shadow.

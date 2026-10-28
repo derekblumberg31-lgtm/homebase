@@ -129,11 +129,11 @@ export const GUIDES: Guide[] = [
     steps: [
       'Check whether anyone in the household or a trusted neighbour has a spare.',
       'A licensed locksmith can open most home locks without damage. Ask for an estimate and ID before work starts.',
-      'To copy a key, open it in Keys and locks: the code on its tag is what the key counter needs.',
+      'To copy a key, open it in Keys and Locks: the code on its tag is what the key counter needs.',
       'Keys stamped “Do not duplicate” or with restricted keyways need the owner’s authorization.',
     ],
     actions: [
-      { label: 'Open Keys and locks', href: '/property/keys' },
+      { label: 'Open Keys and Locks', href: '/property/keys' },
       { label: 'Identify a key', href: '/property/identify-key' },
     ],
   },
@@ -185,9 +185,10 @@ export const GUIDES: Guide[] = [
 ];
 
 export const SUGGESTED_QUESTIONS = [
+  'What should I maintain this month?',
+  'Find the warranty for my water heater',
   'There’s water dripping under the sink',
   'My smoke alarm keeps chirping',
-  'What’s due this week?',
   'Which warranties are ending soon?',
   'How do I plan a bathroom remodel?',
 ];

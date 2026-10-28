@@ -8,6 +8,8 @@ export const RECORD_KIND_LABEL: Record<RecordKind, string> = {
   permit: 'Permit',
   inspection: 'Inspection',
   insurance: 'Insurance',
+  contractor: 'Contractor',
+  note: 'Household note',
   other: 'Document',
 };
 

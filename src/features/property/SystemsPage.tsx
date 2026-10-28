@@ -22,7 +22,7 @@ export function SystemsPage() {
 
   return (
     <Page
-      title="Home systems"
+      title="Home Systems"
       subtitle="Knowing install years lets Homebase remind you before things wear out."
       back={{ to: '/property', label: 'Property' }}
       actions={<button type="button" className="button is-quiet" onClick={() => setEditing('new')}>Add</button>}

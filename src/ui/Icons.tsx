@@ -395,3 +395,74 @@ export const Send = (props: IconProps) => (
     <path d="M5 12h12M13 6l6 6-6 6" />
   </IconBase>
 );
+
+export const FileText = (props: IconProps) => (
+  <IconBase {...props}>
+    <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z" />
+    <path d="M14 3v5h5M9 13h6M9 17h4" />
+  </IconBase>
+);
+
+export const Receipt = (props: IconProps) => (
+  <IconBase {...props}>
+    <path d="M6 3h12v18l-3-2-3 2-3-2-3 2z" />
+    <path d="M9 8h6M9 12h6M9 16h3" />
+  </IconBase>
+);
+
+export const NotePad = (props: IconProps) => (
+  <IconBase {...props}>
+    <path d="M5 4h14v12l-4 4H5z" />
+    <path d="M15 20v-4h4M8.5 9h7M8.5 13h4" />
+  </IconBase>
+);
+
+export const MoreHorizontal = (props: IconProps) => (
+  <IconBase {...props}>
+    <circle cx="6" cy="12" r="1.2" fill="currentColor" />
+    <circle cx="12" cy="12" r="1.2" fill="currentColor" />
+    <circle cx="18" cy="12" r="1.2" fill="currentColor" />
+  </IconBase>
+);
+
+export const Phone = (props: IconProps) => (
+  <IconBase {...props}>
+    <path d="M5 4h3.5l1.6 4.2-2.1 1.3a11 11 0 0 0 6.5 6.5l1.3-2.1L20 15.5V19a1.5 1.5 0 0 1-1.6 1.5A16.5 16.5 0 0 1 3.5 5.6 1.5 1.5 0 0 1 5 4z" />
+  </IconBase>
+);
+
+export const Mail = (props: IconProps) => (
+  <IconBase {...props}>
+    <rect x="3.5" y="5.5" width="17" height="13" rx="2" />
+    <path d="m4 7 8 6 8-6" />
+  </IconBase>
+);
+
+export const HeartPulse = (props: IconProps) => (
+  <IconBase {...props}>
+    <path d="M20.4 12.5 12 20.5l-8.4-8A4.9 4.9 0 0 1 12 6a4.9 4.9 0 0 1 8.4 6.5z" />
+    <path d="M7 12h2.5l1.5-2.5 2 5 1.5-2.5H17" />
+  </IconBase>
+);
+
+export const DoorOpen = (props: IconProps) => (
+  <IconBase {...props}>
+    <path d="M4 20h16M6 20V4h9v16" />
+    <path d="M15 5.5l3 1V20" />
+    <circle cx="12" cy="12.5" r="0.8" fill="currentColor" />
+  </IconBase>
+);
+
+export const Thermometer = (props: IconProps) => (
+  <IconBase {...props}>
+    <path d="M14 14.8V5a2 2 0 0 0-4 0v9.8a4 4 0 1 0 4 0z" />
+    <path d="M12 9v7" />
+  </IconBase>
+);
+
+export const Hammer = (props: IconProps) => (
+  <IconBase {...props}>
+    <path d="m14 7 3 3-9.5 9.5a2.1 2.1 0 0 1-3-3z" />
+    <path d="m13 6 2.5-2.5a2 2 0 0 1 2.8 0L21 6.2l-2.5 2.5" />
+  </IconBase>
+);

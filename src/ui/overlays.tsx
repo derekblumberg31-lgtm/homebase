@@ -12,12 +12,12 @@ import {
 import { createPortal } from 'react-dom';
 
 /** Close on Escape, trap Tab inside, and give focus back to whatever opened the overlay. */
-function useDialogFocus(onClose: () => void) {
+export function useDialogFocus(onClose: () => void, lockScroll = true) {
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const opener = document.activeElement as HTMLElement | null;
     const node = ref.current;
-    const first = node?.querySelector<HTMLElement>('[autofocus], input, select, textarea, button, a[href]');
+    const first = node?.querySelector<HTMLElement>('[data-autofocus], [autofocus]') ?? node?.querySelector<HTMLElement>('input, select, textarea, button, a[href]');
     first?.focus();
     function onKey(event: KeyboardEvent) {
       if (event.key === 'Escape') {
@@ -42,7 +42,7 @@ function useDialogFocus(onClose: () => void) {
     }
     document.addEventListener('keydown', onKey);
     const { overflow } = document.body.style;
-    document.body.style.overflow = 'hidden';
+    if (lockScroll) document.body.style.overflow = 'hidden';
     return () => {
       document.removeEventListener('keydown', onKey);
       document.body.style.overflow = overflow;

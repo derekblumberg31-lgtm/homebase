@@ -14,7 +14,7 @@
     <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
     <style>
       html { background: #f4f3f0; }
-      html[data-theme='dark'] { background: #171716; }
+      html[data-theme='dark'] { background: #141312; }
     </style>
     <script>
       // Apply the saved theme before first paint so there is no flash.
@@ -25,7 +25,7 @@
         document.documentElement.dataset.theme = theme;
         document.documentElement.style.colorScheme = theme;
         var meta = document.querySelector('meta[name="theme-color"]');
-        if (meta) meta.setAttribute('content', theme === 'dark' ? '#171716' : '#f4f3f0');
+        if (meta) meta.setAttribute('content', theme === 'dark' ? '#141312' : '#f4f3f0');
       } catch (error) {}
     </script>
   </head>

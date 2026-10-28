@@ -289,7 +289,7 @@ export default function IdentifyKeyPage() {
 
   // ---------- screens ----------
 
-  const back = { to: enrollItem ? `/property/keys/${enrollItem.id}` : '/property/keys', label: enrollItem ? enrollItem.name : 'Keys and locks' };
+  const back = { to: enrollItem ? `/property/keys/${enrollItem.id}` : '/property/keys', label: enrollItem ? enrollItem.name : 'Keys and Locks' };
 
   if (screen.kind === 'idle') {
     const enrollCount = enrollItem?.key?.captures.length ?? 0;
@@ -461,7 +461,7 @@ export default function IdentifyKeyPage() {
   if (screen.kind === 'done') {
     const adding = screen.next.startsWith('Take photo');
     return (
-      <Page title={screen.title} back={{ to: '/property/keys', label: 'Keys and locks' }}>
+      <Page title={screen.title} back={{ to: '/property/keys', label: 'Keys and Locks' }}>
         <StatusLine tone="match" text="Done" />
         <p className="page-sub">{screen.text}</p>
         <div className="button-stack">

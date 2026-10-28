@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useData, useStore } from '../../data/DataProvider';
 import type { StoredFile } from '../../data/types';
 import { formatCurrency, formatDate, toDateInput } from '../../lib/dates';
 import { formatBytes } from '../../lib/images';
 import { EmptyState, Group, Page, Row, Section, Skeleton } from '../../ui/layout';
+import { Mail, Phone } from '../../ui/Icons';
 import { Confirm, useToast } from '../../ui/overlays';
 import { RECORD_KIND_LABEL } from './labels';
 import { RecordForm } from './RecordForm';
@@ -60,15 +61,45 @@ export function RecordPage() {
         <Group>
           {record.date && <Row title={record.kind === 'warranty' ? 'Starts' : 'Date'} value={formatDate(record.date)} />}
           {record.expiresAt && <Row title={record.expiresAt < today ? 'Ended' : 'Ends'} value={formatDate(record.expiresAt)} />}
-          {record.vendor && <Row title="From" value={record.vendor} />}
+          {record.vendor && <Row title={record.kind === 'contractor' ? 'Trade' : 'From'} value={record.vendor} />}
           {record.amount != null && <Row title="Amount" value={formatCurrency(record.amount)} />}
-          {item && <Row title="For" value={item.name} to={`/property/items/${item.id}`} />}
-          {!record.date && !record.expiresAt && !record.vendor && record.amount == null && !item && <Row title="No details yet" sub="Add dates, the seller and the amount with Edit." />}
+          {!record.date && !record.expiresAt && !record.vendor && record.amount == null && !record.phone && !record.email && record.kind !== 'note' && (
+            <Row title="No details yet" sub={record.kind === 'contractor' ? 'Add their trade, phone and email with Edit.' : 'Add dates, the seller and the amount with Edit.'} wrap />
+          )}
         </Group>
       </Section>
 
+      {(record.phone || record.email) && (
+        <Section title="Contact">
+          <div className="group">
+            {record.phone && (
+              <a className="row" href={`tel:${record.phone.replace(/[^\d+]/g, '')}`}>
+                <span className="row-lead"><Phone size={18} /></span>
+                <span className="row-main"><span className="row-title">{record.phone}</span><span className="row-sub">Call</span></span>
+              </a>
+            )}
+            {record.email && (
+              <a className="row" href={`mailto:${record.email}`}>
+                <span className="row-lead"><Mail size={18} /></span>
+                <span className="row-main"><span className="row-title">{record.email}</span><span className="row-sub">Email</span></span>
+              </a>
+            )}
+          </div>
+        </Section>
+      )}
+
+      {item && (
+        <Section title="Covers" aside={<Link to={`/property/items/${item.id}`}>Open item</Link>}>
+          <Group>
+            <Row title={item.name} sub={[item.brand, item.model].filter(Boolean).join(' ') || 'Add the brand and model in Home Inventory'} wrap to={`/property/items/${item.id}`} />
+            {item.serial && <Row title="Serial number" value={item.serial} />}
+            {item.purchaseDate && <Row title="Bought" value={formatDate(item.purchaseDate)} />}
+          </Group>
+        </Section>
+      )}
+
       {record.notes && (
-        <Section title="Notes">
+        <Section title={record.kind === 'note' ? 'Note' : 'Notes'}>
           <div className="group note-card">{record.notes}</div>
         </Section>
       )}

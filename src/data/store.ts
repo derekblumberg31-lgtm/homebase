@@ -35,7 +35,7 @@ type RowOf<C extends Collection> = HomeData[C][number];
 const ACTIVITY_LIMIT = 200;
 
 export function defaultSettings(): Settings {
-  return { id: 'settings', theme: 'system', reminders: false, dismissedTips: [], keyDebug: false };
+  return { id: 'settings', theme: 'system', reminders: false, dismissedTips: [], tipStates: {}, keyDebug: false };
 }
 
 export function emptyData(): HomeData {

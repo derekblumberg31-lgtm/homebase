@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import type { Task } from '../../data/types';
 import { DAY_MS, parseDateInput } from '../../lib/dates';
 import { Check } from '../../ui/Icons';
+import { PRIORITY_LABEL, taskMetaParts, taskPriority } from './meta';
 import { countdownParts, type TaskInfo } from './taskMath';
 
 export function Countdown({ info, large = false }: { info: TaskInfo; large?: boolean }) {
@@ -104,7 +105,8 @@ export function TaskRow({ task, info, now, featured = false, onDone }: TaskRowPr
 
   const offset = dragX ?? (open ? -ACTION_WIDTH : 0);
   const canSwipe = task.status !== 'done';
-  const where = [task.location, task.kind !== 'maintenance' ? (task.kind === 'repair' ? 'Repair' : 'Project') : null].filter(Boolean).join(' · ');
+  const where = taskMetaParts(task, info).join(' · ');
+  const priority = taskPriority(task);
 
   return (
     <div className={`swipe-shell row-wrap ${open || dragX !== null ? 'is-revealed' : ''}`}>
@@ -127,7 +129,7 @@ export function TaskRow({ task, info, now, featured = false, onDone }: TaskRowPr
         type="button"
         className="task-row"
         style={{ transform: `translateX(${offset}px)`, transition: dragX === null ? undefined : 'none' }}
-        aria-label={`${task.name}${where ? `, ${where}` : ''}, ${countdownParts(info).label}`}
+        aria-label={`${task.name}${priority !== 'normal' ? `, ${PRIORITY_LABEL[priority]}` : ''}${where ? `, ${where}` : ''}, ${countdownParts(info).label}`}
         onClick={() => (open ? setOpen(false) : navigate(`/tasks/${task.id}`))}
         onClickCapture={clickCapture}
         onPointerDown={canSwipe ? down : undefined}
@@ -137,8 +139,11 @@ export function TaskRow({ task, info, now, featured = false, onDone }: TaskRowPr
       >
         <span className="row-line">
           <span className="row-main">
-            <span className="row-title">{task.name}</span>
-            {where && <span className="row-sub">{where}</span>}
+            <span className="row-title">
+              {priority === 'high' && <span className="priority-mark" title={PRIORITY_LABEL.high} aria-hidden="true" />}
+              {task.name}
+            </span>
+            {where && <span className="row-sub is-wrap">{where}</span>}
           </span>
           <Countdown info={info} />
         </span>

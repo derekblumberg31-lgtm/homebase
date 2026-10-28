@@ -30,7 +30,7 @@ export function KeyPage() {
 
   if (!item?.key) {
     return (
-      <Page title="Key" back={{ to: '/property/keys', label: 'Keys and locks' }}>
+      <Page title="Key" back={{ to: '/property/keys', label: 'Keys and Locks' }}>
         <div className="section">
           <EmptyState title="This key isn’t here" body="It may have been removed." action={{ label: 'Back to keys', to: '/property/keys' }} />
         </div>
@@ -58,7 +58,7 @@ export function KeyPage() {
   }
 
   return (
-    <Page title={item.name} subtitle={item.notes} back={{ to: '/property/keys', label: 'Keys and locks' }} actions={<button type="button" className="button is-quiet" onClick={() => setEditing(true)}>Edit</button>}>
+    <Page title={item.name} subtitle={item.notes} back={{ to: '/property/keys', label: 'Keys and Locks' }} actions={<button type="button" className="button is-quiet" onClick={() => setEditing(true)}>Edit</button>}>
       <Section>
         <ReplacementCard
           code={keyCode(item, entry)}

@@ -54,9 +54,9 @@ export function PropertyPage() {
 
       <Section title="What’s in it">
         <Group>
-          <Row title="Home systems" sub="Heating, cooling, water heater, roof" value={data.systems.length || undefined} to="/property/systems" />
+          <Row title="Home Systems" sub="Heating, cooling, water heater, roof" value={data.systems.length || undefined} to="/property/systems" />
           <Row title="Home Inventory" sub="Appliances, electronics, furniture, tools" value={belongings.length || undefined} to="/property/inventory" />
-          <Row title="Keys and locks" sub="Saved keys and the blanks to copy them" value={keys.length || undefined} lead={<Key size={19} />} to="/property/keys" />
+          <Row title="Keys and Locks" sub="Saved keys and the blanks to copy them" value={keys.length || undefined} lead={<Key size={19} />} to="/property/keys" />
           <Row title="Identify a key" sub="Take a photo to find which key it is" lead={<Camera size={19} />} to="/property/identify-key" />
         </Group>
       </Section>
@@ -106,7 +106,7 @@ export function RoomSheet({ room, onClose, onSave }: { room?: Room; onClose: () 
       <FormGroup>
         <TextField label="Name" value={name} onChange={(e) => setName(e.target.value)} error={error} autoFocus />
         <TextField label="Floor" optional value={floor} onChange={(e) => setFloor(e.target.value)} placeholder="Upstairs" />
-        <TextField label="Notes" optional value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Paint colour, flooring" />
+        <TextField label="Notes" optional value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Paint color, flooring" />
       </FormGroup>
       {!room && ideas.length > 0 && (
         <div className="chips" role="group" aria-label="Common rooms">

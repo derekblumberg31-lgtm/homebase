@@ -86,18 +86,20 @@ interface RowProps {
   tone?: 'action' | 'danger';
   chevron?: boolean;
   label?: string;
+  /** Let the title and subtitle wrap instead of truncating. */
+  wrap?: boolean;
 }
 
 /** One line in a grouped list: a link, a button, or a plain read-only row. */
-export function Row({ title, sub, value, lead, to, onClick, tone, chevron, label }: RowProps) {
+export function Row({ title, sub, value, lead, to, onClick, tone, chevron, label, wrap = false }: RowProps) {
   const className = `row ${tone === 'action' ? 'is-action' : tone === 'danger' ? 'is-danger' : ''}`;
   const showChevron = chevron ?? Boolean(to);
   const body = (
     <>
       {lead && <span className="row-lead">{lead}</span>}
       <span className="row-main">
-        <span className="row-title">{title}</span>
-        {sub && <span className="row-sub">{sub}</span>}
+        <span className={`row-title ${wrap ? 'is-wrap' : ''}`}>{title}</span>
+        {sub && <span className={`row-sub ${wrap ? 'is-wrap' : ''}`}>{sub}</span>}
       </span>
       {value !== undefined && <span className="row-value">{value}</span>}
       {showChevron && <ChevronRight size={17} className="row-chevron" />}
