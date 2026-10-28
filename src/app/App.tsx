@@ -8,6 +8,7 @@ import { AppShell } from './AppShell';
 import { useReminders } from './reminders';
 import { useApplyTheme } from './theme';
 import { HomePage } from '../features/home/HomePage';
+import { HomeActivityPage, HomeComingUpPage, HomeHealthPage, HomeSeasonPage } from '../features/home/HomeDetailPages';
 import { PropertyPage } from '../features/property/PropertyPage';
 import { PropertyDetailsPage } from '../features/property/PropertyDetailsPage';
 import { RoomPage } from '../features/property/RoomPage';
@@ -93,6 +94,10 @@ export function App() {
                 <Route element={<AppShell />}>
                   <Route path="/" element={<Navigate to="/home" replace />} />
                   <Route path="/home" element={<HomePage />} />
+                  <Route path="/home/health" element={<HomeHealthPage />} />
+                  <Route path="/home/season" element={<HomeSeasonPage />} />
+                  <Route path="/home/coming-up" element={<HomeComingUpPage />} />
+                  <Route path="/home/activity" element={<HomeActivityPage />} />
                   <Route path="/property" element={<PropertyPage />} />
                   <Route path="/property/details" element={<PropertyDetailsPage />} />
                   <Route path="/property/rooms/:roomId" element={<RoomPage />} />

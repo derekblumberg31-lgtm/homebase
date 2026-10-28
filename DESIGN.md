@@ -255,9 +255,12 @@ One family: `-apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Robot
   - A 244px sidebar: brand, a coral Add button (the one persistent primary), the five areas, and Settings set apart at the bottom.
   - The active item has a 3px accent bar at the edge.
   - Pages are max 760px, or 1120px for `Page wide`.
-- **Home:**
-  - One raised overview panel spans the page: status headline, a five-fact snapshot strip and Needs attention.
-  - Below it, two columns from 1100px: Up next, Coming up and the season's jobs on the left; Home Health Check and Activity on the right.
+- **Home** is for a few seconds in front of the thing that needs doing:
+  - one status line saying whether anything is overdue
+  - the next three jobs, swipe to mark done
+  - an Ask Homebase row
+  - a short list linking to Home Health Check (with the snapshot), This season, Coming up and Activity, each on its own page one tap away
+- **Launcher lane:** the launcher sits 72px above the bottom edge, clear of Netlify's own corner badge on the hosted site.
 - **Launcher lane:** from 768px the main column keeps a 72px lane on the right for the Ask Homebase launcher, so it never covers content.
 - **Sheets:**
   - Bottom-anchored on phones, with drag to dismiss.
@@ -312,6 +315,24 @@ All of these live in `src/ui/` and `src/features/*/components`.
 - **Chat** (`features/assistant`):
   - User bubbles are brick with white text.
   - Answers are white groups with the guide name, numbered steps, an amber safety note and up to two text actions.
+
+## Motion and touch
+
+Following Apple's *Designing Fluid Interfaces* (`ui/physics.ts`):
+- **Swipe to done:**
+  - The row tracks the finger 1:1 and rubber-bands past both edges.
+  - On release it decides from the projected end point (velocity × deceleration), not the release point.
+  - A long, fast swipe marks it done straight away, with Undo.
+- **Sheets:**
+  - Dragging down tracks 1:1; upward drag resists.
+  - A flick dismisses on velocity alone.
+  - Dismissing by drag, Escape or a tap outside slides the sheet back down from wherever it is, the way it came.
+- **Menus and the Ask Homebase panel** grow from their trigger (`transform-origin` on the button side), not from their centre.
+- **Preferences:**
+  - Reduced motion swaps slides and scales for fades.
+  - Reduced transparency makes the tab bar solid.
+  - High contrast strengthens lines and secondary text.
+- **Tracking follows size:** large titles at -0.02em, body at -0.01em, small text at 0.
 
 ## States
 

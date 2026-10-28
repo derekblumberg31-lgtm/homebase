@@ -354,12 +354,12 @@ const ACTIVITY_ICON: Partial<Record<ActivityKind, ComponentType<IconProps>>> = {
 
 const MONTH_MS = 30 * 24 * 60 * 60 * 1000;
 
-export function ActivityFeed({ now, health }: { now: number; health: HealthCheck }) {
+export function ActivityFeed({ now, health, limit = 5 }: { now: number; health: HealthCheck; limit?: number }) {
   const data = useData();
   const since = new Date(now - MONTH_MS).toISOString();
   const doneCount = data.serviceEvents.filter((e) => e.createdAt >= since).length;
   const addedCount = data.activity.filter((a) => a.at >= since && (a.kind === 'record-added' || a.kind === 'item-added' || a.kind === 'key-added' || a.kind === 'task-added' || a.kind === 'import')).length;
-  const entries = data.activity.slice(0, 5);
+  const entries = data.activity.slice(0, limit);
 
   return (
     <section className="module" aria-labelledby="activity-title">

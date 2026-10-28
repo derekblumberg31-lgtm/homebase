@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import type { Task } from '../../data/types';
 import { DAY_MS, parseDateInput } from '../../lib/dates';
 import { Check } from '../../ui/Icons';
+import { project, rubberband, velocityTracker } from '../../ui/physics';
 import { PRIORITY_LABEL, taskMetaParts, taskPriority } from './meta';
 import { countdownParts, type TaskInfo } from './taskMath';
 
@@ -70,10 +71,12 @@ export function TaskRow({ task, info, now, featured = false, onDone }: TaskRowPr
   const [dragX, setDragX] = useState<number | null>(null);
   const start = useRef<{ x: number; y: number; base: number; horizontal: boolean | null } | null>(null);
   const moved = useRef(false);
+  const tracker = useRef(velocityTracker());
 
   function down(event: PointerEvent<HTMLButtonElement>) {
     if (event.pointerType === 'mouse' && event.button !== 0) return;
     start.current = { x: event.clientX, y: event.clientY, base: open ? -ACTION_WIDTH : 0, horizontal: null };
+    tracker.current.reset();
     event.currentTarget.setPointerCapture(event.pointerId);
   }
   function move(event: PointerEvent<HTMLButtonElement>) {
@@ -86,15 +89,27 @@ export function TaskRow({ task, info, now, featured = false, onDone }: TaskRowPr
     }
     if (!start.current.horizontal) return;
     if (Math.abs(dx) > 8) moved.current = true;
-    setDragX(Math.max(-ACTION_WIDTH, Math.min(0, start.current.base + dx)));
+    const raw = start.current.base + dx;
+    tracker.current.add(raw);
+    // Follows the finger 1:1 between closed and open, and resists past either edge.
+    setDragX(raw > 0 ? rubberband(raw, ACTION_WIDTH) : raw < -ACTION_WIDTH ? -ACTION_WIDTH + rubberband(raw + ACTION_WIDTH, ACTION_WIDTH) : raw);
   }
   function up() {
     if (!start.current) return;
     const value = dragX ?? (open ? -ACTION_WIDTH : 0);
+    const wasHorizontal = start.current.horizontal;
     start.current = null;
-    setOpen(value < -ACTION_WIDTH / 2);
+    // Decide from where the gesture was heading, not just where the finger let go.
+    const projected = value + project(tracker.current.velocity());
     setDragX(null);
     window.setTimeout(() => (moved.current = false), 0);
+    if (wasHorizontal && projected < -ACTION_WIDTH * 2.6) {
+      // A long, fast swipe marks it done straight away, like Mail; the toast offers Undo.
+      setOpen(false);
+      onDone();
+      return;
+    }
+    setOpen(projected < -ACTION_WIDTH / 2);
   }
   function clickCapture(event: MouseEvent) {
     if (!moved.current) return;

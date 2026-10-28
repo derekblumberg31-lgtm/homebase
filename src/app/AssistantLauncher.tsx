@@ -24,7 +24,7 @@ function useSuggestion() {
     }
     const tips = recommendationsFor(data, now);
     if (tips.length) {
-      return { key: `tips:${tips.map((t) => t.id).join(',')}`, nudge: { text: `${tips.length} seasonal ${tips.length === 1 ? 'job is' : 'jobs are'} worth doing now.`, href: '/home', label: 'See them' } };
+      return { key: `tips:${tips.map((t) => t.id).join(',')}`, nudge: { text: `${tips.length} seasonal ${tips.length === 1 ? 'job is' : 'jobs are'} worth doing now.`, href: '/home/season', label: 'See them' } };
     }
     return null;
   }, [data, now]);

@@ -2341,10 +2341,26 @@ select.input {
   bottom: calc(100% + 6px);
 }
 
+.menu.is-end {
+  transform-origin: top right;
+}
+
+.menu.is-start {
+  transform-origin: top left;
+}
+
+.menu.is-above.is-end {
+  transform-origin: bottom right;
+}
+
+.menu.is-above.is-start {
+  transform-origin: bottom left;
+}
+
 @keyframes menu-in {
   from {
     opacity: 0;
-    transform: translateY(-4px);
+    transform: scale(0.96);
   }
 }
 
@@ -3092,7 +3108,8 @@ a.feed-row:focus-visible {
   .launcher-dock {
     position: fixed;
     right: 14px;
-    bottom: 18px;
+    /* Netlify draws its own badge in the bottom-right corner of the hosted site; sit above it. */
+    bottom: 72px;
     z-index: 45;
     display: block;
   }
@@ -3174,12 +3191,13 @@ a.feed-row:focus-visible {
 .assistant-panel {
   position: fixed;
   right: 14px;
-  bottom: 80px;
+  bottom: 134px;
   z-index: 70;
   display: flex;
   flex-direction: column;
   width: min(400px, calc(100vw - 28px));
-  height: min(620px, calc(100dvh - 110px));
+  height: min(620px, calc(100dvh - 164px));
+  transform-origin: calc(100% - 25px) calc(100% + 29px);
   overflow: hidden;
   border: 1px solid var(--line-strong);
   border-radius: 14px;
@@ -3188,10 +3206,11 @@ a.feed-row:focus-visible {
   animation: panel-in 0.22s var(--ease);
 }
 
+/* The panel grows out of the launcher, so it's clear where it came from. */
 @keyframes panel-in {
   from {
     opacity: 0;
-    transform: translateY(8px);
+    transform: scale(0.94);
   }
 }
 
@@ -3296,4 +3315,124 @@ a.feed-row:focus-visible {
 .form-segment > .field-label {
   display: block;
   padding: 0 4px 6px;
+}
+
+/* ---------- Home, focused ---------- */
+
+.home-status {
+  font-weight: 500;
+}
+
+.home-status.is-overdue {
+  color: var(--accent);
+}
+
+.home-next {
+  margin-top: 22px;
+}
+
+.home-more {
+  margin-top: 30px;
+}
+
+.page-note {
+  margin-top: 22px;
+  color: var(--text-2);
+  font-size: 15px;
+}
+
+/* ---------- type: tracking follows size ---------- */
+/* Large text tightens, body stays near the system default, small text opens up slightly. */
+
+.row-sub,
+.section-foot,
+.module-note,
+.field-hint,
+.menu-hint,
+.snapshot dt,
+.snapshot .snapshot-detail,
+.timeline-detail,
+.feed-time,
+.tally dt,
+.tally-note,
+.step-why,
+.tip-why,
+.local-note,
+.bubble-note,
+.overview-label,
+.timeline-label {
+  letter-spacing: 0;
+}
+
+.tab-item,
+.side-link {
+  letter-spacing: 0.005em;
+}
+
+/* ---------- sheet exit: back the way it came ---------- */
+
+/* A sheet let go short of dismissing settles back from wherever it was. */
+.sheet:not(.is-dragging) {
+  transition: transform 0.3s var(--ease-settle);
+}
+
+.sheet.is-leaving {
+  transition: transform 0.26s var(--ease-settle), opacity 0.26s var(--ease-settle);
+  transform: translateY(100%) !important;
+}
+
+.overlay.is-leaving {
+  transition: opacity 0.26s var(--ease-settle);
+  opacity: 0;
+}
+
+@media (min-width: 768px) {
+  .sheet.is-leaving {
+    opacity: 0;
+    transform: translateY(16px) !important;
+  }
+}
+
+/* ---------- materials and contrast preferences ---------- */
+
+@media (prefers-reduced-transparency: reduce) {
+  .tab-bar {
+    background: var(--sidebar-bg);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
+
+@media (prefers-contrast: more) {
+  :root {
+    --line: rgba(43, 41, 38, 0.28);
+    --line-strong: rgba(43, 41, 38, 0.45);
+    --text-2: #4a4641;
+    --text-3: #57524c;
+  }
+
+  :root[data-theme='dark'] {
+    --line: rgba(241, 236, 228, 0.24);
+    --line-strong: rgba(241, 236, 228, 0.4);
+    --text-2: #d2ccc3;
+    --text-3: #c0b9af;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sheet.is-leaving {
+    transform: none !important;
+    opacity: 0;
+  }
+
+  .menu,
+  .assistant-panel {
+    animation-name: fade-in;
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
 }

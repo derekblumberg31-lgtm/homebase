@@ -10,6 +10,7 @@ import {
   type ReactNode,
 } from 'react';
 import { createPortal } from 'react-dom';
+import { project, rubberband, velocityTracker } from './physics';
 
 /** Close on Escape, trap Tab inside, and give focus back to whatever opened the overlay. */
 export function useDialogFocus(onClose: () => void, lockScroll = true) {
@@ -65,39 +66,59 @@ interface SheetProps {
 /** A bottom sheet on phones (drag down to dismiss) and a centred panel on larger screens. */
 export function Sheet({ title, onClose, children, leading, trailing, footer }: SheetProps) {
   const titleId = useId();
-  const ref = useDialogFocus(onClose);
+  // Escape leaves the same way as a drag or a tap outside; the handler is read when it fires.
+  const dismissRef = useRef<() => void>(onClose);
+  const ref = useDialogFocus(() => dismissRef.current());
   const [dragY, setDragY] = useState(0);
   const [dragging, setDragging] = useState(false);
+  const [leaving, setLeaving] = useState(false);
   const startY = useRef<number | null>(null);
+  const tracker = useRef(velocityTracker());
+
+  /** Leaves the way it arrived (down), starting from wherever the sheet is right now. */
+  function dismiss() {
+    if (leaving) return;
+    setLeaving(true);
+    window.setTimeout(onClose, 260);
+  }
+  dismissRef.current = dismiss;
 
   function down(event: PointerEvent<HTMLDivElement>) {
-    if (event.pointerType === 'mouse' && event.button !== 0) return;
+    if (leaving || (event.pointerType === 'mouse' && event.button !== 0)) return;
     startY.current = event.clientY;
+    tracker.current.reset();
     setDragging(true);
     event.currentTarget.setPointerCapture(event.pointerId);
   }
   function move(event: PointerEvent<HTMLDivElement>) {
     if (startY.current === null) return;
-    setDragY(Math.max(0, event.clientY - startY.current));
+    const dy = event.clientY - startY.current;
+    tracker.current.add(dy);
+    // Downwards tracks 1:1; upwards there's nowhere to go, so it resists.
+    setDragY(dy >= 0 ? dy : rubberband(dy, 300));
   }
   function up() {
     if (startY.current === null) return;
-    const close = dragY > 110;
     startY.current = null;
     setDragging(false);
+    const velocity = tracker.current.velocity();
+    const projected = dragY + project(velocity, 0.99);
+    if (projected > 160 && velocity >= -50) {
+      dismiss();
+      return;
+    }
     setDragY(0);
-    if (close) onClose();
   }
 
   return createPortal(
-    <div className="overlay" onClick={onClose}>
+    <div className={`overlay ${leaving ? 'is-leaving' : ''}`} onClick={dismiss}>
       <div
         ref={ref}
-        className={`sheet ${dragging ? 'is-dragging' : ''}`}
+        className={`sheet ${dragging ? 'is-dragging' : ''} ${leaving ? 'is-leaving' : ''}`}
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
-        style={dragY > 0 ? { transform: `translateY(${dragY}px)` } : undefined}
+        style={dragY !== 0 ? { transform: `translateY(${dragY}px)` } : undefined}
         onClick={(event) => event.stopPropagation()}
       >
         <div className="sheet-grab" onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerCancel={up}>

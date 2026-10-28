@@ -95,7 +95,7 @@ function answerFromData(question: string, data: HomeData, now: number): Answer |
       text: due.length ? `${due.length} ${due.length === 1 ? 'task is' : 'tasks are'} due in the next month${seasonal.length ? ', plus a few seasonal jobs' : ''}:` : 'Nothing on your list is due, but these are worth doing this season:',
       steps,
       source: 'Your tasks, systems and this season’s checklist',
-      actions: [{ label: 'Open Tasks', href: '/tasks' }, ...(seasonal.length ? [{ label: 'See seasonal jobs', href: '/home' }] : [])],
+      actions: [{ label: 'Open Tasks', href: '/tasks' }, ...(seasonal.length ? [{ label: 'See seasonal jobs', href: '/home/season' }] : [])],
     };
   }
 

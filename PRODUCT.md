@@ -7,6 +7,8 @@
 web
 
 ## Users
+Anchor: someone who owns a 1990s house, keeps forgetting the furnace filter and gutters, and can never find the water heater warranty when something breaks. They open Homebase for a few seconds, usually standing in front of the thing that needs attention.
+
 Homeowners (and renters) who want one calm place for their home: what needs doing, what they own, where the paperwork is, and what to do when something breaks. Mostly on an iPhone installed to the Home Screen, sometimes on a laptop or tablet when entering details.
 
 ## Product Purpose
