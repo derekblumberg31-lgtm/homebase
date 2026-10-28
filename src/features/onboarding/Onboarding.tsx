@@ -65,7 +65,7 @@ export function Onboarding() {
   return (
     <div className="onboarding">
       <div className="onboarding-card">
-        <img className="onboarding-mark" src="/icons/icon-192.png" alt="" />
+        <img className="onboarding-mark" src={`${import.meta.env.BASE_URL}icons/icon-192.png`} alt="" />
 
         {step === 'welcome' && (
           <>

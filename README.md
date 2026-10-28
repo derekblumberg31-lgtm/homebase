@@ -48,11 +48,12 @@ npm run build
 
 ## Deploy
 
-```bash
-./deploy.sh
-```
+Every push to `main` deploys to **GitHub Pages** at https://derekblumberg31-lgtm.github.io/homebase/ (`.github/workflows/deploy.yml`). The workflow:
+- runs the tests
+- builds with `BASE_PATH=/homebase/`
+- copies `index.html` to `404.html` so deep links work
 
-This runs the tests and the build, then publishes to the Netlify site `homebase-derek`. It creates the site the first time.
+The older Netlify site (`./deploy.sh`, homebase-derek.netlify.app) still works if you ever want it. It builds for the root path.
 
 ## Docs
 

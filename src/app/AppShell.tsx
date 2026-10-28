@@ -65,7 +65,7 @@ export function AppShell() {
 
       <nav className="sidebar" aria-label="Main">
         <div className="brand">
-          <img src="/icons/icon-192.png" alt="" />
+          <img src={`${import.meta.env.BASE_URL}icons/icon-192.png`} alt="" />
           <div className="brand-text">
             <div className="brand-name">{PRODUCT.name}</div>
             <div className="brand-tagline">{PRODUCT.tagline}</div>

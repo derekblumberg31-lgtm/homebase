@@ -32,7 +32,7 @@ let loading: Promise<KeywayRow[]> | null = null;
 
 export function loadKeyways(): Promise<KeywayRow[]> {
   if (table) return Promise.resolve(table);
-  loading ??= fetch('/engine/keyways.json')
+  loading ??= fetch(`${import.meta.env.BASE_URL}engine/keyways.json`)
     .then((r) => r.json())
     .then((json: { keyways?: KeywayRow[] }) => (table = json.keyways ?? []))
     .catch(() => (table = []));

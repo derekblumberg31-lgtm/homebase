@@ -3,7 +3,11 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
 
+// GitHub Pages serves the app from /homebase/; Netlify and local dev serve it from the root.
+const base = process.env.BASE_PATH ?? '/';
+
 export default defineConfig({
+  base,
   plugins: [
     react(),
     VitePWA({
@@ -11,12 +15,12 @@ export default defineConfig({
       injectRegister: null,
       includeAssets: ['icons/favicon.svg', 'icons/apple-touch-icon.png'],
       manifest: {
-        id: '/',
+        id: base,
         name: 'Homebase',
         short_name: 'Homebase',
         description: 'Your intelligent homeowner assistant: maintenance, property details, keys, records and help, all in one place.',
-        start_url: '/home',
-        scope: '/',
+        start_url: `${base}home`,
+        scope: base,
         display: 'standalone',
         orientation: 'any',
         lang: 'en',
@@ -24,9 +28,9 @@ export default defineConfig({
         background_color: '#faf9f5',
         theme_color: '#faf9f5',
         icons: [
-          { src: '/icons/icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
-          { src: '/icons/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
-          { src: '/icons/maskable-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
+          { src: `${base}icons/icon-192.png`, sizes: '192x192', type: 'image/png', purpose: 'any' },
+          { src: `${base}icons/icon-512.png`, sizes: '512x512', type: 'image/png', purpose: 'any' },
+          { src: `${base}icons/maskable-512.png`, sizes: '512x512', type: 'image/png', purpose: 'maskable' },
         ],
       },
       workbox: {
@@ -34,13 +38,15 @@ export default defineConfig({
         // the first time someone opens Identify a Key, so the first visit stays light.
         globPatterns: ['**/*.{js,css,html,svg,png,webmanifest,json}'],
         globIgnores: ['engine/**'],
-        navigateFallback: '/index.html',
+        navigateFallback: `${base}index.html`,
         cleanupOutdatedCaches: true,
         clientsClaim: true,
         skipWaiting: true,
         runtimeCaching: [
           {
-            urlPattern: ({ url }) => url.pathname.startsWith('/engine/'),
+            // A RegExp, not a function: functions are copied into the service worker as source,
+            // where this config's variables don't exist.
+            urlPattern: new RegExp(`${base.replace(/[.*+?^${}()|[\]\\/]/g, '\\$&')}engine/`),
             handler: 'CacheFirst',
             options: { cacheName: 'homebase-key-engine', expiration: { maxEntries: 40 } },
           },

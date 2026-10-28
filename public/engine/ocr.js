@@ -12,7 +12,7 @@ const OCR = (() => {
         if (!window.Tesseract) throw new Error('Tesseract.js did not load (offline?)');
         // Everything loads from the bundled vendor/ folder: the worker, the OCR engine (Tesseract
         // picks the SIMD or plain build for the device) and the English model.
-        const base = new URL('/engine/vendor/', location.href).href;
+        const base = new URL((window.__ENGINE_BASE__ || '/engine/') + 'vendor/', location.href).href;
         const w = await Tesseract.createWorker('eng', 1, {
           workerPath: base + 'worker.min.js',
           corePath: base,

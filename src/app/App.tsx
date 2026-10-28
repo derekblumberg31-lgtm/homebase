@@ -86,7 +86,7 @@ export function App() {
       <SessionProvider>
         <ToastProvider>
           <Effects />
-          <BrowserRouter>
+          <BrowserRouter basename={import.meta.env.BASE_URL.replace(/\/$/, '') || '/'}>
             <ScrollToTop />
             <Gate>
               <Routes>

@@ -119,9 +119,14 @@ interface EngineGlobals {
 
 declare global {
   interface Window {
+    __ENGINE_BASE__?: string;
     __KeyEngine?: EngineGlobals;
   }
 }
+
+/** Where the engine files live; the classic scripts read it from window.__ENGINE_BASE__ too. */
+const ENGINE_BASE = `${import.meta.env.BASE_URL}engine/`;
+window.__ENGINE_BASE__ = ENGINE_BASE;
 
 const SCRIPTS = ['engine-config.js', 'vendor/tesseract.min.js', 'identify.js', 'vision.js', 'match.js', 'ocr.js', 'engine-export.js'];
 
@@ -133,7 +138,7 @@ function addScript(src: string, async = false): Promise<void> {
       return;
     }
     const script = document.createElement('script');
-    script.src = `/engine/${src}`;
+    script.src = `${ENGINE_BASE}${src}`;
     script.async = async;
     script.dataset.engine = src;
     script.onload = () => resolve();

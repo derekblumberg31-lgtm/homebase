@@ -27,7 +27,7 @@ const Identify = (() => {
   async function load() {
     if (window.__KEYWAYS__) { table = window.__KEYWAYS__.keyways || []; return table; } // embedded build
     try {
-      const r = await fetch('/engine/keyways.json', { cache: 'no-cache' });
+      const r = await fetch((window.__ENGINE_BASE__ || '/engine/') + 'keyways.json', { cache: 'no-cache' });
       table = (await r.json()).keyways || [];
     } catch (e) {
       console.warn('keyways.json not loaded', e);
