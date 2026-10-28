@@ -22,5 +22,5 @@ Homebase ships local-first with offline guided help. Each future feature below n
 
 ## Known gaps
 
-- Offline behaviour hasn't been checked in a real browser yet: the in-app browser pane blocks service workers. The config matches Replacely's, which works offline.
+- Offline: on the live site the service worker installs and precaches the app shell (index.html, JS, CSS, icons). A reload with the network turned off hasn't been run yet.
 - Identify a key needs a camera or a photo file; it wasn't run end to end against a real key photo in this build.
