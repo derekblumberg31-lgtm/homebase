@@ -1,0 +1,5 @@
+Bundled open-source libraries (unmodified copies):
+
+- OpenCV.js 4.10.0 (@techstark/opencv-js 4.10.0-release.1) - Apache License 2.0 - https://opencv.org
+- Tesseract.js 5.1.1 and tesseract.js-core 5.1.1 - Apache License 2.0 - https://github.com/naptha/tesseract.js
+- Tesseract English model (eng, 4.0.0_best_int via @tesseract.js-data/eng 1.0.0) - Apache License 2.0 - https://github.com/tesseract-ocr/tessdata_best

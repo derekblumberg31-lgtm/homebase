@@ -1,0 +1,453 @@
+{
+  "_note": "Common US keys only. 'headShapes' and 'ratio' (blade length / blade height as measured by the app) are rough heuristics for guessing. Entries with verify:true have details that aren't certain (mostly car keys, where the keyway depends on model and year); confirm the blank with the shop before ordering. 'alt' is a cross-reference blank number where known. Brand-level entries (car makers, restricted brands, mailboxes) have an empty 'keyway' and a 'keywayNote' instead.",
+  "keyways": [
+    {
+      "id": "kw1",
+      "brand": "Kwikset",
+      "brandAliases": [
+        "KWIKSET"
+      ],
+      "keyway": "KW1",
+      "codes": [
+        "KW1"
+      ],
+      "type": "house",
+      "blank": "KW1",
+      "alt": "Ilco 1176",
+      "pins": 5,
+      "headShapes": [
+        "bow"
+      ],
+      "ratio": [
+        2.6,
+        3.8
+      ],
+      "prior": 0.6,
+      "notes": "The most common US house key. Kwikset SmartKey locks use the same KW1 profile.",
+      "verify": false
+    },
+    {
+      "id": "kw10",
+      "brand": "Kwikset",
+      "brandAliases": [
+        "KWIKSET"
+      ],
+      "keyway": "KW10",
+      "codes": [
+        "KW10"
+      ],
+      "type": "house",
+      "blank": "KW10",
+      "alt": null,
+      "pins": 6,
+      "headShapes": [
+        "bow"
+      ],
+      "ratio": [
+        3.2,
+        4.4
+      ],
+      "prior": 0.15,
+      "notes": "6-pin version of the Kwikset profile (longer blade).",
+      "verify": false
+    },
+    {
+      "id": "sc1",
+      "brand": "Schlage",
+      "brandAliases": [
+        "SCHLAGE"
+      ],
+      "keyway": "SC1",
+      "codes": [
+        "SC1"
+      ],
+      "type": "house",
+      "blank": "SC1",
+      "alt": "Ilco 1145",
+      "pins": 5,
+      "headShapes": [
+        "round",
+        "bow"
+      ],
+      "ratio": [
+        2.8,
+        3.9
+      ],
+      "prior": 0.55,
+      "notes": "The most common Schlage house key.",
+      "verify": false
+    },
+    {
+      "id": "sc4",
+      "brand": "Schlage",
+      "brandAliases": [
+        "SCHLAGE"
+      ],
+      "keyway": "SC4",
+      "codes": [
+        "SC4"
+      ],
+      "type": "house",
+      "blank": "SC4",
+      "alt": null,
+      "pins": 6,
+      "headShapes": [
+        "round",
+        "bow"
+      ],
+      "ratio": [
+        3.3,
+        4.5
+      ],
+      "prior": 0.15,
+      "notes": "6-pin Schlage (longer blade), common on apartment and commercial doors.",
+      "verify": false
+    },
+    {
+      "id": "wr5",
+      "brand": "Weiser",
+      "brandAliases": [
+        "WEISER"
+      ],
+      "keyway": "WR5",
+      "codes": [
+        "WR5"
+      ],
+      "type": "house",
+      "blank": "WR5",
+      "alt": null,
+      "pins": 5,
+      "headShapes": [
+        "bow",
+        "oval"
+      ],
+      "ratio": [
+        2.6,
+        3.8
+      ],
+      "prior": 0.15,
+      "notes": "Common on Weiser locks, especially in Canada.",
+      "verify": false
+    },
+    {
+      "id": "y1",
+      "brand": "Yale",
+      "brandAliases": [
+        "YALE"
+      ],
+      "keyway": "Y1",
+      "codes": [
+        "Y1"
+      ],
+      "type": "house",
+      "blank": "Y1",
+      "alt": null,
+      "pins": 5,
+      "headShapes": [
+        "bow",
+        "oval"
+      ],
+      "ratio": [
+        2.6,
+        3.8
+      ],
+      "prior": 0.1,
+      "notes": "Most common Yale house key.",
+      "verify": false
+    },
+    {
+      "id": "m1",
+      "brand": "Master Lock",
+      "brandAliases": [
+        "MASTER",
+        "MASTERLOCK"
+      ],
+      "keyway": "M1",
+      "codes": [
+        "M1"
+      ],
+      "type": "padlock",
+      "blank": "M1",
+      "alt": "Ilco 1092",
+      "pins": 4,
+      "headShapes": [
+        "square",
+        "bow"
+      ],
+      "ratio": [
+        2.0,
+        3.2
+      ],
+      "prior": 0.3,
+      "notes": "Fits most Master Lock laminated (layered steel) padlocks. Some other Master models use different keys.",
+      "verify": true
+    },
+    {
+      "id": "mailbox",
+      "brand": "Cluster / apartment mailbox",
+      "brandAliases": [
+        "USPS"
+      ],
+      "keyway": "",
+      "keywayNote": "Varies (many small keyways)",
+      "codes": [],
+      "type": "mailbox",
+      "blank": null,
+      "alt": null,
+      "pins": null,
+      "headShapes": [
+        "bow",
+        "square"
+      ],
+      "ratio": [
+        1.6,
+        3.0
+      ],
+      "prior": 0.05,
+      "notes": "Mailbox locks are small and come in many keyways. Cluster and apartment box locks usually belong to the property manager or USPS, who replace them.",
+      "verify": false
+    },
+    {
+      "id": "medeco",
+      "brand": "Medeco",
+      "brandAliases": [
+        "MEDECO"
+      ],
+      "keyway": "",
+      "keywayNote": "Restricted keyway",
+      "codes": [],
+      "type": "high security",
+      "blank": null,
+      "alt": null,
+      "pins": 6,
+      "headShapes": [
+        "bow",
+        "round"
+      ],
+      "ratio": [
+        2.8,
+        4.6
+      ],
+      "prior": 0.02,
+      "restricted": true,
+      "notes": "Restricted key: copies only through authorized Medeco dealers, usually with the key's ID card.",
+      "verify": false
+    },
+    {
+      "id": "multlock",
+      "brand": "Mul-T-Lock",
+      "brandAliases": [
+        "MULTLOCK",
+        "MULTILOCK"
+      ],
+      "keyway": "",
+      "keywayNote": "Restricted keyway",
+      "codes": [],
+      "type": "high security",
+      "blank": null,
+      "alt": null,
+      "pins": null,
+      "headShapes": [
+        "bow",
+        "oval",
+        "square"
+      ],
+      "ratio": [
+        2.4,
+        4.6
+      ],
+      "prior": 0.02,
+      "restricted": true,
+      "notes": "Restricted key: copies only through authorized dealers with the key card.",
+      "verify": false
+    },
+    {
+      "id": "primus",
+      "brand": "Schlage",
+      "brandAliases": [
+        "SCHLAGE"
+      ],
+      "keyway": "Primus / Everest (restricted)",
+      "codes": [
+        "PRIMUS",
+        "EVEREST"
+      ],
+      "type": "high security",
+      "blank": null,
+      "alt": null,
+      "pins": 6,
+      "headShapes": [
+        "round",
+        "bow"
+      ],
+      "ratio": [
+        3.0,
+        4.6
+      ],
+      "prior": 0.02,
+      "restricted": true,
+      "notes": "Restricted Schlage key: copies only through authorized dealers.",
+      "verify": false
+    },
+    {
+      "id": "ford",
+      "brand": "Ford",
+      "brandAliases": [
+        "FORD"
+      ],
+      "keyway": "",
+      "keywayNote": "Varies by model and year (H75 10-cut on many older models)",
+      "codes": [
+        "H75"
+      ],
+      "type": "car",
+      "blank": null,
+      "alt": null,
+      "pins": null,
+      "headShapes": [
+        "plastic"
+      ],
+      "ratio": [
+        3.3,
+        5.5
+      ],
+      "prior": 0.04,
+      "transponderLikely": true,
+      "notes": "Keyway depends on model and year; newer Fords use a laser-cut key. Give the shop your VIN.",
+      "verify": true
+    },
+    {
+      "id": "gm",
+      "brand": "GM (Chevrolet, GMC, Buick, Cadillac)",
+      "brandAliases": [
+        "GM",
+        "CHEVROLET",
+        "CHEVY"
+      ],
+      "keyway": "",
+      "keywayNote": "Varies by model and year",
+      "codes": [],
+      "type": "car",
+      "blank": null,
+      "alt": null,
+      "pins": null,
+      "headShapes": [
+        "plastic"
+      ],
+      "ratio": [
+        3.3,
+        5.5
+      ],
+      "prior": 0.03,
+      "transponderLikely": true,
+      "notes": "Keyway depends on model and year. Give the shop your VIN.",
+      "verify": true
+    },
+    {
+      "id": "toyota",
+      "brand": "Toyota / Lexus",
+      "brandAliases": [
+        "TOYOTA",
+        "LEXUS"
+      ],
+      "keyway": "",
+      "keywayNote": "Varies by model and year",
+      "codes": [],
+      "type": "car",
+      "blank": null,
+      "alt": null,
+      "pins": null,
+      "headShapes": [
+        "plastic"
+      ],
+      "ratio": [
+        3.3,
+        5.5
+      ],
+      "prior": 0.03,
+      "transponderLikely": true,
+      "notes": "Keyway depends on model and year. Give the shop your VIN.",
+      "verify": true
+    },
+    {
+      "id": "honda",
+      "brand": "Honda / Acura",
+      "brandAliases": [
+        "HONDA",
+        "ACURA"
+      ],
+      "keyway": "",
+      "keywayNote": "Laser-cut on most models since about 2000",
+      "codes": [],
+      "type": "car",
+      "blank": null,
+      "alt": null,
+      "pins": null,
+      "headShapes": [
+        "plastic"
+      ],
+      "ratio": [
+        3.3,
+        5.5
+      ],
+      "prior": 0.03,
+      "transponderLikely": true,
+      "notes": "Most are laser-cut, which KeyFinder can't read. Give the shop your VIN.",
+      "verify": true
+    },
+    {
+      "id": "nissan",
+      "brand": "Nissan / Infiniti",
+      "brandAliases": [
+        "NISSAN",
+        "INFINITI"
+      ],
+      "keyway": "",
+      "keywayNote": "Varies by model and year",
+      "codes": [],
+      "type": "car",
+      "blank": null,
+      "alt": null,
+      "pins": null,
+      "headShapes": [
+        "plastic"
+      ],
+      "ratio": [
+        3.3,
+        5.5
+      ],
+      "prior": 0.03,
+      "transponderLikely": true,
+      "notes": "Keyway depends on model and year. Give the shop your VIN.",
+      "verify": true
+    },
+    {
+      "id": "stellantis",
+      "brand": "Chrysler / Dodge / Jeep / Ram",
+      "brandAliases": [
+        "CHRYSLER",
+        "DODGE",
+        "JEEP",
+        "MOPAR"
+      ],
+      "keyway": "",
+      "keywayNote": "Varies by model and year",
+      "codes": [],
+      "type": "car",
+      "blank": null,
+      "alt": null,
+      "pins": null,
+      "headShapes": [
+        "plastic"
+      ],
+      "ratio": [
+        3.3,
+        5.5
+      ],
+      "prior": 0.03,
+      "transponderLikely": true,
+      "notes": "Keyway depends on model and year. Give the shop your VIN.",
+      "verify": true
+    }
+  ]
+}

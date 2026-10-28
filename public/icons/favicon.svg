@@ -1,0 +1,7 @@
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Homebase: a simple house on the warm ground, in the one brick accent. -->
+  <rect width="1024" height="1024" fill="#f4f3f0"/>
+  <path d="M512 236 214 486a24 24 0 0 0 15 42h55v236a24 24 0 0 0 24 24h408a24 24 0 0 0 24-24V528h55a24 24 0 0 0 15-42L512 236Z" fill="#a8503c"/>
+  <rect x="452" y="600" width="120" height="188" rx="14" fill="#f4f3f0"/>
+  <circle cx="548" cy="696" r="10" fill="#a8503c"/>
+</svg>

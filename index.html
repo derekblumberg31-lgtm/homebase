@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Homebase</title>
+    <meta name="description" content="Your intelligent homeowner assistant: maintenance, property details, keys, records and help, all in one place." />
+    <meta name="theme-color" content="#f4f3f0" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="Homebase" />
+    <meta name="format-detection" content="telephone=no" />
+    <link rel="icon" href="/icons/favicon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+    <style>
+      html { background: #f4f3f0; }
+      html[data-theme='dark'] { background: #171716; }
+    </style>
+    <script>
+      // Apply the saved theme before first paint so there is no flash.
+      try {
+        var pref = localStorage.getItem('homebase:theme');
+        var theme = pref === 'light' || pref === 'dark' ? pref
+          : window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        document.documentElement.dataset.theme = theme;
+        document.documentElement.style.colorScheme = theme;
+        var meta = document.querySelector('meta[name="theme-color"]');
+        if (meta) meta.setAttribute('content', theme === 'dark' ? '#171716' : '#f4f3f0');
+      } catch (error) {}
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

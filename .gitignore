@@ -1,0 +1,20 @@
+node_modules/
+dist/
+.dev-server.log
+.DS_Store
+*.local
+.freebuff/
+
+# Local Netlify folder
+.netlify
+
+# Impeccable engine binary (the launcher downloads it on first run)
+.claude/skills/impeccable/scripts/bin/
+
+# Impeccable working files (decision sketches, review captures); the surface briefs stay tracked
+.impeccable/mocks/
+.impeccable/review/
+.impeccable/build/
+.impeccable/config.local.json
+
+.claude/settings.local.json
