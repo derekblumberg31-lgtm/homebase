@@ -22,7 +22,7 @@ Homebase replaces two earlier apps and keeps everything they did:
 
 - Everything is stored on the device in IndexedDB (`homebase`). There's no account and no server.
 - **Settings → Data and privacy → Save a backup** saves one JSON file, including attached files.
-- **Restore or bring in a backup** (in Settings, or "Bring in your data" during onboarding) accepts a Homebase backup, a Replacely backup or a KeyFinder export.
+- **Restore from a backup** (in Settings, or on the welcome screen when moving to a new device) restores a Homebase backup.
 
 ## Development
 

@@ -4,83 +4,89 @@
 
 :root {
   color-scheme: light;
-  --bg: #f4f3f0;
+  /* Warm ivory ground, soft ink, and colour used sparingly: nothing should shout. */
+  --bg: #faf9f5;
   --surface: #ffffff;
-  --surface-2: #f8f7f4;
-  --fill: #ecebe7;
-  --fill-strong: #e0ded8;
-  --text: #2b2926;
-  --text-2: #6b665f;
-  --text-3: #77726b;
-  --line: rgba(43, 41, 38, 0.1);
-  --line-strong: rgba(43, 41, 38, 0.15);
-  --grid: #dedad3;
-  --ink-x: #9a958d;
-  --accent: #a8503c;
-  --accent-deep: #8f4232;
-  --accent-soft: #f5e8e3;
+  --surface-2: #f5f4ee;
+  --surface-raised: #ffffff;
+  --sidebar-bg: #f4f3ec;
+  --fill: #efede5;
+  --fill-strong: #e6e3d9;
+  --text: #29271f;
+  --text-2: #5f5d56;
+  --text-3: #6f6c64;
+  --line: rgba(41, 39, 31, 0.09);
+  --line-strong: rgba(41, 39, 31, 0.15);
+  --grid: #dcd9cf;
+  --ink-x: #9a978e;
+  --accent: #b5603f;
+  --accent-deep: #9c4f32;
+  --accent-soft: rgba(181, 96, 63, 0.1);
   --on-accent: #ffffff;
-  --green: #3d7a55;
-  --green-soft: #e6f0e9;
-  --cool: #3b687a;
-  --cool-soft: #e3edf0;
-  --surface-raised: #fffdfa;
-  --sidebar-bg: #efede9;
-  --amber: #8a5200;
-  --amber-soft: #f6ecdc;
-  --red: #a8503c;
-  --red-soft: #f5e8e3;
-  --scrim: rgba(28, 26, 24, 0.38);
-  --toast-bg: #2f2d2a;
-  --toast-text: #ffffff;
-  --shadow-1: 0 1px 2px rgba(43, 41, 38, 0.04);
-  --shadow-raised: 0 1px 2px rgba(43, 41, 38, 0.05), 0 14px 34px -18px rgba(43, 41, 38, 0.28);
-  --shadow-2: 0 2px 8px rgba(43, 41, 38, 0.06), 0 16px 40px rgba(43, 41, 38, 0.12);
-  --radius: 12px;
-  --radius-lg: 16px;
+  --button-bg: #29271f;
+  --button-text: #faf9f5;
+  --green: #4f7353;
+  --green-soft: rgba(79, 115, 83, 0.1);
+  --amber: #8a6420;
+  --amber-soft: rgba(138, 100, 32, 0.1);
+  --red: #b5603f;
+  --red-soft: rgba(181, 96, 63, 0.1);
+  --cool: #5d7480;
+  --cool-soft: rgba(93, 116, 128, 0.1);
+  --scrim: rgba(41, 39, 31, 0.28);
+  --toast-bg: #29271f;
+  --toast-text: #faf9f5;
+  --shadow-1: none;
+  --shadow-raised: 0 1px 2px rgba(41, 39, 31, 0.03), 0 6px 24px rgba(41, 39, 31, 0.05);
+  --shadow-2: 0 2px 6px rgba(41, 39, 31, 0.05), 0 18px 48px rgba(41, 39, 31, 0.12);
+  --radius: 14px;
+  --radius-lg: 18px;
   --radius-sheet: 22px;
   --page-max: 760px;
   --sidebar: 232px;
   --ease: cubic-bezier(0.22, 0.8, 0.24, 1);
   --ease-settle: cubic-bezier(0.32, 0.72, 0, 1);
   --font: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --font-display: ui-serif, 'New York', 'Iowan Old Style', 'Palatino Linotype', Palatino, Georgia, serif;
 }
 
 :root[data-theme='dark'] {
   color-scheme: dark;
-  /* Warm charcoal ground, warm off-white ink, coral for actions, dusty blue for information. */
-  --bg: #141312;
-  --surface: #1c1a18;
-  --surface-2: #23211e;
-  --surface-raised: #201d1a;
-  --sidebar-bg: #171514;
-  --fill: #2a2724;
-  --fill-strong: #36322e;
-  --text: #f1ece4;
-  --text-2: #b3aca2;
-  --text-3: #958e84;
-  --line: rgba(241, 236, 228, 0.07);
-  --line-strong: rgba(241, 236, 228, 0.12);
-  --grid: #45413c;
-  --ink-x: #8f8880;
-  --accent: #df8f7b;
-  --accent-deep: #e9a593;
-  --accent-soft: rgba(223, 143, 123, 0.13);
-  --on-accent: #1c0b07;
-  --green: #86c29d;
-  --green-soft: rgba(134, 194, 157, 0.13);
-  --amber: #e2a85a;
-  --amber-soft: rgba(226, 168, 90, 0.13);
-  --red: #df8f7b;
-  --red-soft: rgba(223, 143, 123, 0.13);
-  --cool: #8fb6c5;
-  --cool-soft: rgba(143, 182, 197, 0.13);
-  --scrim: rgba(0, 0, 0, 0.55);
-  --toast-bg: #ebe6de;
-  --toast-text: #1d1b19;
-  --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.3);
-  --shadow-raised: inset 0 1px 0 rgba(255, 245, 230, 0.035), 0 18px 40px -22px rgba(0, 0, 0, 0.85);
-  --shadow-2: 0 20px 50px rgba(0, 0, 0, 0.55);
+  /* Soft charcoal, warm off-white ink, muted terracotta only where something needs you. */
+  --bg: #262624;
+  --surface: #2f2e2b;
+  --surface-2: #353431;
+  --surface-raised: #2f2e2b;
+  --sidebar-bg: #1f1e1c;
+  --fill: #383733;
+  --fill-strong: #44423e;
+  --text: #f3f1ea;
+  --text-2: #c3c0b6;
+  --text-3: #a29f96;
+  --line: rgba(236, 232, 220, 0.09);
+  --line-strong: rgba(236, 232, 220, 0.16);
+  --grid: #4a4843;
+  --ink-x: #8f8c84;
+  --accent: #d08a6e;
+  --accent-deep: #dc9f87;
+  --accent-soft: rgba(208, 138, 110, 0.13);
+  --on-accent: #1f1e1c;
+  --button-bg: #f3f1ea;
+  --button-text: #262624;
+  --green: #a2bfa0;
+  --green-soft: rgba(162, 191, 160, 0.12);
+  --amber: #d6ac6a;
+  --amber-soft: rgba(214, 172, 106, 0.12);
+  --red: #d08a6e;
+  --red-soft: rgba(208, 138, 110, 0.13);
+  --cool: #a3b5be;
+  --cool-soft: rgba(163, 181, 190, 0.12);
+  --scrim: rgba(0, 0, 0, 0.45);
+  --toast-bg: #f3f1ea;
+  --toast-text: #262624;
+  --shadow-1: none;
+  --shadow-raised: 0 1px 2px rgba(0, 0, 0, 0.18), 0 8px 28px rgba(0, 0, 0, 0.18);
+  --shadow-2: 0 18px 48px rgba(0, 0, 0, 0.42);
 }
 
 /* ---------- base ---------- */
@@ -3435,4 +3441,400 @@ a.feed-row:focus-visible {
   from {
     opacity: 0;
   }
+}
+
+/* =====================================================================
+   Calm, Claude-like surface: serif headings, ink buttons, neutral badges,
+   hairlines instead of shadows. Terracotta is for the few things that need you.
+   ===================================================================== */
+
+.page-title,
+.overview-title,
+.onboarding h1,
+.empty h2,
+.assistant-hello {
+  font-family: var(--font-display);
+  font-weight: 500;
+  letter-spacing: -0.012em;
+}
+
+.page-title {
+  font-size: 30px;
+  line-height: 1.15;
+}
+
+.empty h2 {
+  font-size: 21px;
+}
+
+.onboarding h1 {
+  font-size: 32px;
+  line-height: 1.15;
+}
+
+/* Primary actions are ink, not colour. */
+.button.is-primary,
+.round-button.is-send,
+.composer .round-button {
+  background: var(--button-bg);
+  color: var(--button-text);
+}
+
+.button.is-primary:hover,
+.button.is-primary:active {
+  background: var(--button-bg);
+  opacity: 0.88;
+}
+
+.button.is-quiet,
+.text-button,
+.module-aside.is-link,
+.section-aside a,
+.section-aside button,
+.section-foot a,
+.module-note a,
+.module-empty a,
+.back-link,
+.sheet-action {
+  color: var(--text);
+}
+
+.text-button,
+.section-foot a,
+.module-note a,
+.module-empty a,
+.module-aside.is-link {
+  text-decoration: underline;
+  text-decoration-color: var(--line-strong);
+  text-underline-offset: 3px;
+}
+
+.sheet-action.is-strong {
+  color: var(--text);
+  font-weight: 650;
+}
+
+.round-button {
+  background: var(--fill);
+  color: var(--text-2);
+}
+
+.quick-add-round {
+  color: var(--text);
+}
+
+.chip[aria-pressed='true'] {
+  background: var(--button-bg);
+  color: var(--button-text);
+}
+
+/* Surfaces: hairlines, no lifted shadows. */
+.group,
+.empty:not(.is-inline),
+.module {
+  border: 1px solid var(--line);
+  box-shadow: none;
+}
+
+.overview {
+  border-color: var(--line);
+  background: var(--surface);
+  box-shadow: none;
+}
+
+.snapshot dt svg,
+.menu-icon,
+.feed-icon {
+  color: var(--text-3);
+}
+
+.progress span {
+  background: var(--text-2);
+}
+
+/* ---------- navigation: soft fill, no colour bars ---------- */
+
+.tab-item::before {
+  display: none;
+}
+
+.tab-item.is-active,
+.tab-item.is-active svg {
+  color: var(--text);
+}
+
+.tab-badge,
+.tab-badge.is-soon {
+  background: var(--text-2);
+  color: var(--bg);
+  box-shadow: 0 0 0 2px var(--sidebar-bg);
+}
+
+@media (min-width: 768px) {
+  .side-link::before {
+    display: none;
+  }
+
+  .side-link.is-active {
+    background: var(--fill-strong);
+    color: var(--text);
+  }
+
+  .side-link.is-active svg {
+    color: var(--text);
+  }
+
+  .side-dot,
+  .side-dot.is-soon {
+    background: var(--text-2);
+  }
+
+  .side-add .quick-add {
+    background: transparent;
+    color: var(--text);
+    border: 1px solid var(--line-strong);
+  }
+
+  .side-add .quick-add:hover {
+    background: var(--fill);
+    opacity: 1;
+  }
+}
+
+@media (min-width: 1100px) {
+  .side-add .quick-add {
+    border: 0;
+    padding-left: 8px;
+    font-weight: 500;
+  }
+
+  .side-add .quick-add svg {
+    box-sizing: content-box;
+    width: 14px;
+    height: 14px;
+    padding: 4px;
+    border-radius: 50%;
+    background: var(--accent);
+    color: var(--on-accent);
+  }
+
+  .side-count,
+  .side-count.is-soon {
+    background: transparent;
+    color: var(--text-3);
+    font-weight: 600;
+  }
+}
+
+/* ---------- launcher ---------- */
+
+.launcher {
+  background: var(--surface);
+  color: var(--text-2);
+  border-color: var(--line-strong);
+  box-shadow: var(--shadow-raised);
+}
+
+.launcher-dot {
+  width: 7px;
+  height: 7px;
+  top: 10px;
+  right: 10px;
+}
+
+@keyframes launcher-nudge {
+  0%,
+  100% {
+    box-shadow: var(--shadow-raised), 0 0 0 0 color-mix(in srgb, var(--text-2) 25%, transparent);
+  }
+  50% {
+    box-shadow: var(--shadow-raised), 0 0 0 7px color-mix(in srgb, var(--text-2) 0%, transparent);
+  }
+}
+
+/* ---------- tasks: overdue is noticed, not alarming ---------- */
+
+.priority-mark,
+.tip-dot {
+  background: var(--accent);
+  opacity: 0.8;
+}
+
+/* ---------- Assistant: a conversation, not a widget ---------- */
+
+.bubble {
+  font-size: 16px;
+  line-height: 1.6;
+}
+
+.bubble.is-user {
+  border: 0;
+  border-radius: 18px;
+  background: var(--fill);
+  color: var(--text);
+}
+
+.bubble.is-assistant {
+  max-width: 100%;
+  padding: 2px 2px 4px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  font-family: var(--font-display);
+  font-size: 17px;
+  line-height: 1.6;
+}
+
+.bubble.is-assistant h3 {
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.bubble .bubble-note,
+.bubble .bubble-actions,
+.bubble-nudge,
+.bubble-safety {
+  font-family: var(--font);
+}
+
+.bubble .bubble-actions button,
+.bubble .bubble-actions a {
+  min-height: 34px;
+  padding: 0 12px;
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  color: var(--text);
+  font-size: 14px;
+  line-height: 32px;
+}
+
+.bubble .bubble-actions button:hover,
+.bubble .bubble-actions a:hover {
+  background: var(--fill);
+}
+
+.bubble-safety {
+  background: var(--amber-soft);
+}
+
+.composer {
+  align-items: flex-end;
+  padding: 10px 0 12px;
+}
+
+.composer .input {
+  min-height: 56px;
+  padding: 0 64px 0 18px;
+  border: 1px solid var(--line-strong);
+  border-radius: 20px;
+  background: var(--surface);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03), 0 6px 20px rgba(0, 0, 0, 0.04);
+  font-size: 16px;
+}
+
+.composer .input:focus {
+  border-color: var(--text-3);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03), 0 6px 20px rgba(0, 0, 0, 0.05);
+  outline: none;
+}
+
+.composer {
+  position: sticky;
+}
+
+.composer .round-button {
+  position: absolute;
+  right: 10px;
+  bottom: 22px;
+  width: 36px;
+  height: 36px;
+  border-radius: 11px;
+}
+
+.composer .round-button:disabled {
+  background: var(--fill-strong);
+  color: var(--text-3);
+  opacity: 1;
+}
+
+.assistant-welcome {
+  display: grid;
+  justify-items: center;
+  gap: 18px;
+  padding: 9vh 0 6px;
+  text-align: center;
+}
+
+.assistant-mark {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.assistant-hello {
+  font-size: 30px;
+  line-height: 1.2;
+}
+
+.assistant-welcome p {
+  max-width: 42ch;
+  color: var(--text-2);
+  font-size: 15px;
+}
+
+.suggestions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.suggestions button {
+  min-height: 36px;
+  padding: 0 14px;
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  color: var(--text-2);
+  font-size: 14px;
+  transition: background 0.15s var(--ease), color 0.15s var(--ease);
+}
+
+.suggestions button:hover {
+  background: var(--fill);
+  color: var(--text);
+}
+
+.assistant.is-compact .assistant-welcome {
+  padding: 18px 0 4px;
+  gap: 12px;
+}
+
+.assistant.is-compact .assistant-hello {
+  font-size: 22px;
+}
+
+.assistant.is-compact .composer .round-button {
+  right: 22px;
+  bottom: 16px;
+}
+
+.assistant-panel {
+  background: var(--bg);
+}
+
+.assistant-panel-head {
+  background: var(--bg);
+}
+
+.assistant-panel-head h2 {
+  font-family: var(--font-display);
+  font-size: 17px;
+  font-weight: 500;
 }

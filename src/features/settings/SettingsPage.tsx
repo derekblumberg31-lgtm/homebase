@@ -113,7 +113,7 @@ export function SettingsPage() {
       <Section title="Data and privacy" foot="Everything you add stays on this device. A backup file is the only copy that leaves it, and only when you save one.">
         <Group>
           <Row title="Save a backup" tone="action" onClick={() => downloadBackup(store).then(() => toast('Backup saved'))} />
-          <ImportButton label="Restore or bring in a backup" />
+          <ImportButton label="Restore from a backup" />
           <Row title="Erase everything on this device" tone="danger" onClick={() => setEraseOpen(true)} />
         </Group>
       </Section>

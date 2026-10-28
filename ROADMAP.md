@@ -18,7 +18,7 @@ Homebase ships local-first with offline guided help. Each future feature below n
 
 ## Data migrations
 
-`src/data/db.ts` keeps `DB_VERSION` and a `MIGRATIONS` map. Add a new store or index by bumping the version and adding a step, never by editing an existing step. Backups carry `version` so `parseHomebaseBackup` can upgrade older files.
+`src/data/db.ts` keeps `DB_VERSION` and a `MIGRATIONS` map. Add a new store or index by bumping the version and adding a step, never by editing an existing step. Backups carry `version` so `parseHomebaseBackup` can upgrade older files. Only Homebase backups are accepted.
 
 ## Known gaps
 

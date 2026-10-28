@@ -211,7 +211,14 @@ Density is low and the voice is soft. Everything is the system font, sentence ca
 
 ## Colors
 
-The palette is Replacely's, listed in the front matter and in `src/styles/app.css` (`:root` and `[data-theme='dark']`). The rules:
+The palette is calm and Claude-like, defined in `src/styles/app.css` (`:root` and `[data-theme='dark']`). The front matter above keeps the original token names for reference.
+- **Light:** ivory ground #faf9f5, white surfaces, soft ink #29271f.
+- **Dark:** charcoal #262624, surfaces #2f2e2b, warm off-white ink #f3f1ea.
+- **Primary buttons are ink** (`--button-bg`), not colour.
+- **Terracotta** (#b5603f / #d08a6e) is muted and kept for things that need you: overdue text, the high-priority dot, the small Add circle.
+- **Badges are neutral grey.**
+
+The rules:
 
 - **The One Brick Rule.** Brick marks either the next action or something overdue. If a screen shows brick on more than a handful of elements, something is decorating.
 - **The Status Hue Rule.** Green means done, amber means due soon or "check this" (for example a restricted key), and brick means overdue. None is used for category colour.
@@ -230,7 +237,7 @@ One family: `-apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Robot
 
 | Role | Spec | Used for |
 |---|---|---|
-| Large title | 700, 28px, -0.02em | Page titles: "Good evening, Derek", "Tasks", "Records" |
+| Large title | Serif (`--font-display`: New York, Iowan, Georgia), 500, 30px | Page titles: "Good evening, Derek", "Tasks", "Records" |
 | Countdown large | 600, 40px, tabular | Countdown in task detail |
 | Title | 700, 21px | Onboarding and empty-state headings |
 | Countdown | 600, 20px, tabular; unit 15px/500 | Right side of every task row |
@@ -241,6 +248,7 @@ One family: `-apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Robot
 | Tab label | 600, 10px | Mobile tab bar only |
 
 - **The Sentence Case Rule.** Nothing is uppercased or letter-spaced into a label.
+- **Serif for voice.** Page titles, the onboarding and Assistant greetings, and Assistant answers use the serif; everything functional stays in the system sans.
 - **The One Big Line Rule.** Each screen has one large line: the page title, or the countdown on task detail.
 
 ## Layout
@@ -312,7 +320,11 @@ All of these live in `src/ui/` and `src/features/*/components`.
   - A 50px docked button with an "Ask Homebase" tooltip.
   - A coral dot and two slow pulses only when there's a new suggestion; it never loops.
   - It opens a 400px panel with the shared `AssistantChat`.
-- **Chat** (`features/assistant`):
+- **Chat** (`features/assistant`), styled like a Claude conversation:
+  - An empty chat opens on a centred serif greeting with suggestion pills.
+  - Your messages sit in a quiet grey bubble; answers are unboxed serif text with pill-shaped actions.
+  - The composer is a large rounded field with the send button inside it.
+- **Chat details:**
   - User bubbles are brick with white text.
   - Answers are white groups with the guide name, numbered steps, an amber safety note and up to two text actions.
 

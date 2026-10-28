@@ -30,7 +30,7 @@ A local-first home manager: no account, no server, everything on the device, wit
   - Assistant: offline guides
   - Records: Warranty Vault, documents, Service History
   - Settings
-- Data is in IndexedDB (`homebase`, versioned migrations). Files are kept as blobs. JSON backup and restore, plus importers for Replacely and KeyFinder backups.
+- Data is in IndexedDB (`homebase`, versioned migrations). Files are kept as blobs. JSON backup and restore of a Homebase backup.
 - The key engine (OpenCV + Tesseract, about 21 MB) loads only on Identify a key and is cached after first use.
 - Stack: React 19, TypeScript, Vite 7, react-router 7, vite-plugin-pwa. Deployed to Netlify via `deploy.sh`.
 

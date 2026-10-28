@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useData, useNow } from '../../data/DataProvider';
 import { uid } from '../../data/ids';
 import { useSession } from '../../session/session';
-import { Send } from '../../ui/Icons';
+import { House, Send } from '../../ui/Icons';
 import { SUGGESTED_QUESTIONS } from './guides';
 import { LocalGuideProvider, type Answer, type AssistantProvider } from './provider';
 
@@ -70,16 +70,18 @@ export function AssistantChat({ provider = LocalGuideProvider, compact = false, 
     onNavigate?.();
     navigate(href);
   };
-  const suggestions = compact ? SUGGESTED_QUESTIONS.slice(0, 4) : SUGGESTED_QUESTIONS;
+  const suggestions = SUGGESTED_QUESTIONS.slice(0, 4);
 
   return (
     <div className={`assistant ${compact ? 'is-compact' : ''}`}>
       <div className="chat" aria-live="polite">
         {messages.length === 0 && (
-          <div className="bubble is-assistant">
-            <p>
-              Hi {session.firstName ?? 'there'}. I know your tasks, records and home details, and I have step-by-step guides for common problems. What’s going on?
-            </p>
+          <div className="assistant-welcome">
+            <span className="assistant-mark" aria-hidden="true">
+              <House size={22} />
+            </span>
+            <h2 className="assistant-hello">How can I help with your home{session.firstName ? `, ${session.firstName}` : ''}?</h2>
+            <p>I know your tasks, records and home details, and I have step-by-step help for leaks, heating, power and more.</p>
             {nudge && (
               <p className="bubble-nudge">
                 {nudge.text}{' '}
@@ -88,7 +90,7 @@ export function AssistantChat({ provider = LocalGuideProvider, compact = false, 
                 </button>
               </p>
             )}
-            <div className="bubble-actions">
+            <div className="suggestions">
               {suggestions.map((q) => (
                 <button key={q} type="button" onClick={() => void ask(q)}>
                   {q}

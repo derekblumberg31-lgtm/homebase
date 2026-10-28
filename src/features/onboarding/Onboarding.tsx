@@ -1,19 +1,18 @@
 import { useState, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PRODUCT } from '../../app/areas';
-import { useData, useStore } from '../../data/DataProvider';
+import { useStore } from '../../data/DataProvider';
 import { uid } from '../../data/ids';
 import type { PropertyType } from '../../data/types';
 import { FormGroup, SelectField, TextField, Segmented } from '../../ui/controls';
 import { ImportButton } from '../settings/ImportButton';
 
-type Step = 'welcome' | 'household' | 'property' | 'bring-in';
-const STEPS: Step[] = ['welcome', 'household', 'property', 'bring-in'];
+type Step = 'welcome' | 'household' | 'property';
+const STEPS: Step[] = ['welcome', 'household', 'property'];
 
-/** First run: who you are, which home this is, and whether to bring in data from the older apps. */
+/** First run: who you are and which home this is. Two short steps, then Home. */
 export function Onboarding() {
   const store = useStore();
-  const data = useData();
   const navigate = useNavigate();
   const [step, setStep] = useState<Step>('welcome');
   const [name, setName] = useState('');
@@ -56,12 +55,8 @@ export function Onboarding() {
       ownership,
       yearBuilt: yearBuilt ? year : undefined,
     });
-    setStep('bring-in');
-  }
-
-  async function finish() {
-    if (!data.household) return;
-    await store.saveHousehold({ ...data.household, onboardedAt: new Date().toISOString() });
+    const household = store.getSnapshot().household;
+    if (household) await store.saveHousehold({ ...household, onboardedAt: new Date().toISOString() });
     navigate('/home', { replace: true });
   }
 
@@ -83,6 +78,7 @@ export function Onboarding() {
               <button type="button" className="button is-primary is-block" onClick={() => setStep('household')}>
                 Get started
               </button>
+              <ImportButton label="Moving from another device? Restore a backup" className="button is-quiet is-block" />
             </div>
           </>
         )}
@@ -136,29 +132,10 @@ export function Onboarding() {
             </div>
             <div className="button-stack">
               <button type="submit" className="button is-primary is-block">
-                Continue
+                Go to Home
               </button>
             </div>
           </form>
-        )}
-
-        {step === 'bring-in' && (
-          <>
-            <h1>Bring in your data</h1>
-            <p className="lead">
-              Used Replacely or KeyFinder? Export a backup there (Settings → Export backup in Replacely, Keys → Export in KeyFinder), then choose the file here. You can also do this later in Settings.
-            </p>
-            <div className="section">
-              <div className="group">
-                <ImportButton label="Choose a backup file" />
-              </div>
-            </div>
-            <div className="button-stack">
-              <button type="button" className="button is-primary is-block" onClick={finish}>
-                {data.tasks.length || data.items.length ? 'Go to Home' : 'Start fresh'}
-              </button>
-            </div>
-          </>
         )}
 
         <div className="steps-dots" aria-label={`Step ${index + 1} of ${STEPS.length}`}>

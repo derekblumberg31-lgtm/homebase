@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildBackup, detectBackup, importKeyFinder, importReplacely, parseHomebaseBackup } from './backup';
+import { buildBackup, parseHomebaseBackup, readBackup } from './backup';
 import { createDatabase } from './db';
 import { HomeStore } from './store';
 import type { Task } from './types';
@@ -66,9 +66,9 @@ describe('backup', () => {
     const file = await store.saveFile(new Blob(['receipt text'], { type: 'text/plain' }), 'receipt.txt');
     const text = await buildBackup(store.getSnapshot(), await store.allFiles());
 
-    const detected = detectBackup(text);
-    expect(detected?.kind).toBe('homebase');
-    const { data, files } = parseHomebaseBackup(detected!.parsed);
+    const parsed = readBackup(text);
+    expect(parsed).not.toBeNull();
+    const { data, files } = parseHomebaseBackup(parsed!);
     const restored = await freshStore();
     await restored.replaceAll(data, files);
 
@@ -77,67 +77,9 @@ describe('backup', () => {
     expect(await back!.data.text()).toBe('receipt text');
   });
 
-  it('brings in a Replacely backup with its completion history', () => {
-    const replacely = JSON.stringify({
-      app: 'replacely',
-      version: 2,
-      exportedAt: '2026-10-26T00:00:00.000Z',
-      filters: [
-        {
-          id: 'f1',
-          name: 'Swap the HVAC filter',
-          typeId: 'hvac-service',
-          location: 'Hallway return',
-          installedAt: '2026-08-01',
-          lifespanDays: 90,
-          cost: 24,
-          history: [{ id: 'h1', replacedAt: '2026-08-01', previousInstalledAt: '2026-05-01', note: 'MERV 11' }],
-          createdAt: '2026-05-01T00:00:00.000Z',
-        },
-        { id: 'sample-1', name: 'Sample', location: 'x', installedAt: '2026-01-01', lifespanDays: 30 },
-        { id: 'bad', name: 'Broken', location: 'x', installedAt: 'not-a-date', lifespanDays: 30 },
-      ],
-    });
-    const detected = detectBackup(replacely);
-    expect(detected?.kind).toBe('replacely');
-    const result = importReplacely(detected!.parsed);
-    expect(result.tasks).toHaveLength(1);
-    expect(result.tasks[0]).toMatchObject({ id: 'f1', lastDoneAt: '2026-08-01', intervalDays: 90, recurring: true, cost: 24 });
-    expect(result.serviceEvents[0]).toMatchObject({ taskId: 'f1', date: '2026-08-01', previousDoneAt: '2026-05-01', notes: 'MERV 11' });
-  });
-
-  it('brings in a KeyFinder backup as key items', () => {
-    const keyfinder = JSON.stringify({
-      app: 'KeyFinder',
-      version: 1,
-      exportedAt: '2026-10-26T00:00:00.000Z',
-      keys: [
-        {
-          id: 'k1',
-          label: 'Back door',
-          notes: 'Back door and garage',
-          brand: 'Kwikset',
-          keyway: 'KW1',
-          type: 'house',
-          flags: { dnd: false, transponder: false },
-          idSource: 'user',
-          ocrTokens: ['KW1'],
-          captures: [{ id: 'c1', at: 1, photo: 'data:image/jpeg;base64,AAAA', top: [0.1, 0.2] }],
-          createdAt: 1761436800000,
-        },
-        { id: 'broken', label: 'No captures' },
-      ],
-    });
-    const detected = detectBackup(keyfinder);
-    expect(detected?.kind).toBe('keyfinder');
-    const { items } = importKeyFinder(detected!.parsed);
-    expect(items).toHaveLength(1);
-    expect(items[0]).toMatchObject({ id: 'k1', kind: 'key', name: 'Back door', brand: 'Kwikset' });
-    expect(items[0].key).toMatchObject({ keyway: 'KW1', idSource: 'user', captures: [{ id: 'c1' }] });
-  });
-
   it('rejects files that are not backups', () => {
-    expect(detectBackup('not json')).toBeNull();
-    expect(detectBackup(JSON.stringify({ hello: 'world' }))).toBeNull();
+    expect(readBackup('not json')).toBeNull();
+    expect(readBackup(JSON.stringify({ hello: 'world' }))).toBeNull();
+    expect(readBackup(JSON.stringify({ app: 'replacely', filters: [] }))).toBeNull();
   });
 });

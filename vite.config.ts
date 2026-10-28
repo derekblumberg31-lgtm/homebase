@@ -21,8 +21,8 @@ export default defineConfig({
         orientation: 'any',
         lang: 'en',
         categories: ['lifestyle', 'utilities', 'productivity'],
-        background_color: '#f4f3f0',
-        theme_color: '#f4f3f0',
+        background_color: '#faf9f5',
+        theme_color: '#faf9f5',
         icons: [
           { src: '/icons/icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
           { src: '/icons/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
