@@ -20,8 +20,12 @@ export interface TaskItem {
 const DUE_SOON_DAYS = 7;
 const DUE_SOON_PERCENT = 85;
 
-/** When a task is due: the next repeat for recurring tasks, the due date for one-offs. */
-export function dueDateOf(task: Pick<Task, 'recurring' | 'lastDoneAt' | 'intervalDays' | 'dueDate'>): Date {
+/**
+ * When a task is due: a snoozed or rescheduled date first, then the next repeat for recurring
+ * tasks, or the due date for one-offs.
+ */
+export function dueDateOf(task: Pick<Task, 'recurring' | 'lastDoneAt' | 'intervalDays' | 'dueDate' | 'nextDue'>): Date {
+  if (task.nextDue) return parseDateInput(task.nextDue);
   if (!task.recurring && task.dueDate) return parseDateInput(task.dueDate);
   return addDays(parseDateInput(task.lastDoneAt), task.intervalDays);
 }

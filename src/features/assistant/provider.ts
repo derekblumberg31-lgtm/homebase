@@ -5,6 +5,7 @@ import { RECORD_KIND_LABEL } from '../records/labels';
 import { recommendationsFor } from '../home/insights';
 import { annualCost, compareUrgency, countdownText, withInfo } from '../tasks/taskMath';
 import { GUIDES, type Guide, type GuideAction } from './guides';
+import { findSubject, issueContextFor, type IssueContext } from './issueContext';
 
 export interface Answer {
   title?: string;
@@ -14,6 +15,8 @@ export interface Answer {
   actions?: GuideAction[];
   /** Where the answer came from, shown under it. */
   source: string;
+  /** A homeowner problem: the guide, plus what this home already knows about it. */
+  issue?: { guide: Guide; question: string; context: IssueContext };
 }
 
 /**
@@ -196,13 +199,14 @@ function answerFromData(question: string, data: HomeData, now: number): Answer |
   return null;
 }
 
-const guideAnswer = (guide: Guide): Answer => ({
+const guideAnswer = (guide: Guide, question: string, data: HomeData, now: number): Answer => ({
   title: guide.title,
   text: guide.summary,
   steps: guide.steps,
   safety: guide.safety,
   actions: guide.actions,
-  source: `Guide: ${guide.title}`,
+  source: `Guide: ${guide.title} · general guidance, not a diagnosis`,
+  issue: { guide, question, context: issueContextFor(guide, question, data, now) },
 });
 
 export const LocalGuideProvider: AssistantProvider = {
@@ -211,17 +215,25 @@ export const LocalGuideProvider: AssistantProvider = {
     // Danger comes first: "I smell gas, what do I do next?" must not turn into a list of due tasks.
     const q = question.toLowerCase();
     const urgent = GUIDES.find((guide) => guide.urgentWhen?.test(q));
-    if (urgent) return guideAnswer(urgent);
+    if (urgent) return guideAnswer(urgent, question, data, now);
     const fromData = answerFromData(question, data, now);
     if (fromData) return fromData;
-    const ranked = GUIDES.map((g) => ({ g, score: scoreGuide(g, question) })).filter((r) => r.score > 0).sort((a, b) => b.score - a.score);
-    const best = ranked[0]?.g;
+    const { system, item } = findSubject(question, data);
+    const ranked = GUIDES.map((g) => ({ g, score: scoreGuide(g, question) + (system && g.systemKinds?.includes(system.kind) ? 3 : 0) }))
+      .filter((r) => r.score > 0)
+      .sort((a, b) => b.score - a.score);
+    // "Problem with my dishwasher": a named appliance or system with no other clue gets the appliance guide.
+    const best = ranked[0]?.g ?? (system || item ? GUIDES.find((g) => g.id === (system ? kindGuide(system.kind) : 'appliance')) : undefined);
     if (!best) {
       return {
-        text: 'I don’t have a guide for that yet. If anyone could be in danger, leave the home and call 911. I can help with gas smells, fire and smoke, leaks, heating and hot water, power and breakers, alarms, frozen pipes, clogs, air conditioning, keys and lockouts, and planning projects. I can also look things up in your home: what to maintain this month, a warranty or manual, when a job was last done, or how old a system is.',
+        text: 'I don’t have a guide for that yet. If anyone could be in danger, leave the home and call 911. I can help with gas smells, fire and smoke, leaks, no heat or hot water, power outages, alarms, broken appliances, frozen pipes, clogs, air conditioning, keys and lockouts, and planning projects. I can also look things up in your home: what to maintain this month, a warranty or manual, when a job was last done, or how old a system is.',
         source: 'Homebase guides',
       };
     }
-    return guideAnswer(best);
+    return guideAnswer(best, question, data, now);
   },
 };
+
+function kindGuide(kind: string): string {
+  return kind === 'heating' ? 'no-heat' : kind === 'cooling' ? 'ac-not-cooling' : kind === 'water-heater' ? 'no-hot-water' : kind === 'electrical' ? 'power-out' : kind === 'plumbing' ? 'water-leak' : 'appliance';
+}

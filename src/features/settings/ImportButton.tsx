@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react';
 import { useStore } from '../../data/DataProvider';
-import { Confirm, useToast } from '../../ui/overlays';
-import { prepareRestore, type RestoreSummary } from './importing';
+import { Sheet, useToast } from '../../ui/overlays';
+import { downloadBackup, prepareRestore, type RestoreSummary } from './importing';
 
 /** Pick a Homebase backup, see what restoring it will do, then confirm. */
 export function ImportButton({ label = 'Restore from a backup', className = 'row is-action', onDone }: { label?: string; className?: string; onDone?: () => void }) {
@@ -58,14 +58,25 @@ export function ImportButton({ label = 'Restore from a backup', className = 'row
         }}
       />
       {pending && (
-        <Confirm
-          title="Restore this backup?"
-          message={pending.text}
-          confirmLabel="Restore"
-          destructive
-          onConfirm={apply}
-          onCancel={() => setPending(null)}
-        />
+        <Sheet title="Restore this backup?" onClose={() => setPending(null)}>
+          <p className="callout is-warn">{pending.text}</p>
+          <p className="sheet-lead form-gap">Nothing changes until you tap Restore. If the file can’t be read, this device keeps what it has.</p>
+          <div className="button-stack">
+            <button
+              type="button"
+              className="button is-secondary is-block"
+              onClick={() => void downloadBackup(store).then(() => toast('This device’s data saved to a file'))}
+            >
+              First, save a backup of this device
+            </button>
+            <button type="button" className="button is-primary is-block" onClick={apply} disabled={busy}>
+              {busy ? 'Restoring…' : 'Restore and replace'}
+            </button>
+            <button type="button" className="button is-quiet" onClick={() => setPending(null)}>
+              Cancel
+            </button>
+          </div>
+        </Sheet>
       )}
     </>
   );

@@ -88,26 +88,32 @@ function validKey(key: unknown): boolean {
 /** What the screens rely on in each collection. A row that breaks these would crash them later. */
 const ROW_CHECKS = {
   rooms: (row: Row) => hasStrings(row, ['name']) && optionalStrings(row, ['floor', 'notes']),
-  systems: (row: Row) => hasStrings(row, ['name', 'kind']) && optionalStrings(row, ['brand', 'model', 'notes', 'roomId']),
+  systems: (row: Row) =>
+    hasStrings(row, ['name', 'kind']) &&
+    optionalStrings(row, ['brand', 'model', 'notes', 'roomId', 'serial', 'location', 'contractorId']) &&
+    optionalDate(row.installDate) &&
+    optionalDate(row.warrantyExpires) &&
+    (row.photos == null || (Array.isArray(row.photos) && row.photos.every((p) => typeof p === 'string'))),
   items: (row: Row) =>
     hasStrings(row, ['name', 'kind']) &&
-    optionalStrings(row, ['brand', 'model', 'serial', 'notes', 'roomId']) &&
+    optionalStrings(row, ['brand', 'model', 'serial', 'notes', 'roomId', 'contractorId']) &&
     optionalDate(row.purchaseDate) &&
     Array.isArray(row.photos) &&
     (row.kind === 'key' || row.key != null ? validKey(row.key) : true),
   tasks: (row: Row) =>
     hasStrings(row, ['name', 'kind']) &&
-    optionalStrings(row, ['location', 'typeId', 'notes', 'roomId', 'itemId']) &&
+    optionalStrings(row, ['location', 'typeId', 'notes', 'roomId', 'itemId', 'systemId']) &&
+    optionalDate(row.nextDue) &&
     isRealDate(row.lastDoneAt) &&
     typeof row.intervalDays === 'number' &&
     row.intervalDays > 0 &&
     typeof row.recurring === 'boolean' &&
     (row.status === 'open' || row.status === 'done') &&
     optionalDate(row.dueDate),
-  serviceEvents: (row: Row) => hasStrings(row, ['title']) && isRealDate(row.date) && optionalStrings(row, ['provider', 'notes', 'taskId', 'itemId']),
+  serviceEvents: (row: Row) => hasStrings(row, ['title']) && isRealDate(row.date) && optionalStrings(row, ['provider', 'notes', 'taskId', 'itemId', 'systemId']),
   records: (row: Row) =>
     hasStrings(row, ['title', 'kind']) &&
-    optionalStrings(row, ['vendor', 'phone', 'email', 'notes', 'itemId', 'taskId']) &&
+    optionalStrings(row, ['vendor', 'phone', 'email', 'notes', 'itemId', 'taskId', 'systemId']) &&
     optionalDate(row.date) &&
     optionalDate(row.expiresAt) &&
     Array.isArray(row.fileIds),
@@ -152,7 +158,18 @@ function validSettings(value: unknown): Settings {
     tipStates: isRecord(value.tipStates) ? (value.tipStates as Settings['tipStates']) : {},
     keyDebug: value.keyDebug === true,
     lastBackupAt: typeof value.lastBackupAt === 'string' ? value.lastBackupAt : undefined,
+    healthSteps: validHealthSteps(value.healthSteps),
+    hasGas: typeof value.hasGas === 'boolean' ? value.hasGas : undefined,
   };
+}
+
+/** Starter Health Check progress: keeps well-formed steps, drops anything else. */
+function validHealthSteps(value: unknown): Settings['healthSteps'] {
+  if (!isRecord(value)) return undefined;
+  const steps = Object.entries(value).filter(
+    ([, step]) => isRecord(step) && ['done', 'skipped', 'not-applicable'].includes(step.state as string) && typeof step.at === 'string' && (step.note == null || typeof step.note === 'string'),
+  );
+  return steps.length ? (Object.fromEntries(steps) as Settings['healthSteps']) : undefined;
 }
 
 function validFiles(value: unknown): StoredFile[] {

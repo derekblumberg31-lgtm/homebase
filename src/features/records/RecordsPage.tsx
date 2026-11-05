@@ -41,7 +41,7 @@ export function RecordsPage() {
   const [params, setParams] = useSearchParams();
   const newKind = params.get('new') as RecordKind | null;
   const [adding, setAdding] = useState<RecordKind | null>(newKind);
-  const [filter, setFilter] = useState<Filter>('all');
+  const [filter, setFilter] = useState<Filter>(() => (['warranties', 'paperwork', 'contractors', 'notes'].includes(params.get('show') ?? '') ? (params.get('show') as Filter) : 'all'));
   const [query, setQuery] = useState('');
   useEffect(() => {
     if (newKind) setAdding(newKind);
@@ -196,7 +196,7 @@ export function RecordsPage() {
       {adding && (
         <RecordForm
           key={adding}
-          draft={{ kind: adding, itemId: params.get('itemId') ?? undefined }}
+          draft={{ kind: adding, itemId: params.get('itemId') ?? undefined, systemId: params.get('systemId') ?? undefined, title: params.get('title') ?? undefined, notes: params.get('notes') ?? undefined, vendor: params.get('vendor') ?? undefined }}
           onClose={closeForm}
           onSaved={(r) => {
             closeForm();

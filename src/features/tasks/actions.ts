@@ -2,6 +2,7 @@ import type { HomeStore } from '../../data/store';
 import type { ServiceEvent, Task } from '../../data/types';
 import { uid } from '../../data/ids';
 import { addDays, formatDate, parseDateInput, toDateInput } from '../../lib/dates';
+import { dueDateOf } from './taskMath';
 
 export interface CompletionInput {
   date?: string;
@@ -23,6 +24,7 @@ export async function completeTask(store: HomeStore, task: Task, input: Completi
     title: task.name,
     taskId: task.id,
     itemId: task.itemId,
+    systemId: task.systemId,
     previousDoneAt: task.recurring ? task.lastDoneAt : undefined,
     cost: input.cost ?? task.cost,
     provider: input.provider,
@@ -30,8 +32,8 @@ export async function completeTask(store: HomeStore, task: Task, input: Completi
     createdAt: new Date().toISOString(),
   };
   const updated: Task = task.recurring
-    ? { ...task, lastDoneAt: date, updatedAt: new Date().toISOString() }
-    : { ...task, status: 'done', lastDoneAt: date, updatedAt: new Date().toISOString() };
+    ? { ...task, lastDoneAt: date, nextDue: undefined, updatedAt: new Date().toISOString() }
+    : { ...task, status: 'done', lastDoneAt: date, nextDue: undefined, updatedAt: new Date().toISOString() };
 
   await store.put('tasks', updated);
   await store.put('serviceEvents', event);
@@ -60,4 +62,20 @@ export async function removeTask(store: HomeStore, task: Task) {
       await store.putMany('serviceEvents', events);
     },
   };
+}
+
+/** Push a task back by some days from today (or from its due date if that's later). Undo restores it. */
+export async function snoozeTask(store: HomeStore, task: Task, days: number, now = Date.now()) {
+  const due = dueDateOf(task);
+  const from = due.getTime() > now ? due : new Date(now);
+  const nextDue = toDateInput(addDays(from, days));
+  await store.put('tasks', { ...task, nextDue, updatedAt: new Date().toISOString() });
+  return { nextDue, undo: () => store.put('tasks', task) };
+}
+
+/** Move a task to a specific date. One-off tasks change their due date; recurring ones keep their rhythm after this date. */
+export async function rescheduleTask(store: HomeStore, task: Task, date: string) {
+  const next: Task = task.recurring ? { ...task, nextDue: date } : { ...task, dueDate: date, nextDue: undefined };
+  await store.put('tasks', { ...next, updatedAt: new Date().toISOString() });
+  return { undo: () => store.put('tasks', task) };
 }
