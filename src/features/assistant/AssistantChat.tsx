@@ -150,7 +150,11 @@ export function AssistantChat({ provider = LocalGuideProvider, compact = false, 
               {message.answer?.actions && (
                 <div className="bubble-actions">
                   {message.answer.actions.map((action) =>
-                    action.href ? (
+                    action.tel ? (
+                      <a key={action.label} href={`tel:${action.tel}`}>
+                        {action.label}
+                      </a>
+                    ) : action.href ? (
                       <Link key={action.label} to={action.href} onClick={onNavigate}>
                         {action.label}
                       </Link>

@@ -151,7 +151,6 @@ export function HomePage() {
         <div className="home-secondary">
           <QuickActions />
           <YourHome />
-          <BackupNote now={now} />
           <RecentActivity now={now} />
         </div>
       </div>
@@ -189,7 +188,7 @@ function NeedsAttention({ overdue, urgentSoon, alerts, now }: { overdue: TaskIte
               <Link to={alert.href} className="alert-card is-soon">
                 <AlertTriangle size={18} />
                 <span className="alert-text">
-                  <span className="alert-label">{alert.id.startsWith('system-') ? 'Aging system' : 'Ending soon'}</span>
+                  <span className="alert-label">{alert.id === 'backup' ? 'Only copy is on this device' : alert.id.startsWith('system-') ? 'Aging system' : 'Ending soon'}</span>
                   <span className="alert-title">{alert.title}</span>
                   <span className="alert-detail">{alert.detail}</span>
                 </span>
@@ -401,27 +400,3 @@ function RecentActivity({ now }: { now: number }) {
   );
 }
 
-// ---------- Backup reminder: local-only data needs a copy somewhere else ----------
-
-const BACKUP_STALE_DAYS = 30;
-
-function BackupNote({ now }: { now: number }) {
-  const data = useData();
-  const last = data.settings.lastBackupAt;
-  const amount = data.tasks.length + data.systems.length + data.items.length + data.records.length + data.serviceEvents.length;
-  const stale = !last || now - new Date(last).getTime() > BACKUP_STALE_DAYS * 86_400_000;
-  if (amount === 0 || !stale) return null;
-  return (
-    <section className="module backup-note" aria-labelledby="backup-title">
-      <h2 id="backup-title" className="module-title">
-        {last ? `Last backup ${formatRelativeTime(last, now).toLowerCase()}` : 'No backup yet'}
-      </h2>
-      <p className="module-lead">Everything lives only in this browser. If its data is cleared, a backup file is the only way to get it back.</p>
-      <div className="inline-actions">
-        <Link className="button is-small is-secondary" to="/settings#data">
-          Save a backup
-        </Link>
-      </div>
-    </section>
-  );
-}

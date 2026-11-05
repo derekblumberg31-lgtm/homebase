@@ -4,13 +4,13 @@ import { PRODUCT } from '../../app/areas';
 import { useData, useStore } from '../../data/DataProvider';
 import { uid } from '../../data/ids';
 import type { Member, ThemePreference } from '../../data/types';
+import { formatRelativeTime } from '../../lib/dates';
 import { FormGroup, Segmented, Switch, TextField } from '../../ui/controls';
 import { Group, Page, Row, Section } from '../../ui/layout';
 import { Confirm, Sheet, useToast } from '../../ui/overlays';
 import { ImportButton } from './ImportButton';
 import { downloadBackup } from './importing';
 import { downloadCalendar } from '../../lib/calendar';
-import { formatRelativeTime } from '../../lib/dates';
 
 function isStandalone() {
   return window.matchMedia?.('(display-mode: standalone)').matches || (navigator as Navigator & { standalone?: boolean }).standalone === true;
@@ -166,7 +166,12 @@ export function SettingsPage() {
               sub={data.settings.lastBackupAt ? `Last saved ${formatRelativeTime(data.settings.lastBackupAt)} on this device` : 'Never saved from this device. One file includes attachments.'}
               tone="action"
               wrap
-              onClick={() => downloadBackup(store).then(() => toast('Backup saved. Keep it somewhere safe, like iCloud Drive or Google Drive.'))}
+              onClick={() =>
+                downloadBackup(store).then(
+                  () => toast('Backup saved. Keep it somewhere safe, like iCloud Drive or Google Drive.'),
+                  () => toast('The backup couldn’t be saved. Try again.', { tone: 'error' }),
+                )
+              }
             />
             <ImportButton label="Restore from a backup" />
             <Row title="Erase everything on this device" tone="danger" onClick={() => setEraseOpen(true)} />

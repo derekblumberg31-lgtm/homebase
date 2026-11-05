@@ -33,6 +33,8 @@ export function IssueAnswer({ answer, state, onChange, go }: Props) {
   const toast = useToast();
   const { guide, question, context } = answer.issue;
   const [resolving, setResolving] = useState(false);
+  // Gas, carbon monoxide and fire: getting out and calling for help is the whole answer.
+  const critical = Boolean(guide.urgentWhen) && !guide.questions?.length;
 
   const picked = (guide.questions ?? []).flatMap((q) => (state.picks[q.id] !== undefined ? [{ q, o: q.options[state.picks[q.id]] }] : []));
   const emergency = picked.some((p) => p.o.tone === 'emergency');
@@ -126,7 +128,19 @@ export function IssueAnswer({ answer, state, onChange, go }: Props) {
         </IssueBlock>
       )}
 
-      <IssueBlock title="Safe for you to try">
+      {critical && (
+        <div className="critical-call">
+          {guide.actions
+            ?.filter((a) => a.tel)
+            .map((a) => (
+              <a key={a.label} className="button is-block is-call" href={`tel:${a.tel}`}>
+                <Phone size={18} /> {a.label}
+              </a>
+            ))}
+        </div>
+      )}
+
+      <IssueBlock title={critical ? 'Do this now' : 'Safe for you to try'}>
         <ol>
           {guide.steps.map((s) => (
             <li key={s}>{s}</li>
@@ -135,7 +149,7 @@ export function IssueAnswer({ answer, state, onChange, go }: Props) {
       </IssueBlock>
 
       {(guide.proOnly?.length || guide.safety) && (
-        <IssueBlock title={`Leave to a professional${guide.trade ? ` (${tradeWord(guide.trade)})` : ''}`}>
+        <IssueBlock title={critical ? 'Remember' : `Leave to a professional${guide.trade ? ` (${tradeWord(guide.trade)})` : ''}`}>
           {guide.proOnly && (
             <ul>
               {guide.proOnly.map((s) => (
@@ -147,6 +161,9 @@ export function IssueAnswer({ answer, state, onChange, go }: Props) {
         </IssueBlock>
       )}
 
+      {critical ? (
+        <p className="issue-later">Once everyone is safe and the emergency services have been, come back here to save what happened.</p>
+      ) : (
       <div className="issue-actions" role="group" aria-label="What to do with this">
         <p className="issue-actions-title">{needsPro ? 'Your answers suggest calling a professional. Next steps:' : 'Next steps'}</p>
         <div className="issue-action-grid">
@@ -233,7 +250,14 @@ export function IssueAnswer({ answer, state, onChange, go }: Props) {
             />
           )}
           {guide.actions
-            ?.filter((a) => a.task || a.href)
+            ?.filter((a) => a.tel)
+            .map((a) => (
+              <a key={a.label} className="issue-action is-call" href={`tel:${a.tel}`}>
+                <Phone size={17} /> {a.label}
+              </a>
+            ))}
+          {guide.actions
+            ?.filter((a) => !a.tel && (a.task || a.href))
             .map((a) => (
               <button
                 key={a.label}
@@ -260,6 +284,7 @@ export function IssueAnswer({ answer, state, onChange, go }: Props) {
           )}
         </div>
       </div>
+      )}
 
       {resolving && (
         <ResolveSheet

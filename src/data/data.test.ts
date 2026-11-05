@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { buildBackup, parseHomebaseBackup, readBackup } from './backup';
+import { BACKUP_APP, BACKUP_VERSION, buildBackup, parseHomebaseBackup, readBackup } from './backup';
 import { createDatabase } from './db';
-import { HomeStore } from './store';
-import type { Task } from './types';
+import { emptyData, HomeStore } from './store';
+import type { Room, Task } from './types';
 
 let counter = 0;
 async function freshStore() {
@@ -75,6 +75,38 @@ describe('backup', () => {
     expect(restored.getSnapshot().tasks).toEqual([sampleTask]);
     const back = await restored.getFile(file.id);
     expect(await back!.data.text()).toBe('receipt text');
+  });
+
+  it('leaves everything in place when a restore cannot be saved', async () => {
+    const store = await freshStore();
+    await store.put('tasks', sampleTask);
+    const data = { ...emptyData(), rooms: [{ name: 'No id, so IndexedDB refuses it' } as Room] };
+
+    await expect(store.replaceAll(data, [])).rejects.toThrow();
+
+    expect(store.getSnapshot().tasks).toEqual([sampleTask]);
+    await store.load();
+    expect(store.getSnapshot().tasks).toEqual([sampleTask]);
+  });
+
+  it('refuses a damaged backup before anything changes', () => {
+    const parse = (data: unknown, extra: object = {}) => parseHomebaseBackup({ app: BACKUP_APP, data, ...extra });
+    expect(() => parse({ tasks: [{ id: 'x', name: 'No date', status: 'open', recurring: true }] })).toThrow(/damaged.*tasks/);
+    expect(() => parse({ tasks: 'not a list' })).toThrow(/damaged.*tasks/);
+    expect(() => parse({ records: [{ id: 'r', title: 'No files list', kind: 'note' }] })).toThrow(/damaged.*records/);
+    expect(() => parse({ items: [{ id: 'k', name: 'Key', kind: 'key', photos: [] }] })).toThrow(/damaged.*items/);
+    expect(() => parse({ household: { name: 'No members' } })).toThrow(/damaged.*household/);
+    expect(() => parse({}, { files: [{ id: 'f', name: 'a', type: 'text/plain', size: 1, createdAt: '', base64: '%%%' }] })).toThrow(/damaged.*files/);
+    expect(() => parse({}, { version: BACKUP_VERSION + 1 })).toThrow(/newer version/);
+  });
+
+  it('accepts older backups with missing collections and repairs bad settings', () => {
+    const { data, files } = parseHomebaseBackup({ app: BACKUP_APP, data: { tasks: [sampleTask], settings: { theme: 'neon', dismissedTips: 'x' } } });
+    expect(data.tasks).toEqual([sampleTask]);
+    expect(data.rooms).toEqual([]);
+    expect(data.settings.theme).toBe('system');
+    expect(data.settings.dismissedTips).toEqual([]);
+    expect(files).toEqual([]);
   });
 
   it('rejects files that are not backups', () => {

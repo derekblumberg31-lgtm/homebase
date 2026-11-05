@@ -199,9 +199,23 @@ function answerFromData(question: string, data: HomeData, now: number): Answer |
   return null;
 }
 
+const guideAnswer = (guide: Guide, question: string, data: HomeData, now: number): Answer => ({
+  title: guide.title,
+  text: guide.summary,
+  steps: guide.steps,
+  safety: guide.safety,
+  actions: guide.actions,
+  source: `Guide: ${guide.title} · general guidance, not a diagnosis`,
+  issue: { guide, question, context: issueContextFor(guide, question, data, now) },
+});
+
 export const LocalGuideProvider: AssistantProvider = {
   name: 'Homebase guides',
   async answer(question, data, now) {
+    // Danger comes first: "I smell gas, what do I do next?" must not turn into a list of due tasks.
+    const q = question.toLowerCase();
+    const urgent = GUIDES.find((guide) => guide.urgentWhen?.test(q));
+    if (urgent) return guideAnswer(urgent, question, data, now);
     const fromData = answerFromData(question, data, now);
     if (fromData) return fromData;
     const { system, item } = findSubject(question, data);
@@ -212,19 +226,11 @@ export const LocalGuideProvider: AssistantProvider = {
     const best = ranked[0]?.g ?? (system || item ? GUIDES.find((g) => g.id === (system ? kindGuide(system.kind) : 'appliance')) : undefined);
     if (!best) {
       return {
-        text: 'I don’t have a guide for that yet. I can help with leaks, no heat or hot water, power outages, alarms, broken appliances, frozen pipes, clogs, air conditioning, keys and lockouts, and planning projects. I can also look things up in your home: what to maintain this month, a warranty or manual, when a job was last done, or how old a system is.',
+        text: 'I don’t have a guide for that yet. If anyone could be in danger, leave the home and call 911. I can help with gas smells, fire and smoke, leaks, no heat or hot water, power outages, alarms, broken appliances, frozen pipes, clogs, air conditioning, keys and lockouts, and planning projects. I can also look things up in your home: what to maintain this month, a warranty or manual, when a job was last done, or how old a system is.',
         source: 'Homebase guides',
       };
     }
-    return {
-      title: best.title,
-      text: best.summary,
-      steps: best.steps,
-      safety: best.safety,
-      actions: best.actions,
-      source: `Guide: ${best.title} · general guidance, not a diagnosis`,
-      issue: { guide: best, question, context: issueContextFor(best, question, data, now) },
-    };
+    return guideAnswer(best, question, data, now);
   },
 };
 

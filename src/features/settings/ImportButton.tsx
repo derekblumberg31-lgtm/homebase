@@ -10,6 +10,7 @@ export function ImportButton({ label = 'Restore from a backup', className = 'row
   const input = useRef<HTMLInputElement>(null);
   const [pending, setPending] = useState<RestoreSummary | null>(null);
   const [busy, setBusy] = useState(false);
+  const applying = useRef(false);
 
   async function pick(file: File | undefined) {
     if (!file) return;
@@ -21,7 +22,9 @@ export function ImportButton({ label = 'Restore from a backup', className = 'row
   }
 
   async function apply() {
-    if (!pending) return;
+    // The confirm dialog stays up while this runs, so a double tap must not restore twice.
+    if (!pending || applying.current) return;
+    applying.current = true;
     setBusy(true);
     try {
       await pending.apply();
@@ -30,6 +33,7 @@ export function ImportButton({ label = 'Restore from a backup', className = 'row
     } catch {
       toast('That didn’t finish. Nothing was changed; try the file again.', { tone: 'error' });
     } finally {
+      applying.current = false;
       setBusy(false);
       setPending(null);
     }

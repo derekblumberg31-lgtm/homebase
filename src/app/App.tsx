@@ -4,7 +4,9 @@ import { DataProvider, useData } from '../data/DataProvider';
 import { SessionProvider, useSession } from '../session/session';
 import { Skeleton } from '../ui/layout';
 import { ToastProvider } from '../ui/overlays';
+import { requestPersistentStorage } from '../lib/storage';
 import { AppShell } from './AppShell';
+import { AppErrorBoundary } from './CrashScreen';
 import { useReminders } from './reminders';
 import { useApplyTheme } from './theme';
 import { HomePage } from '../features/home/HomePage';
@@ -75,60 +77,66 @@ function ScrollToTop() {
 
 function Effects() {
   const { settings } = useData();
+  const { ready } = useSession();
   useApplyTheme(settings.theme);
   useReminders();
+  useEffect(() => {
+    if (ready) void requestPersistentStorage();
+  }, [ready]);
   return null;
 }
 
 export function App() {
   return (
-    <DataProvider fallback={<Loading />} errorView={(message) => <StorageError message={message} />}>
-      <SessionProvider>
-        <ToastProvider>
-          <Effects />
-          <BrowserRouter basename={import.meta.env.BASE_URL.replace(/\/$/, '') || '/'}>
-            <ScrollToTop />
-            <Gate>
-              <Routes>
-                <Route path="/welcome" element={<Onboarding />} />
-                <Route element={<AppShell />}>
-                  <Route path="/" element={<Navigate to="/home" replace />} />
-                  <Route path="/home" element={<HomePage />} />
-                  <Route path="/home/health" element={<HomeHealthPage />} />
-                  <Route path="/home/season" element={<HomeSeasonPage />} />
-                  <Route path="/home/coming-up" element={<HomeComingUpPage />} />
-                  <Route path="/home/activity" element={<HomeActivityPage />} />
-                  <Route path="/property" element={<PropertyPage />} />
-                  <Route path="/property/details" element={<PropertyDetailsPage />} />
-                  <Route path="/property/rooms/:roomId" element={<RoomPage />} />
-                  <Route path="/property/systems" element={<SystemsPage />} />
-                  <Route path="/property/systems/:systemId" element={<SystemPage />} />
-                  <Route path="/property/inventory" element={<InventoryPage />} />
-                  <Route path="/property/items/:itemId" element={<ItemPage />} />
-                  <Route path="/property/keys" element={<KeysPage />} />
-                  <Route path="/property/keys/:keyId" element={<KeyPage />} />
-                  <Route
-                    path="/property/identify-key"
-                    element={
-                      <Suspense fallback={<Loading />}>
-                        <IdentifyKeyPage />
-                      </Suspense>
-                    }
-                  />
-                  <Route path="/tasks" element={<TasksPage />} />
-                  <Route path="/tasks/:taskId" element={<TaskDetailPage />} />
-                  <Route path="/assistant" element={<AssistantPage />} />
-                  <Route path="/records" element={<RecordsPage />} />
-                  <Route path="/records/service-history" element={<ServiceHistoryPage />} />
-                  <Route path="/records/:recordId" element={<RecordPage />} />
-                  <Route path="/settings" element={<SettingsPage />} />
-                  <Route path="*" element={<Navigate to="/home" replace />} />
-                </Route>
-              </Routes>
-            </Gate>
-          </BrowserRouter>
-        </ToastProvider>
-      </SessionProvider>
-    </DataProvider>
+    <AppErrorBoundary>
+      <DataProvider fallback={<Loading />} errorView={(message) => <StorageError message={message} />}>
+        <SessionProvider>
+          <ToastProvider>
+            <Effects />
+            <BrowserRouter basename={import.meta.env.BASE_URL.replace(/\/$/, '') || '/'}>
+              <ScrollToTop />
+              <Gate>
+                <Routes>
+                  <Route path="/welcome" element={<Onboarding />} />
+                  <Route element={<AppShell />}>
+                    <Route path="/" element={<Navigate to="/home" replace />} />
+                    <Route path="/home" element={<HomePage />} />
+                    <Route path="/home/health" element={<HomeHealthPage />} />
+                    <Route path="/home/season" element={<HomeSeasonPage />} />
+                    <Route path="/home/coming-up" element={<HomeComingUpPage />} />
+                    <Route path="/home/activity" element={<HomeActivityPage />} />
+                    <Route path="/property" element={<PropertyPage />} />
+                    <Route path="/property/details" element={<PropertyDetailsPage />} />
+                    <Route path="/property/rooms/:roomId" element={<RoomPage />} />
+                    <Route path="/property/systems" element={<SystemsPage />} />
+                    <Route path="/property/systems/:systemId" element={<SystemPage />} />
+                    <Route path="/property/inventory" element={<InventoryPage />} />
+                    <Route path="/property/items/:itemId" element={<ItemPage />} />
+                    <Route path="/property/keys" element={<KeysPage />} />
+                    <Route path="/property/keys/:keyId" element={<KeyPage />} />
+                    <Route
+                      path="/property/identify-key"
+                      element={
+                        <Suspense fallback={<Loading />}>
+                          <IdentifyKeyPage />
+                        </Suspense>
+                      }
+                    />
+                    <Route path="/tasks" element={<TasksPage />} />
+                    <Route path="/tasks/:taskId" element={<TaskDetailPage />} />
+                    <Route path="/assistant" element={<AssistantPage />} />
+                    <Route path="/records" element={<RecordsPage />} />
+                    <Route path="/records/service-history" element={<ServiceHistoryPage />} />
+                    <Route path="/records/:recordId" element={<RecordPage />} />
+                    <Route path="/settings" element={<SettingsPage />} />
+                    <Route path="*" element={<Navigate to="/home" replace />} />
+                  </Route>
+                </Routes>
+              </Gate>
+            </BrowserRouter>
+          </ToastProvider>
+        </SessionProvider>
+      </DataProvider>
+    </AppErrorBoundary>
   );
 }

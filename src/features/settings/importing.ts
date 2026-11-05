@@ -29,8 +29,6 @@ export async function prepareRestore(store: HomeStore, file: File): Promise<Rest
 
 export async function downloadBackup(store: HomeStore) {
   const text = await buildBackup(store.getSnapshot(), await store.allFiles());
-  // Remember when, so Settings and Home can say how old the latest copy is.
-  await store.updateSettings({ lastBackupAt: new Date().toISOString() });
   const blob = new Blob([text], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const anchor = document.createElement('a');
@@ -40,4 +38,5 @@ export async function downloadBackup(store: HomeStore) {
   anchor.click();
   anchor.remove();
   window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+  await store.updateSettings({ lastBackupAt: new Date().toISOString() });
 }

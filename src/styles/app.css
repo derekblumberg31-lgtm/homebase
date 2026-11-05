@@ -4670,3 +4670,41 @@ a.feed-row:focus-visible {
   align-items: center;
   min-height: 44px;
 }
+
+.issue-action.is-call {
+  border-color: var(--red);
+  background: var(--red);
+  color: #fff;
+}
+
+.issue-action.is-call svg {
+  color: inherit;
+}
+
+:root[data-theme='dark'] .issue-action.is-call {
+  color: #1f1e1c;
+}
+
+.critical-call {
+  margin-top: 12px;
+}
+
+.button.is-call {
+  background: var(--red);
+  color: #fff;
+  font-size: 17px;
+}
+
+:root[data-theme='dark'] .button.is-call {
+  color: #1f1e1c;
+}
+
+.issue-later {
+  margin-top: 16px;
+  color: var(--text-2);
+  font-size: 15px;
+}
+
+.button.quick-add {
+  min-height: 44px;
+}

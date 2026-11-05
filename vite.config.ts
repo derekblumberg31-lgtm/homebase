@@ -42,6 +42,7 @@ export default defineConfig({
         cleanupOutdatedCaches: true,
         clientsClaim: true,
         skipWaiting: true,
+        importScripts: ['notifications-sw.js'],
         runtimeCaching: [
           {
             // A RegExp, not a function: functions are copied into the service worker as source,
