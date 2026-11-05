@@ -6,12 +6,14 @@ import { useSession } from '../../session/session';
 import { House, Send } from '../../ui/Icons';
 import { SUGGESTED_QUESTIONS } from './guides';
 import { LocalGuideProvider, type Answer, type AssistantProvider } from './provider';
+import { IssueAnswer, type IssueState } from './IssueAnswer';
 
 interface Message {
   id: string;
   role: 'user' | 'assistant';
   text?: string;
   answer?: Answer;
+  issue?: IssueState;
 }
 
 // One conversation while Homebase is open, shared by the Assistant page and the Ask Homebase panel.
@@ -26,9 +28,11 @@ interface AssistantChatProps {
   nudge?: { text: string; href: string; label: string };
   /** Called when an answer's link moves away (the panel closes itself). */
   onNavigate?: () => void;
+  /** Asked once on arrival, e.g. from "Ask about a problem with it" on a system. */
+  initialQuestion?: string;
 }
 
-export function AssistantChat({ provider = LocalGuideProvider, compact = false, nudge, onNavigate }: AssistantChatProps) {
+export function AssistantChat({ provider = LocalGuideProvider, compact = false, nudge, onNavigate, initialQuestion }: AssistantChatProps) {
   const data = useData();
   const now = useNow();
   const session = useSession();
@@ -39,10 +43,22 @@ export function AssistantChat({ provider = LocalGuideProvider, compact = false, 
   const end = useRef<HTMLDivElement>(null);
   const input = useRef<HTMLInputElement>(null);
 
+  const count = messages.length;
   useEffect(() => {
     conversation = messages;
-    end.current?.scrollIntoView({ block: 'end' });
   }, [messages]);
+  // Scroll to the start of a new answer (not on every chip tap inside it).
+  useEffect(() => {
+    if (count) end.current?.scrollIntoView({ block: 'end' });
+  }, [count]);
+  const asked = useRef(false);
+  useEffect(() => {
+    if (initialQuestion && !asked.current) {
+      asked.current = true;
+      void ask(initialQuestion);
+    }
+    // Only on arrival.
+  }, [initialQuestion]);
 
   async function ask(question: string) {
     const text = question.trim();
@@ -52,7 +68,7 @@ export function AssistantChat({ provider = LocalGuideProvider, compact = false, 
     setThinking(true);
     try {
       const answer = await provider.answer(text, data, now);
-      setMessages((m) => [...m, { id: uid(), role: 'assistant', answer }]);
+      setMessages((m) => [...m, { id: uid(), role: 'assistant', answer, issue: answer.issue ? { picks: {}, done: {} } : undefined }]);
     } catch {
       setMessages((m) => [...m, { id: uid(), role: 'assistant', answer: { text: 'Something went wrong answering that. Try asking another way.', source: provider.name } }]);
     } finally {
@@ -104,6 +120,16 @@ export function AssistantChat({ provider = LocalGuideProvider, compact = false, 
           message.role === 'user' ? (
             <div key={message.id} className="bubble is-user">
               {message.text}
+            </div>
+          ) : message.answer?.issue && message.issue ? (
+            <div key={message.id} className="bubble is-assistant is-issue">
+              <IssueAnswer
+                answer={message.answer as Answer & { issue: NonNullable<Answer['issue']> }}
+                state={message.issue}
+                onChange={(issue) => setMessages((list) => list.map((m) => (m.id === message.id ? { ...m, issue } : m)))}
+                go={go}
+              />
+              <p className="bubble-note">{message.answer.source}</p>
             </div>
           ) : (
             <div key={message.id} className="bubble is-assistant">
@@ -166,7 +192,7 @@ export function AssistantChat({ provider = LocalGuideProvider, compact = false, 
           <Send size={19} />
         </button>
       </form>
-      <p className="local-note">Guidance is general. For gas, electrical or structural problems, call a licensed professional.</p>
+      <p className="local-note">General guidance that runs on this device, not a diagnosis. For gas, electrical or structural problems, call a licensed professional. In an emergency, call 911.</p>
     </div>
   );
 }

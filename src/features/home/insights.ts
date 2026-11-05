@@ -69,7 +69,12 @@ export function alertsFor(data: HomeData, now: number): Alert[] {
     if (!life || !system.installYear) continue;
     const age = year - system.installYear;
     if (age >= life) {
-      alerts.push({ id: `system-${system.id}`, title: system.name, detail: `${age} years old, past its usual ${life}. Worth an inspection.`, href: '/property/systems', tone: 'soon' });
+      alerts.push({ id: `system-${system.id}`, title: system.name, detail: `${age} years old, past its usual ${life}. Worth an inspection.`, href: `/property/systems/${system.id}`, tone: 'soon' });
+    }
+  }
+  for (const system of data.systems) {
+    if (system.warrantyExpires && system.warrantyExpires >= today && system.warrantyExpires <= soon) {
+      alerts.push({ id: `record-system-${system.id}`, title: `${system.name} warranty`, detail: `Ends ${formatDate(system.warrantyExpires)}`, href: `/property/systems/${system.id}`, tone: 'soon' });
     }
   }
   return alerts;
@@ -213,7 +218,7 @@ export function snapshotFor(data: HomeData, now: number, health: HealthCheck): S
     next
       ? { id: 'next', label: 'Next maintenance', value: next.info.status === 'overdue' || next.info.daysLeft <= 1 ? countdownText(next.info) : formatDateShort(next.info.dueDate, now), detail: next.task.name, href: `/tasks/${next.task.id}`, tone: next.info.status === 'overdue' ? 'overdue' : undefined }
       : { id: 'next', label: 'Next maintenance', value: 'Nothing planned', detail: 'Add your first task', href: '/tasks?new=1', tone: 'muted' },
-    { id: 'health', label: 'Home health', value: `${health.score}%`, detail: `${health.done} of ${health.total} steps`, href: '#home-health', tone: health.score >= 75 ? 'good' : undefined },
+    { id: 'health', label: 'Home record', value: `${health.score}%`, detail: `${health.done} of ${health.total} steps`, href: '#home-record', tone: health.score >= 75 ? 'good' : undefined },
   ];
 }
 
@@ -259,6 +264,12 @@ export function timelineFor(data: HomeData, now: number): TimelineMonth[] {
     const date = new Date(`${r.expiresAt}T12:00:00`);
     if (date.getTime() > horizon) continue;
     entries.push({ id: `record-${r.id}`, date, title: `${r.title} ends`, detail: 'Check what’s still covered', href: `/records/${r.id}`, kind: 'warranty', overdue: false });
+  }
+  for (const s of data.systems) {
+    if (!s.warrantyExpires || s.warrantyExpires < today) continue;
+    const date = new Date(`${s.warrantyExpires}T12:00:00`);
+    if (date.getTime() > horizon) continue;
+    entries.push({ id: `system-${s.id}`, date, title: `${s.name} warranty ends`, detail: 'Book any covered repairs first', href: `/property/systems/${s.id}`, kind: 'warranty', overdue: false });
   }
   entries.sort((a, b) => Number(b.overdue) - Number(a.overdue) || a.date.getTime() - b.date.getTime());
 

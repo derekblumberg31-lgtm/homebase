@@ -35,7 +35,11 @@ export function TasksPage() {
   const draftFromParams = (): TaskDraft | null =>
     params.get('new')
       ? {
-          kind: (params.get('kind') as Task['kind']) ?? 'maintenance',
+          kind: (params.get('kind') as Task['kind']) ?? undefined,
+          systemId: params.get('systemId') ?? undefined,
+          location: params.get('location') ?? undefined,
+          dueDate: params.get('due') ?? undefined,
+          priority: (params.get('priority') as Task['priority']) ?? undefined,
           name: params.get('name') ?? undefined,
           roomId: params.get('roomId') ?? undefined,
           itemId: params.get('itemId') ?? undefined,

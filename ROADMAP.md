@@ -24,3 +24,5 @@ Homebase ships local-first with offline guided help. Each future feature below n
 
 - Offline: on the live site the service worker installs and precaches the app shell (index.html, JS, CSS, icons). A reload with the network turned off hasn't been run yet.
 - Identify a key needs a camera or a photo file; it wasn't run end to end against a real key photo in this build.
+- Reminders only fire while Homebase is open (no server, no push). Settings explains this and offers a calendar (.ics) export. Exported events don't update when dates change in the app.
+- Optional fields added without a schema bump: `Settings.healthSteps`, `hasGas`, `lastBackupAt`; `HomeSystem.serial`, `installDate`, `location`, `warrantyExpires`, `contractorId`, `photos`; `Item.contractorId`; `Task.systemId`, `nextDue`; `ServiceEvent.systemId`; `HomeRecord.systemId`. Older backups restore unchanged; older app versions ignore the new fields.

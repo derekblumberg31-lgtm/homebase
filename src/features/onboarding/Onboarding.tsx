@@ -22,6 +22,7 @@ export function Onboarding() {
   const [type, setType] = useState<PropertyType>('house');
   const [ownership, setOwnership] = useState<'own' | 'rent'>('own');
   const [yearBuilt, setYearBuilt] = useState('');
+  const [gas, setGas] = useState<'yes' | 'no' | 'unsure'>('unsure');
   const [error, setError] = useState('');
 
   async function saveHousehold(event: FormEvent) {
@@ -55,9 +56,12 @@ export function Onboarding() {
       ownership,
       yearBuilt: yearBuilt ? year : undefined,
     });
+    // The starter Home Health Check is ready on Home straight away; gas decides whether the
+    // gas-shutoff step applies.
+    await store.updateSettings({ hasGas: gas === 'yes' ? true : gas === 'no' ? false : undefined });
     const household = store.getSnapshot().household;
     if (household) await store.saveHousehold({ ...household, onboardedAt: new Date().toISOString() });
-    navigate('/home', { replace: true });
+    navigate('/home?welcome=1', { replace: true });
   }
 
   const index = STEPS.indexOf(step);
@@ -73,7 +77,8 @@ export function Onboarding() {
             <p className="lead">
               One place for your home: what needs doing, what you own, where the paperwork is, and help when something breaks.
             </p>
-            <p className="lead">Everything stays on this device. No account needed.</p>
+            <p className="lead">Two quick questions, then you get a starter Home Health Check: eight concrete steps, like finding your water shutoff and testing your alarms.</p>
+            <p className="lead">Everything stays on this device. No account, no sync. Save a backup file from Settings to keep a copy.</p>
             <div className="button-stack">
               <button type="button" className="button is-primary is-block" onClick={() => setStep('household')}>
                 Get started
@@ -120,6 +125,7 @@ export function Onboarding() {
               </FormGroup>
             </div>
             <div className="section">
+              <p className="field-label is-standalone" aria-hidden="true">Own or rent</p>
               <Segmented
                 label="Own or rent"
                 value={ownership}
@@ -130,9 +136,23 @@ export function Onboarding() {
                 ]}
               />
             </div>
+            <div className="section">
+              <p className="field-label is-standalone" aria-hidden="true">Does it have gas service?</p>
+              <Segmented
+                label="Does it have gas service?"
+                value={gas}
+                onChange={setGas}
+                options={[
+                  { value: 'yes', label: 'Has gas' },
+                  { value: 'no', label: 'No gas' },
+                  { value: 'unsure', label: 'Not sure' },
+                ]}
+              />
+              <p className="section-foot">A gas stove, furnace, water heater or dryer means yes. This decides whether your checklist includes the gas shutoff.</p>
+            </div>
             <div className="button-stack">
               <button type="submit" className="button is-primary is-block">
-                Go to Home
+                Build my Home Health Check
               </button>
             </div>
           </form>

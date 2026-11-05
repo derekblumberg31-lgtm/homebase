@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PRODUCT } from '../../app/areas';
 import { useData, useStore } from '../../data/DataProvider';
@@ -9,6 +9,8 @@ import { Group, Page, Row, Section } from '../../ui/layout';
 import { Confirm, Sheet, useToast } from '../../ui/overlays';
 import { ImportButton } from './ImportButton';
 import { downloadBackup } from './importing';
+import { downloadCalendar } from '../../lib/calendar';
+import { formatRelativeTime } from '../../lib/dates';
 
 function isStandalone() {
   return window.matchMedia?.('(display-mode: standalone)').matches || (navigator as Navigator & { standalone?: boolean }).standalone === true;
@@ -24,6 +26,13 @@ export function SettingsPage() {
   const [installOpen, setInstallOpen] = useState(false);
   const notificationsSupported = typeof Notification !== 'undefined';
   const household = data.household;
+  const storage = useStorageStatus();
+  // Links like /settings#data (from Home's backup reminder) land on that section.
+  useEffect(() => {
+    const id = window.location.hash.slice(1);
+    if (id) window.setTimeout(() => document.getElementById(id)?.scrollIntoView({ block: 'start' }), 50);
+  }, []);
+  const openTasks = data.tasks.filter((t) => t.status === 'open');
 
   async function toggleReminders(next: boolean) {
     if (!next) {
@@ -65,7 +74,7 @@ export function SettingsPage() {
           ))}
           <Row title="Add someone" tone="action" onClick={() => setMemberSheet('new')} />
         </Group>
-        <p className="section-foot">Everyone shares this device’s Homebase. Sharing across devices will come with sign-in.</p>
+        <p className="section-foot">Everyone shares this device’s Homebase. There’s no syncing between devices; to move to a new one, save a backup here and restore it there.</p>
       </Section>
 
       <Section title="Property">
@@ -92,30 +101,78 @@ export function SettingsPage() {
         </Group>
       </Section>
 
-      <Section title="Notifications" foot="Homebase checks once a day while it’s open and lets you know about due and overdue tasks.">
-        <Group>
-          <div className="row">
-            <span className="row-main">
-              <span className="row-title">Task reminders</span>
-              <span className="row-sub">{notificationsSupported ? 'A notification when something is due' : 'Not available in this browser'}</span>
-            </span>
-            <Switch checked={data.settings.reminders} onChange={toggleReminders} label="Task reminders" />
-          </div>
-        </Group>
+      <Section title="Reminders and notifications" id="reminders">
+        <div className="callout">
+          <p>
+            <b>How reminders work.</b> Homebase has no server, so it can only notify you while it’s open in a browser tab or as an installed app. It checks once a day when you open it. It
+            can’t send anything while it’s closed.
+          </p>
+          <p className="form-gap">For reminders you can count on, add your tasks to the calendar you already use. Recurring tasks repeat there too.</p>
+        </div>
+        <div className="section">
+          <Group>
+            <div className="row">
+              <span className="row-main">
+                <span className="row-title">Notify me while Homebase is open</span>
+                <span className="row-sub">{notificationsSupported ? 'Once a day: what’s due, overdue or ending soon' : 'Not available in this browser'}</span>
+              </span>
+              <Switch checked={data.settings.reminders} onChange={toggleReminders} label="Notify me while Homebase is open" />
+            </div>
+            <Row
+              title="Add all tasks to my calendar"
+              sub={openTasks.length ? `Downloads a calendar file with ${openTasks.length} open ${openTasks.length === 1 ? 'task' : 'tasks'}. Open it to add them to Apple, Google or Outlook Calendar.` : 'Add a task first'}
+              tone="action"
+              wrap
+              onClick={openTasks.length ? () => { downloadCalendar(openTasks); toast('Calendar file saved. Open it to import.'); } : undefined}
+            />
+          </Group>
+          <p className="section-foot">Calendar entries don’t update themselves. After you change a lot of dates, export again and remove the old ones.</p>
+        </div>
       </Section>
 
-      <Section title="Integrations" foot="Smart-home, calendar and utility connections will appear here. Homebase works fully on its own.">
+      <Section title="Integrations" foot="There are no connected services. Homebase works fully on its own and doesn’t connect to smart-home devices or accounts.">
         <Group>
           <Row title="Connected services" value="None" />
         </Group>
       </Section>
 
-      <Section title="Data and privacy" foot="Everything you add stays on this device. A backup file is the only copy that leaves it, and only when you save one.">
-        <Group>
-          <Row title="Save a backup" tone="action" onClick={() => downloadBackup(store).then(() => toast('Backup saved'))} />
-          <ImportButton label="Restore from a backup" />
-          <Row title="Erase everything on this device" tone="danger" onClick={() => setEraseOpen(true)} />
-        </Group>
+      <Section title="Your data and privacy" id="data">
+        <div className="group">
+          <dl className="privacy-list">
+            <div>
+              <dt>Stored on this device</dt>
+              <dd>Everything you add: your home, tasks, systems, inventory, records, attached photos and PDFs, and activity. It lives in this browser’s storage for this site.</dd>
+            </div>
+            <div>
+              <dt>What leaves the device</dt>
+              <dd>Nothing, unless you save a backup or calendar file yourself. There’s no account, no sync and no analytics. The Assistant runs on the device; questions aren’t sent anywhere.</dd>
+            </div>
+            <div>
+              <dt>If browser data is cleared</dt>
+              <dd>
+                Clearing this site’s data, uninstalling the app, or some private-browsing modes delete everything here. Your other devices don’t have a copy. A backup file is the only way to get it back.
+              </dd>
+            </div>
+            <div>
+              <dt>Browser storage</dt>
+              <dd>{storage}</dd>
+            </div>
+          </dl>
+        </div>
+        <div className="section">
+          <Group>
+            <Row
+              title="Save a backup"
+              sub={data.settings.lastBackupAt ? `Last saved ${formatRelativeTime(data.settings.lastBackupAt)} on this device` : 'Never saved from this device. One file includes attachments.'}
+              tone="action"
+              wrap
+              onClick={() => downloadBackup(store).then(() => toast('Backup saved. Keep it somewhere safe, like iCloud Drive or Google Drive.'))}
+            />
+            <ImportButton label="Restore from a backup" />
+            <Row title="Erase everything on this device" tone="danger" onClick={() => setEraseOpen(true)} />
+          </Group>
+          <p className="section-foot">Restoring shows what’s in the file and what it will replace before anything changes.</p>
+        </div>
       </Section>
 
       <Section title="App">
@@ -224,4 +281,31 @@ function MemberSheet({ member, onClose, onSave, onRemove }: { member: Member | n
       )}
     </Sheet>
   );
+}
+
+/** Whether the browser has agreed to keep Homebase's storage instead of clearing it under pressure. */
+function useStorageStatus() {
+  const [status, setStatus] = useState('Checking…');
+  useEffect(() => {
+    let live = true;
+    (async () => {
+      const storage = navigator.storage;
+      if (!storage?.persisted) return live && setStatus('This browser doesn’t say whether it might clear Homebase’s storage. Keep a recent backup.');
+      let persisted = await storage.persisted();
+      // Asking is harmless: the browser decides, often silently.
+      if (!persisted && storage.persist) persisted = await storage.persist().catch(() => false);
+      const estimate = await storage.estimate?.().catch(() => undefined);
+      const used = estimate?.usage ? ` Using about ${Math.max(1, Math.round(estimate.usage / 1024 / 1024))} MB.` : '';
+      if (live)
+        setStatus(
+          persisted
+            ? `Protected: the browser won’t clear it to free up space.${used}`
+            : `Not protected: the browser may clear it if the device runs low on space, or after weeks without a visit (Safari).${used} Keep a recent backup.`,
+        );
+    })().catch(() => live && setStatus('Couldn’t check. Keep a recent backup.'));
+    return () => {
+      live = false;
+    };
+  }, []);
+  return status;
 }

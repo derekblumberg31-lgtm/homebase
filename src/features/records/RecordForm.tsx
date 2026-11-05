@@ -31,19 +31,21 @@ const SHOWS = {
 };
 
 /** Add or edit a record: warranty, receipt, manual, permit… with an end date and files. */
-export function RecordForm({ record, draft, onClose, onSaved }: { record?: HomeRecord; draft?: { kind?: RecordKind; itemId?: string }; onClose: () => void; onSaved: (r: HomeRecord) => void }) {
-  const { items } = useData();
+export function RecordForm({ record, draft, onClose, onSaved }: { record?: HomeRecord; draft?: { kind?: RecordKind; itemId?: string; systemId?: string; title?: string; notes?: string; vendor?: string }; onClose: () => void; onSaved: (r: HomeRecord) => void }) {
+  const { items, systems } = useData();
   const store = useStore();
   const toast = useToast();
   const fileInput = useRef<HTMLInputElement>(null);
   const [kind, setKind] = useState<RecordKind>(record?.kind ?? draft?.kind ?? 'warranty');
-  const [title, setTitle] = useState(record?.title ?? '');
+  const [title, setTitle] = useState(record?.title ?? draft?.title ?? '');
   const [date, setDate] = useState(record?.date ?? '');
   const [expiresAt, setExpiresAt] = useState(record?.expiresAt ?? '');
   const [amount, setAmount] = useState(record?.amount != null ? String(record.amount) : '');
-  const [vendor, setVendor] = useState(record?.vendor ?? '');
-  const [itemId, setItemId] = useState(record?.itemId ?? draft?.itemId ?? '');
-  const [notes, setNotes] = useState(record?.notes ?? '');
+  const [vendor, setVendor] = useState(record?.vendor ?? draft?.vendor ?? '');
+  // What it's for: an item ("i:<id>") or a home system ("s:<id>").
+  const initialFor = record?.systemId ?? draft?.systemId ? `s:${record?.systemId ?? draft?.systemId}` : record?.itemId ?? draft?.itemId ? `i:${record?.itemId ?? draft?.itemId}` : '';
+  const [forId, setForId] = useState(initialFor);
+  const [notes, setNotes] = useState(record?.notes ?? draft?.notes ?? '');
   const [phone, setPhone] = useState(record?.phone ?? '');
   const [email, setEmail] = useState(record?.email ?? '');
   const [existingNames, setExistingNames] = useState<Record<string, string>>({});
@@ -101,7 +103,8 @@ export function RecordForm({ record, draft, onClose, onSaved }: { record?: HomeR
       vendor: vendor.trim() || undefined,
       phone: SHOWS.contact.includes(kind) ? phone.trim() || undefined : undefined,
       email: SHOWS.contact.includes(kind) ? email.trim() || undefined : undefined,
-      itemId: SHOWS.item.includes(kind) ? itemId || undefined : undefined,
+      itemId: SHOWS.item.includes(kind) && forId.startsWith('i:') ? forId.slice(2) : undefined,
+      systemId: SHOWS.item.includes(kind) && forId.startsWith('s:') ? forId.slice(2) : undefined,
       notes: notes.trim() || undefined,
       fileIds: [...existing, ...files.map((f) => f.id)],
       createdAt: record?.createdAt ?? now,
@@ -141,14 +144,27 @@ export function RecordForm({ record, draft, onClose, onSaved }: { record?: HomeR
           ))}
         </SelectField>
         <TextField label="Name" value={title} onChange={(e) => setTitle(e.target.value)} placeholder={TITLE_EXAMPLE[kind] ?? 'Closing documents'} error={errors.title} />
-        {belongings.length > 0 && SHOWS.item.includes(kind) && (
-          <SelectField label="For an item" optional value={itemId} onChange={(e) => setItemId(e.target.value)}>
-            <option value="">None</option>
-            {belongings.map((i) => (
-              <option key={i.id} value={i.id}>
-                {i.name}
-              </option>
-            ))}
+        {(belongings.length > 0 || systems.length > 0) && SHOWS.item.includes(kind) && (
+          <SelectField label="What it’s for" optional value={forId} onChange={(e) => setForId(e.target.value)} hint="Linked records show on that system or item, and the Assistant can find them.">
+            <option value="">Nothing in particular</option>
+            {systems.length > 0 && (
+              <optgroup label="Home systems">
+                {systems.map((s) => (
+                  <option key={s.id} value={`s:${s.id}`}>
+                    {s.name}
+                  </option>
+                ))}
+              </optgroup>
+            )}
+            {belongings.length > 0 && (
+              <optgroup label="Home Inventory">
+                {belongings.map((i) => (
+                  <option key={i.id} value={`i:${i.id}`}>
+                    {i.name}
+                  </option>
+                ))}
+              </optgroup>
+            )}
           </SelectField>
         )}
       </FormGroup>

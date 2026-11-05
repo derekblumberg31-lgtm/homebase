@@ -13,8 +13,8 @@
   --fill: #efede5;
   --fill-strong: #e6e3d9;
   --text: #29271f;
-  --text-2: #5f5d56;
-  --text-3: #6f6c64;
+  --text-2: #4c4a44;
+  --text-3: #5a5750;
   --line: rgba(41, 39, 31, 0.09);
   --line-strong: rgba(41, 39, 31, 0.15);
   --grid: #dcd9cf;
@@ -29,8 +29,11 @@
   --green-soft: rgba(79, 115, 83, 0.1);
   --amber: #8a6420;
   --amber-soft: rgba(138, 100, 32, 0.1);
-  --red: #b5603f;
-  --red-soft: rgba(181, 96, 63, 0.1);
+  --red: #b3261e;
+  --red-soft: #fbe9e7;
+  --red-line: rgba(179, 38, 30, 0.35);
+  --amber-line: rgba(138, 100, 32, 0.35);
+  --good-soft: #e8f1e8;
   --cool: #5d7480;
   --cool-soft: rgba(93, 116, 128, 0.1);
   --scrim: rgba(41, 39, 31, 0.28);
@@ -61,8 +64,8 @@
   --fill: #383733;
   --fill-strong: #44423e;
   --text: #f3f1ea;
-  --text-2: #c3c0b6;
-  --text-3: #a29f96;
+  --text-2: #d3d0c7;
+  --text-3: #b8b5ac;
   --line: rgba(236, 232, 220, 0.09);
   --line-strong: rgba(236, 232, 220, 0.16);
   --grid: #4a4843;
@@ -77,8 +80,11 @@
   --green-soft: rgba(162, 191, 160, 0.12);
   --amber: #d6ac6a;
   --amber-soft: rgba(214, 172, 106, 0.12);
-  --red: #d08a6e;
-  --red-soft: rgba(208, 138, 110, 0.13);
+  --red: #ff8a80;
+  --red-soft: rgba(255, 138, 128, 0.14);
+  --red-line: rgba(255, 138, 128, 0.45);
+  --amber-line: rgba(214, 172, 106, 0.45);
+  --good-soft: rgba(162, 191, 160, 0.14);
   --cool: #a3b5be;
   --cool-soft: rgba(163, 181, 190, 0.12);
   --scrim: rgba(0, 0, 0, 0.45);
@@ -3837,4 +3843,830 @@ a.feed-row:focus-visible {
   font-family: var(--font-display);
   font-size: 17px;
   font-weight: 500;
+}
+
+
+/* =====================================================================
+   Operational Home: urgency that reads at a glance, larger targets,
+   clear labels. Calm surfaces stay; colour marks only what needs you.
+   ===================================================================== */
+
+/* Touch targets: nothing tappable under 44px. */
+.round-button,
+.icon-button {
+  width: 44px;
+  height: 44px;
+}
+
+.button.is-small,
+.button.is-quiet,
+.button.is-outline,
+.button.is-danger-quiet,
+.back-link {
+  min-height: 44px;
+}
+
+.button.is-small {
+  padding: 0 14px;
+  border-radius: 10px;
+  font-size: 15px;
+}
+
+.text-button {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+}
+
+.field-label.is-standalone {
+  display: block;
+  padding: 0 4px 8px;
+}
+
+.page-subhead {
+  margin: 30px 4px 0;
+  color: var(--text-2);
+  font-size: 15px;
+  font-weight: 600;
+}
+
+/* Home layout: one column on phones, two from 1100px. */
+.home .module:first-child {
+  margin-top: 16px;
+}
+
+.home-status.is-overdue {
+  color: var(--red);
+  font-weight: 600;
+}
+
+@media (min-width: 1100px) {
+  .home-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
+    gap: 20px;
+    align-items: start;
+  }
+}
+
+.module-links {
+  display: inline-flex;
+  gap: 14px;
+}
+
+.module-title {
+  font-size: 17px;
+}
+
+.count-badge {
+  display: inline-grid;
+  place-items: center;
+  min-width: 26px;
+  height: 26px;
+  padding: 0 8px;
+  border-radius: 13px;
+  background: var(--fill);
+  font-size: 14px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.count-badge.is-urgent {
+  background: var(--red);
+  color: #fff;
+}
+
+:root[data-theme='dark'] .count-badge.is-urgent {
+  color: #1f1e1c;
+}
+
+.module-empty {
+  font-size: 15px;
+}
+
+.module-empty.is-good {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+}
+
+.module-empty.is-good svg {
+  flex: none;
+  margin-top: 2px;
+  color: var(--green);
+}
+
+.inline-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+/* Needs attention: each item says what kind of trouble it is in words, not just colour. */
+.attention-list {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.alert-card {
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr);
+  gap: 10px;
+  padding: 12px 14px;
+  border: 1px solid var(--line-strong);
+  border-left-width: 4px;
+  border-radius: 10px;
+  color: inherit;
+}
+
+.alert-card > svg {
+  margin-top: 2px;
+}
+
+.alert-card.is-overdue {
+  border-color: var(--red-line);
+  border-left-color: var(--red);
+  background: var(--red-soft);
+}
+
+.alert-card.is-overdue > svg,
+.alert-card.is-overdue .alert-label {
+  color: var(--red);
+}
+
+.alert-card.is-soon {
+  border-color: var(--amber-line);
+  border-left-color: var(--amber);
+  background: var(--amber-soft);
+}
+
+.alert-card.is-soon > svg,
+.alert-card.is-soon .alert-label {
+  color: var(--amber);
+}
+
+.alert-text {
+  display: grid;
+  gap: 1px;
+  min-width: 0;
+  color: inherit;
+}
+
+.alert-label {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+
+.alert-title {
+  font-size: 17px;
+  font-weight: 600;
+}
+
+.alert-detail {
+  color: var(--text-2);
+  font-size: 14px;
+}
+
+.alert-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  grid-column: 2;
+  margin-top: 6px;
+}
+
+.alert-actions .button.is-quiet {
+  border: 1px solid var(--line-strong);
+  background: var(--surface);
+  color: var(--text);
+}
+
+/* Quick actions: icon above a written label, never icon-only. */
+.quick-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.quick-action {
+  display: grid;
+  gap: 2px;
+  align-content: start;
+  height: 100%;
+  min-height: 88px;
+  padding: 12px;
+  border: 1px solid var(--line-strong);
+  border-radius: 10px;
+  color: var(--text);
+  transition: background 0.15s var(--ease);
+}
+
+.quick-action svg {
+  margin-bottom: 4px;
+  color: var(--text-2);
+}
+
+.quick-label {
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+.quick-hint {
+  color: var(--text-2);
+  font-size: 13px;
+}
+
+@media (hover: hover) {
+  .quick-action:hover {
+    background: var(--surface-2);
+  }
+}
+
+@media (min-width: 560px) and (max-width: 1099px) {
+  .quick-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.row-value.is-empty {
+  color: var(--text-2);
+  font-size: 15px;
+  text-decoration: underline;
+  text-decoration-color: var(--line-strong);
+  text-underline-offset: 3px;
+}
+
+/* Welcome after onboarding */
+.welcome-banner {
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr) 44px;
+  gap: 12px;
+  align-items: start;
+  margin-top: 16px;
+  padding: 14px 8px 14px 16px;
+  border: 1px solid var(--line-strong);
+  border-radius: 12px;
+  background: var(--good-soft);
+}
+
+.welcome-banner > svg {
+  margin-top: 2px;
+  color: var(--green);
+}
+
+.welcome-title {
+  font-weight: 650;
+}
+
+.welcome-body {
+  color: var(--text-2);
+  font-size: 15px;
+}
+
+/* ---------- starter Home Health Check ---------- */
+
+.health .health-meter {
+  flex-wrap: wrap;
+  gap: 6px 14px;
+}
+
+.health .health-score {
+  font-size: 20px;
+}
+
+.health-time {
+  width: 100%;
+  color: var(--text-2);
+  font-size: 14px;
+}
+
+.starter-tag {
+  display: inline-block;
+  margin-right: 6px;
+  padding: 1px 8px;
+  border-radius: 6px;
+  background: var(--fill);
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.health-steps {
+  display: grid;
+  gap: 10px;
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.health-step {
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr);
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid var(--line-strong);
+  border-radius: 10px;
+}
+
+.health-step.is-high {
+  border-left: 4px solid var(--red);
+}
+
+.health-step.is-done,
+.health-step.is-na {
+  background: var(--surface-2);
+}
+
+.health-mark {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  margin-top: 1px;
+  border: 2px solid var(--line-strong);
+  border-radius: 50%;
+}
+
+.health-step.is-done .health-mark {
+  border-color: var(--green);
+  background: var(--green);
+  color: #fff;
+}
+
+.health-title {
+  font-size: 17px;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.health-step.is-done .health-title {
+  color: var(--text-2);
+}
+
+.health-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: var(--fill);
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.pill.is-urgent {
+  background: var(--red-soft);
+  color: var(--red);
+  box-shadow: inset 0 0 0 1px var(--red-line);
+}
+
+.pill.is-good {
+  background: var(--good-soft);
+  color: var(--green);
+}
+
+.pill.is-plain {
+  background: transparent;
+  color: var(--text-2);
+  font-weight: 500;
+}
+
+.health-why {
+  margin-top: 6px;
+  color: var(--text-2);
+  font-size: 15px;
+  line-height: 1.45;
+}
+
+.health-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin-top: 10px;
+}
+
+.health-actions:empty {
+  display: none;
+}
+
+/* Sheets with guidance */
+.sheet-lead {
+  color: var(--text-2);
+  font-size: 15px;
+}
+
+.sheet-subhead {
+  margin: 18px 4px 6px;
+  font-size: 15px;
+  font-weight: 650;
+}
+
+.plain-list {
+  margin: 0 0 16px;
+  padding-left: 22px;
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+.plain-list li + li {
+  margin-top: 6px;
+}
+
+.callout {
+  padding: 12px 14px;
+  border: 1px solid var(--line-strong);
+  border-left-width: 4px;
+  border-radius: 10px;
+  font-size: 15px;
+}
+
+.callout.is-warn {
+  border-color: var(--amber-line);
+  border-left-color: var(--amber);
+  background: var(--amber-soft);
+}
+
+.callout.is-danger {
+  border-color: var(--red-line);
+  border-left-color: var(--red);
+  background: var(--red-soft);
+}
+
+.callout.is-good {
+  background: var(--good-soft);
+}
+
+/* Overdue countdowns use the real urgent red, not the brand accent. */
+.countdown.is-overdue,
+.countdown.is-overdue .countdown-unit {
+  color: var(--red);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* A focus ring that's visible on every surface. */
+:focus-visible {
+  outline: 3px solid var(--accent-deep);
+  outline-offset: 2px;
+}
+
+/* ---------- task form: three questions first ---------- */
+
+.form-chips {
+  margin-top: 10px;
+}
+
+.form-gap {
+  margin-top: 10px;
+}
+
+.suggest-box {
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr);
+  gap: 10px;
+  margin-top: 22px;
+  padding: 12px 14px;
+  border: 1px solid var(--line-strong);
+  border-radius: 10px;
+  background: var(--surface);
+}
+
+.suggest-box > svg {
+  margin-top: 2px;
+  color: var(--text-2);
+}
+
+.suggest-title {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.suggest-body,
+.suggest-note {
+  color: var(--text-2);
+  font-size: 14px;
+}
+
+.suggest-note {
+  margin-top: 4px;
+}
+
+.disclosure {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 48px;
+  margin-top: 14px;
+  padding: 0 4px;
+  color: var(--text);
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.disclosure svg {
+  transition: transform 0.2s var(--ease);
+}
+
+.disclosure[aria-expanded='true'] svg {
+  transform: rotate(180deg);
+}
+
+.chip {
+  min-height: 44px;
+}
+
+.button-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.privacy-list {
+  margin: 0;
+  padding: 4px 16px;
+  background: var(--surface);
+}
+
+.privacy-list > div {
+  padding: 12px 0;
+}
+
+.privacy-list > div + div {
+  border-top: 1px solid var(--line);
+}
+
+.privacy-list dt {
+  font-weight: 600;
+}
+
+.privacy-list dd {
+  margin: 2px 0 0;
+  color: var(--text-2);
+  font-size: 15px;
+}
+
+.callout p + p {
+  margin-top: 8px;
+}
+
+/* ---------- Assistant: problems become actions ---------- */
+
+.bubble.is-issue {
+  max-width: 100%;
+  width: 100%;
+}
+
+.issue h3 {
+  font-size: 19px;
+  font-weight: 650;
+}
+
+.issue > p {
+  margin-top: 4px;
+}
+
+.issue .callout {
+  margin-top: 12px;
+}
+
+.callout-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--red);
+  font-weight: 700;
+}
+
+.callout.is-danger.is-active {
+  box-shadow: 0 0 0 2px var(--red);
+}
+
+.issue-block {
+  margin-top: 16px;
+}
+
+.issue-block h4 {
+  margin-bottom: 6px;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-2);
+}
+
+.issue-block ol,
+.issue-block ul {
+  margin: 0;
+  padding-left: 20px;
+}
+
+.issue-block li + li {
+  margin-top: 4px;
+}
+
+.facts {
+  list-style: none;
+  padding-left: 0 !important;
+}
+
+.facts li {
+  padding: 6px 10px;
+  border-left: 3px solid var(--line-strong);
+  background: var(--surface-2);
+  border-radius: 0 8px 8px 0;
+}
+
+.facts li.is-warn {
+  border-left-color: var(--amber);
+}
+
+.fact-label {
+  font-weight: 650;
+}
+
+.facts .text-button {
+  min-height: 0;
+  display: inline;
+  text-align: left;
+}
+
+.issue-q {
+  margin: 0 0 12px;
+  padding: 0;
+  border: 0;
+}
+
+.issue-q legend {
+  margin-bottom: 6px;
+  font-weight: 600;
+}
+
+.issue-reply {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  margin-top: 8px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  font-size: 15px;
+}
+
+.issue-reply svg {
+  flex: none;
+  margin-top: 3px;
+}
+
+.issue-reply.is-emergency {
+  background: var(--red-soft);
+  color: var(--red);
+  font-weight: 600;
+}
+
+.issue-reply.is-pro {
+  background: var(--amber-soft);
+}
+
+.issue-reply.is-ok {
+  background: var(--good-soft);
+}
+
+.call-pro {
+  margin-top: 8px;
+  font-size: 15px;
+}
+
+.call-pro.is-active {
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: var(--amber-soft);
+  font-weight: 600;
+}
+
+.issue-actions {
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line-strong);
+}
+
+.issue-actions-title {
+  margin-bottom: 8px;
+  font-weight: 650;
+}
+
+.issue-action-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 8px;
+}
+
+.issue-action {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 8px 12px;
+  border: 1px solid var(--line-strong);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 15px;
+  font-weight: 600;
+  text-align: left;
+}
+
+.issue-action svg {
+  flex: none;
+  color: var(--text-2);
+}
+
+.issue-action.is-done {
+  background: var(--good-soft);
+}
+
+.issue-action.is-done svg {
+  color: var(--green);
+}
+
+.issue-resolve {
+  margin-top: 12px;
+}
+
+.issue-done {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--green);
+  font-weight: 600;
+}
+
+@media (hover: hover) {
+  .issue-action:hover {
+    background: var(--surface-2);
+  }
+}
+
+/* Problem answers are working instructions: the plain system face, a size that reads in a hurry. */
+.bubble.is-issue {
+  font-family: var(--font);
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+.bubble.is-issue .chip,
+.bubble.is-issue button {
+  font-family: var(--font);
+  font-size: 15px;
+}
+
+/* Home's recent activity has no icon column. */
+.home .feed-row {
+  grid-template-columns: minmax(0, 1fr) auto;
+  min-height: 44px;
+  padding: 10px 18px;
+  font-size: 15px;
+}
+
+.side-link,
+.quick-add {
+  min-height: 44px;
+}
+
+.module-head {
+  align-items: center;
+}
+
+.module-aside.is-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
 }

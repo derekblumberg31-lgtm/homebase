@@ -5,6 +5,7 @@ import { RECORD_KIND_LABEL } from '../records/labels';
 import { recommendationsFor } from '../home/insights';
 import { annualCost, compareUrgency, countdownText, withInfo } from '../tasks/taskMath';
 import { GUIDES, type Guide, type GuideAction } from './guides';
+import { findSubject, issueContextFor, type IssueContext } from './issueContext';
 
 export interface Answer {
   title?: string;
@@ -14,6 +15,8 @@ export interface Answer {
   actions?: GuideAction[];
   /** Where the answer came from, shown under it. */
   source: string;
+  /** A homeowner problem: the guide, plus what this home already knows about it. */
+  issue?: { guide: Guide; question: string; context: IssueContext };
 }
 
 /**
@@ -201,14 +204,30 @@ export const LocalGuideProvider: AssistantProvider = {
   async answer(question, data, now) {
     const fromData = answerFromData(question, data, now);
     if (fromData) return fromData;
-    const ranked = GUIDES.map((g) => ({ g, score: scoreGuide(g, question) })).filter((r) => r.score > 0).sort((a, b) => b.score - a.score);
-    const best = ranked[0]?.g;
+    const { system, item } = findSubject(question, data);
+    const ranked = GUIDES.map((g) => ({ g, score: scoreGuide(g, question) + (system && g.systemKinds?.includes(system.kind) ? 3 : 0) }))
+      .filter((r) => r.score > 0)
+      .sort((a, b) => b.score - a.score);
+    // "Problem with my dishwasher": a named appliance or system with no other clue gets the appliance guide.
+    const best = ranked[0]?.g ?? (system || item ? GUIDES.find((g) => g.id === (system ? kindGuide(system.kind) : 'appliance')) : undefined);
     if (!best) {
       return {
-        text: 'I don’t have a guide for that yet. I can help with leaks, heating and hot water, power and breakers, alarms, frozen pipes, clogs, air conditioning, keys and lockouts, and planning projects. I can also look things up in your home: what to maintain this month, a warranty or manual, when a job was last done, or how old a system is.',
+        text: 'I don’t have a guide for that yet. I can help with leaks, no heat or hot water, power outages, alarms, broken appliances, frozen pipes, clogs, air conditioning, keys and lockouts, and planning projects. I can also look things up in your home: what to maintain this month, a warranty or manual, when a job was last done, or how old a system is.',
         source: 'Homebase guides',
       };
     }
-    return { title: best.title, text: best.summary, steps: best.steps, safety: best.safety, actions: best.actions, source: `Guide: ${best.title}` };
+    return {
+      title: best.title,
+      text: best.summary,
+      steps: best.steps,
+      safety: best.safety,
+      actions: best.actions,
+      source: `Guide: ${best.title} · general guidance, not a diagnosis`,
+      issue: { guide: best, question, context: issueContextFor(best, question, data, now) },
+    };
   },
 };
+
+function kindGuide(kind: string): string {
+  return kind === 'heating' ? 'no-heat' : kind === 'cooling' ? 'ac-not-cooling' : kind === 'water-heater' ? 'no-hot-water' : kind === 'electrical' ? 'power-out' : kind === 'plumbing' ? 'water-leak' : 'appliance';
+}
