@@ -4,6 +4,7 @@ import { PRODUCT } from '../../app/areas';
 import { useData, useStore } from '../../data/DataProvider';
 import { uid } from '../../data/ids';
 import type { Member, ThemePreference } from '../../data/types';
+import { formatRelativeTime } from '../../lib/dates';
 import { FormGroup, Segmented, Switch, TextField } from '../../ui/controls';
 import { Group, Page, Row, Section } from '../../ui/layout';
 import { Confirm, Sheet, useToast } from '../../ui/overlays';
@@ -110,9 +111,19 @@ export function SettingsPage() {
         </Group>
       </Section>
 
-      <Section title="Data and privacy" foot="Everything you add stays on this device. A backup file is the only copy that leaves it, and only when you save one.">
+      <Section title="Data and privacy" foot="Everything you add stays on this device. A backup file is the only copy that leaves it, and only when you save one. If this device is lost or its browser data is cleared, a backup is how you get your home back.">
         <Group>
-          <Row title="Save a backup" tone="action" onClick={() => downloadBackup(store).then(() => toast('Backup saved'))} />
+          <Row title="Last backup" value={data.settings.lastBackupAt ? formatRelativeTime(data.settings.lastBackupAt) : 'Never'} />
+          <Row
+            title="Save a backup"
+            tone="action"
+            onClick={() =>
+              downloadBackup(store).then(
+                () => toast('Backup saved'),
+                () => toast('The backup couldn’t be saved. Try again.', { tone: 'error' }),
+              )
+            }
+          />
           <ImportButton label="Restore from a backup" />
           <Row title="Erase everything on this device" tone="danger" onClick={() => setEraseOpen(true)} />
         </Group>

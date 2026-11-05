@@ -1,5 +1,6 @@
-import { defaultSettings, emptyData, type HomeData } from './store';
-import type { StoredFile } from './types';
+import { isRealDate } from '../lib/dates';
+import { defaultSettings, type HomeData } from './store';
+import type { Household, Property, Settings, StoredFile } from './types';
 
 /**
  * One backup file holds everything Homebase keeps on this device. Files (attachments) are embedded
@@ -74,28 +75,118 @@ export function readBackup(text: string): Record<string, unknown> | null {
   }
 }
 
-export function parseHomebaseBackup(parsed: Record<string, unknown>): { data: HomeData; files: StoredFile[] } {
-  const raw = parsed.data as Partial<HomeData>;
-  const base = emptyData();
-  const data: HomeData = {
-    household: raw.household,
-    property: raw.property,
-    settings: { ...defaultSettings(), ...raw.settings, id: 'settings' },
-    rooms: Array.isArray(raw.rooms) ? raw.rooms : base.rooms,
-    systems: Array.isArray(raw.systems) ? raw.systems : base.systems,
-    items: Array.isArray(raw.items) ? raw.items : base.items,
-    tasks: Array.isArray(raw.tasks) ? raw.tasks : base.tasks,
-    serviceEvents: Array.isArray(raw.serviceEvents) ? raw.serviceEvents : base.serviceEvents,
-    records: Array.isArray(raw.records) ? raw.records : base.records,
-    activity: Array.isArray(raw.activity) ? raw.activity : base.activity,
+type Row = Record<string, unknown>;
+
+const hasStrings = (row: Row, keys: string[]) => keys.every((key) => typeof row[key] === 'string');
+const optionalStrings = (row: Row, keys: string[]) => keys.every((key) => row[key] == null || typeof row[key] === 'string');
+const optionalDate = (value: unknown) => value == null || value === '' || isRealDate(value);
+
+function validKey(key: unknown): boolean {
+  return isRecord(key) && Array.isArray(key.captures) && key.captures.every(isRecord) && isRecord(key.flags);
+}
+
+/** What the screens rely on in each collection. A row that breaks these would crash them later. */
+const ROW_CHECKS = {
+  rooms: (row: Row) => hasStrings(row, ['name']) && optionalStrings(row, ['floor', 'notes']),
+  systems: (row: Row) => hasStrings(row, ['name', 'kind']) && optionalStrings(row, ['brand', 'model', 'notes', 'roomId']),
+  items: (row: Row) =>
+    hasStrings(row, ['name', 'kind']) &&
+    optionalStrings(row, ['brand', 'model', 'serial', 'notes', 'roomId']) &&
+    optionalDate(row.purchaseDate) &&
+    Array.isArray(row.photos) &&
+    (row.kind === 'key' || row.key != null ? validKey(row.key) : true),
+  tasks: (row: Row) =>
+    hasStrings(row, ['name', 'kind']) &&
+    optionalStrings(row, ['location', 'typeId', 'notes', 'roomId', 'itemId']) &&
+    isRealDate(row.lastDoneAt) &&
+    typeof row.intervalDays === 'number' &&
+    row.intervalDays > 0 &&
+    typeof row.recurring === 'boolean' &&
+    (row.status === 'open' || row.status === 'done') &&
+    optionalDate(row.dueDate),
+  serviceEvents: (row: Row) => hasStrings(row, ['title']) && isRealDate(row.date) && optionalStrings(row, ['provider', 'notes', 'taskId', 'itemId']),
+  records: (row: Row) =>
+    hasStrings(row, ['title', 'kind']) &&
+    optionalStrings(row, ['vendor', 'phone', 'email', 'notes', 'itemId', 'taskId']) &&
+    optionalDate(row.date) &&
+    optionalDate(row.expiresAt) &&
+    Array.isArray(row.fileIds),
+  activity: (row: Row) => hasStrings(row, ['at', 'text', 'kind']) && optionalStrings(row, ['href']),
+};
+
+function damaged(part: string) {
+  return new Error(`This backup is damaged (a problem in its ${part}), so nothing was changed.`);
+}
+
+function validRows<C extends keyof typeof ROW_CHECKS>(raw: Row, collection: C, label: string): HomeData[C] {
+  const rows = raw[collection];
+  if (rows === undefined) return [];
+  const check = ROW_CHECKS[collection];
+  const valid = Array.isArray(rows) && rows.every((row) => isRecord(row) && typeof row.id === 'string' && row.id !== '' && check(row));
+  if (!valid) throw damaged(label);
+  return rows as HomeData[C];
+}
+
+function validHousehold(value: unknown): Household | undefined {
+  if (value == null) return undefined;
+  const valid = isRecord(value) && hasStrings(value, ['name']) && Array.isArray(value.members) && value.members.every((m) => isRecord(m) && hasStrings(m, ['id', 'name']));
+  if (!valid) throw damaged('household');
+  return { ...(value as unknown as Household), id: 'household' };
+}
+
+function validProperty(value: unknown): Property | undefined {
+  if (value == null) return undefined;
+  if (!isRecord(value) || !hasStrings(value, ['nickname']) || !optionalStrings(value, ['address', 'notes'])) throw damaged('home details');
+  return { ...(value as unknown as Property), id: 'property' };
+}
+
+/** Keeps what's usable from the saved settings; a bad value falls back to the default. */
+function validSettings(value: unknown): Settings {
+  const defaults = defaultSettings();
+  if (!isRecord(value)) return defaults;
+  return {
+    id: 'settings',
+    theme: value.theme === 'light' || value.theme === 'dark' ? value.theme : defaults.theme,
+    reminders: value.reminders === true,
+    dismissedTips: Array.isArray(value.dismissedTips) ? value.dismissedTips.filter((tip): tip is string => typeof tip === 'string') : [],
+    tipStates: isRecord(value.tipStates) ? (value.tipStates as Settings['tipStates']) : {},
+    keyDebug: value.keyDebug === true,
+    lastBackupAt: typeof value.lastBackupAt === 'string' ? value.lastBackupAt : undefined,
   };
-  const files = (Array.isArray(parsed.files) ? (parsed.files as BackupFile[]) : []).map((file) => ({
-    id: file.id,
-    name: file.name,
-    type: file.type,
-    size: file.size,
-    createdAt: file.createdAt,
-    data: base64ToBlob(file.base64, file.type),
-  }));
-  return { data, files };
+}
+
+function validFiles(value: unknown): StoredFile[] {
+  if (value === undefined) return [];
+  if (!Array.isArray(value)) throw damaged('files');
+  return value.map((file) => {
+    if (!isRecord(file) || !hasStrings(file, ['id', 'name', 'type', 'createdAt', 'base64']) || typeof file.size !== 'number') throw damaged('files');
+    const { id, name, type, size, createdAt, base64 } = file as unknown as BackupFile;
+    try {
+      return { id, name, type, size, createdAt, data: base64ToBlob(base64, type) };
+    } catch {
+      throw damaged('files');
+    }
+  });
+}
+
+/** Checks the whole backup before anything on the device changes. Throws a message to show if it's unusable. */
+export function parseHomebaseBackup(parsed: Record<string, unknown>): { data: HomeData; files: StoredFile[] } {
+  if (typeof parsed.version === 'number' && parsed.version > BACKUP_VERSION) {
+    throw new Error('This backup came from a newer version of Homebase, so nothing was changed. Update Homebase, then try again.');
+  }
+  if (!isRecord(parsed.data)) throw damaged('data');
+  const raw = parsed.data;
+  const data: HomeData = {
+    household: validHousehold(raw.household),
+    property: validProperty(raw.property),
+    settings: validSettings(raw.settings),
+    rooms: validRows(raw, 'rooms', 'rooms'),
+    systems: validRows(raw, 'systems', 'home systems'),
+    items: validRows(raw, 'items', 'items'),
+    tasks: validRows(raw, 'tasks', 'tasks'),
+    serviceEvents: validRows(raw, 'serviceEvents', 'service history'),
+    records: validRows(raw, 'records', 'records'),
+    activity: validRows(raw, 'activity', 'activity'),
+  };
+  return { data, files: validFiles(parsed.files) };
 }

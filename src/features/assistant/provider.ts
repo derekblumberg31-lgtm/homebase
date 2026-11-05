@@ -196,19 +196,32 @@ function answerFromData(question: string, data: HomeData, now: number): Answer |
   return null;
 }
 
+const guideAnswer = (guide: Guide): Answer => ({
+  title: guide.title,
+  text: guide.summary,
+  steps: guide.steps,
+  safety: guide.safety,
+  actions: guide.actions,
+  source: `Guide: ${guide.title}`,
+});
+
 export const LocalGuideProvider: AssistantProvider = {
   name: 'Homebase guides',
   async answer(question, data, now) {
+    // Danger comes first: "I smell gas, what do I do next?" must not turn into a list of due tasks.
+    const q = question.toLowerCase();
+    const urgent = GUIDES.find((guide) => guide.urgentWhen?.test(q));
+    if (urgent) return guideAnswer(urgent);
     const fromData = answerFromData(question, data, now);
     if (fromData) return fromData;
     const ranked = GUIDES.map((g) => ({ g, score: scoreGuide(g, question) })).filter((r) => r.score > 0).sort((a, b) => b.score - a.score);
     const best = ranked[0]?.g;
     if (!best) {
       return {
-        text: 'I don’t have a guide for that yet. I can help with leaks, heating and hot water, power and breakers, alarms, frozen pipes, clogs, air conditioning, keys and lockouts, and planning projects. I can also look things up in your home: what to maintain this month, a warranty or manual, when a job was last done, or how old a system is.',
+        text: 'I don’t have a guide for that yet. If anyone could be in danger, leave the home and call 911. I can help with gas smells, fire and smoke, leaks, heating and hot water, power and breakers, alarms, frozen pipes, clogs, air conditioning, keys and lockouts, and planning projects. I can also look things up in your home: what to maintain this month, a warranty or manual, when a job was last done, or how old a system is.',
         source: 'Homebase guides',
       };
     }
-    return { title: best.title, text: best.summary, steps: best.steps, safety: best.safety, actions: best.actions, source: `Guide: ${best.title}` };
+    return guideAnswer(best);
   },
 };

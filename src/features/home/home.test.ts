@@ -6,7 +6,7 @@ import { firstNameOf } from '../../session/session';
 import { LocalGuideProvider } from '../assistant/provider';
 import { taskCategory, taskMetaParts } from '../tasks/meta';
 import { getTaskInfo } from '../tasks/taskMath';
-import { healthCheckFor, seasonalTipsFor, snapshotFor, timelineFor } from './insights';
+import { alertsFor, healthCheckFor, seasonalTipsFor, snapshotFor, timelineFor } from './insights';
 import { completeTip, hideTip, snoozeTip } from './tipActions';
 
 // A fixed autumn evening, so the seasonal list and dates are predictable.
@@ -46,6 +46,24 @@ async function freshStore() {
   await store.load();
   return store;
 }
+
+describe('backup nudge', () => {
+  const household = (onboardedAt: string) => ({ id: 'household' as const, name: 'Home', members: [], createdAt: onboardedAt, onboardedAt });
+  const hasNudge = (data: HomeData) => alertsFor(data, NOW).some((alert) => alert.id === 'backup');
+  const settings = (lastBackupAt?: string) => ({ ...emptyData().settings, lastBackupAt });
+
+  it('waits until there is data and a month has passed', () => {
+    expect(hasNudge(home({ household: household('2026-01-01T00:00:00.000Z') }))).toBe(false);
+    expect(hasNudge(home({ household: household('2026-10-20T00:00:00.000Z'), tasks: [task({})] }))).toBe(false);
+    expect(hasNudge(home({ household: household('2026-01-01T00:00:00.000Z'), tasks: [task({})] }))).toBe(true);
+  });
+
+  it('goes quiet after a backup and returns a month later', () => {
+    const base = { household: household('2026-01-01T00:00:00.000Z'), records: [record({})] };
+    expect(hasNudge(home({ ...base, settings: settings('2026-10-20T00:00:00.000Z') }))).toBe(false);
+    expect(hasNudge(home({ ...base, settings: settings('2026-08-01T00:00:00.000Z') }))).toBe(true);
+  });
+});
 
 describe('greeting name', () => {
   it('uses a cleaned-up first name and falls back when there is none', () => {

@@ -29,4 +29,5 @@ export async function downloadBackup(store: HomeStore) {
   anchor.click();
   anchor.remove();
   window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+  await store.updateSettings({ lastBackupAt: new Date().toISOString() });
 }

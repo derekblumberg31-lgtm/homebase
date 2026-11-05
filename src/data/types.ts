@@ -270,6 +270,8 @@ export interface Settings {
   tipStates?: Record<string, TipState>;
   /** KeyFinder's debug view. */
   keyDebug: boolean;
+  /** When a backup file was last saved from this device. */
+  lastBackupAt?: Timestamp;
 }
 
 export const STORES = [

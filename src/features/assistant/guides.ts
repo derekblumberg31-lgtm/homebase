@@ -9,6 +9,8 @@ export interface GuideAction {
   /** In-app route, or a task to plan. */
   href?: string;
   task?: { name: string; kind: 'maintenance' | 'repair' | 'project' };
+  /** A phone number to call. */
+  tel?: string;
 }
 
 export interface Guide {
@@ -21,13 +23,68 @@ export interface Guide {
   /** When to stop and call a professional or emergency services. */
   safety?: string;
   actions?: GuideAction[];
+  /**
+   * Questions that describe danger happening now, tested on the lowercased question. A match answers
+   * with this guide before anything else is looked up, so a stray word like "next" can't bury it.
+   * Err towards matching: an extra safety answer costs little, a missed one can cost a lot.
+   */
+  urgentWhen?: RegExp;
 }
 
+const CALL_911: GuideAction = { label: 'Call 911', tel: '911' };
+
+// Order matters: the first guide whose urgentWhen matches answers, so the most dangerous come first.
 export const GUIDES: Guide[] = [
+  {
+    id: 'gas-smell',
+    title: 'If you smell gas',
+    keywords: [],
+    urgentWhen: /\bsmell.*\bgas\b|\bgas (line |pipe |meter |stove |oven )?(is |might be |may be |could be )?(smell|odou?r|leak|hiss)|\b(leak|leaking) (of )?gas\b|rotten eggs?/,
+    summary: 'Leave now. Don’t stop to look for the source.',
+    steps: [
+      'Get everyone out of the home, including pets.',
+      'On your way out, don’t touch light switches, appliances or anything that could spark, and don’t light anything.',
+      'Once you’re well away from the home, call your gas company’s emergency line or 911.',
+      'Stay out until the gas company or fire department says it’s safe to go back.',
+    ],
+    safety: 'Don’t use your phone until you’re outside and away from the home.',
+    actions: [CALL_911],
+  },
+  {
+    id: 'co-alarm',
+    title: 'If your carbon monoxide alarm is going off',
+    keywords: [],
+    urgentWhen: /^(?!.*chirp).*((carbon monoxide|\bco\b).*(going off|goes off|gone off|sounding|beeping|ringing|won[’']?t stop|leak|poison)|(going off|sounding).*(carbon monoxide|\bco\b))/,
+    summary: 'Treat it as real. Get everyone outside into fresh air now.',
+    steps: [
+      'Get everyone out of the home, including pets. Don’t stop to open windows or look for the source.',
+      'Once you’re outside, call 911.',
+      'Stay out until responders say it’s safe to go back.',
+      'A single chirp every minute or so is different: that usually means a low battery.',
+    ],
+    safety: 'Headache, dizziness or nausea can be signs of carbon monoxide poisoning. Tell the 911 operator if anyone has them.',
+    actions: [CALL_911],
+  },
+  {
+    id: 'fire-smoke',
+    title: 'Fire, smoke or sparks',
+    keywords: [],
+    urgentWhen: /\bfire\b(?! (extinguisher|insurance|pit|blanket|door|escape))|\bflames\b|burning smell|smell(s|ing)?( of| like)? (something )?(burning|smoke)|smoke (is )?(coming|pouring|filling)|smoke from|smoke (alarm|detector).*(going off|goes off|sounding|won[’']?t stop)|\bspark(s|ing)?\b(?! plug)/,
+    summary: 'If you can see or smell smoke or fire, get out first and call 911 from outside.',
+    steps: [
+      'Get everyone out and close doors behind you if you can. Don’t go back for belongings.',
+      'Call 911 once you’re outside.',
+      'Sparks or a burning smell from an outlet or appliance, with no flames or smoke: switch that circuit off at the breaker if you can reach it safely, then call an electrician.',
+      'If you’re certain an alarm was set off by cooking, clear the air and check there’s no smoke anywhere else.',
+    ],
+    safety: 'Never use water on an electrical or grease fire. If in doubt, leave and call 911.',
+    actions: [CALL_911],
+  },
   {
     id: 'water-leak',
     title: 'Water leak',
     keywords: ['leak', 'leaking', 'water', 'drip', 'dripping', 'flood', 'flooding', 'burst', 'pipe', 'ceiling', 'wet'],
+    urgentWhen: /^(?!.*(insur|warrant)).*(\b(pouring|gushing|burst)\b|\bflood(ed|ing)?\b|\bwater\b.*\b(ceiling|outlets?|panel|electric\w*)\b|\bceiling\b.*\b(water|leak\w*|sag\w*)\b)/,
     summary: 'Stop the water first, then deal with the damage.',
     steps: [
       'Turn off the nearest valve: under the sink or toilet, or behind the appliance.',

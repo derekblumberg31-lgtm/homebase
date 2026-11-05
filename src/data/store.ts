@@ -187,22 +187,24 @@ export class HomeStore {
 
   /** Remove everything on this device. */
   async eraseAll() {
-    for (const store of ['meta', 'rooms', 'systems', 'items', 'tasks', 'serviceEvents', 'records', 'files', 'activity'] as const) {
-      await this.db.clear(store);
-    }
+    await this.db.replaceAll({});
     this.data = emptyData();
     this.emit();
   }
 
-  /** Replace everything with a restored backup in one pass. */
+  /** Replace everything with a restored backup. If any of it can't be saved, nothing changes. */
   async replaceAll(data: HomeData, files: StoredFile[]) {
-    await this.eraseAll();
-    const meta = [data.household, data.property, data.settings].filter(Boolean) as (Household | Property | Settings)[];
-    await this.db.putMany('meta', meta);
-    for (const collection of ['rooms', 'systems', 'items', 'tasks', 'serviceEvents', 'records', 'activity'] as const) {
-      await this.db.putMany(collection, data[collection] as unknown[]);
-    }
-    await this.db.putMany('files', files);
+    await this.db.replaceAll({
+      meta: [data.household, data.property, data.settings].filter(Boolean),
+      rooms: data.rooms,
+      systems: data.systems,
+      items: data.items,
+      tasks: data.tasks,
+      serviceEvents: data.serviceEvents,
+      records: data.records,
+      activity: data.activity,
+      files,
+    });
     await this.load();
   }
 }

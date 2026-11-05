@@ -40,12 +40,18 @@ export function openDatabase(name = DB_NAME): Promise<IDBDatabase> {
 function run<T>(db: IDBDatabase, store: StoreName, mode: IDBTransactionMode, fn: (s: IDBObjectStore) => IDBRequest | void): Promise<T> {
   return new Promise<T>((resolve, reject) => {
     const tx = db.transaction(store, mode);
-    const request = fn(tx.objectStore(store));
     let result: T;
-    if (request) request.onsuccess = () => (result = request.result as T);
     tx.oncomplete = () => resolve(result);
     tx.onerror = () => reject(tx.error);
     tx.onabort = () => reject(tx.error ?? new Error('The change was not saved.'));
+    try {
+      const request = fn(tx.objectStore(store));
+      if (request) request.onsuccess = () => (result = request.result as T);
+    } catch (error) {
+      // A row IndexedDB refuses throws here; without the abort, the rows before it would still commit.
+      tx.abort();
+      reject(error);
+    }
   });
 }
 
@@ -56,6 +62,8 @@ export interface Database {
   putMany<T>(store: StoreName, values: T[]): Promise<void>;
   remove(store: StoreName, id: string): Promise<void>;
   clear(store: StoreName): Promise<void>;
+  /** Empties every store and writes these rows in one transaction: it all lands, or nothing changes. */
+  replaceAll(rows: Partial<Record<StoreName, unknown[]>>): Promise<void>;
 }
 
 export async function createDatabase(name = DB_NAME): Promise<Database> {
@@ -70,5 +78,22 @@ export async function createDatabase(name = DB_NAME): Promise<Database> {
       }),
     remove: (store, id) => run<void>(db, store, 'readwrite', (s) => s.delete(id)),
     clear: (store) => run<void>(db, store, 'readwrite', (s) => s.clear()),
+    replaceAll: (rows) =>
+      new Promise<void>((resolve, reject) => {
+        const tx = db.transaction([...STORES], 'readwrite');
+        tx.oncomplete = () => resolve();
+        tx.onerror = () => reject(tx.error);
+        tx.onabort = () => reject(tx.error ?? new Error('The change was not saved.'));
+        try {
+          for (const name of STORES) {
+            const store = tx.objectStore(name);
+            store.clear();
+            for (const row of rows[name] ?? []) store.put(row);
+          }
+        } catch (error) {
+          tx.abort();
+          reject(error);
+        }
+      }),
   };
 }
