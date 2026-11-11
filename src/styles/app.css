@@ -884,6 +884,23 @@ button.row:focus-visible {
   margin: 20px auto 0;
 }
 
+/* A long label on a button wraps inside the column instead of widening the page (Welcome at 375px). */
+.button .row-main,
+.button .row-title {
+  min-width: 0;
+  white-space: normal;
+  text-align: center;
+}
+
+/* Welcome's "How to add it" is a stand-alone control, so it gets a full-size target. */
+.onboarding .text-button {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  margin-left: -12px;
+  padding: 0 12px;
+}
+
 /* Home's starter block: five tick rows; the "when" choices open under a ticked row only. */
 .starter h2 {
   font-size: 19px;
