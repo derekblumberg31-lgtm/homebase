@@ -40,13 +40,13 @@ export function ConfirmWithBackup({ verb, ...props }: Props) {
 
   function run() {
     if (busy || saved !== null) return;
-    setStatus('');
+    setStatus('Saving a backup…');
     void save({
       quiet: true,
       onDone: (result) => {
         if (result.outcome === 'shared' || result.outcome === 'downloaded') setSaved(result.outcome === 'shared' ? 'saved' : 'downloaded');
         const text = backupStatus(result, verb);
-        if (text !== null) setStatus(text);
+        setStatus(text ?? '');
       },
     });
   }
@@ -59,9 +59,11 @@ export function ConfirmWithBackup({ verb, ...props }: Props) {
         focusConfirmWhen={saved}
         status={status}
         extra={{
-          label: busy ? 'Saving…' : saved === 'saved' ? 'Backup saved' : saved === 'downloaded' ? 'Backup downloaded' : 'Save a backup first',
+          // The label stays an action; the status line above says what happened.
+          label: 'Save a backup first',
           onClick: run,
           disabled: busy || saved !== null,
+          busy,
         }}
       />
       {dialog}

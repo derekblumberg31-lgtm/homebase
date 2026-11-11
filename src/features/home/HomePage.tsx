@@ -83,7 +83,7 @@ export function HomePage() {
 
   // The install row is outside the alert slot, so focus goes to Ask Homebase once it is gone.
   function focusAsk() {
-    setTimeout(() => document.querySelector<HTMLElement>('#home-ask a')?.focus(), 0);
+    requestAnimationFrame(() => document.querySelector<HTMLElement>('#home-ask a')?.focus());
   }
 
   const installCopy = useMemo(() => installRowCopy(deviceLabel(readDeviceEnv())), []);
@@ -107,7 +107,7 @@ export function HomePage() {
     >
       <section className="home-next" aria-label="Next jobs" ref={nextRef} tabIndex={-1}>
         {next.length === 0 ? (
-          <StarterJobs onAdded={() => setTimeout(() => nextRef.current?.focus(), 0)} />
+          <StarterJobs onAdded={() => requestAnimationFrame(() => nextRef.current?.focus())} />
         ) : (
           <>
             <Group>
@@ -150,7 +150,7 @@ export function HomePage() {
         <Group>
           <Row title="Home Health Check" sub={health.done === health.total ? 'Your home’s record is complete' : `${health.score}% set up · ${health.total - health.done} steps left`} to="/home/health" />
           <Row title="This season" sub={season ? `${season} seasonal ${season === 1 ? 'job' : 'jobs'} to plan` : 'All planned or done'} to="/home/season" />
-          <Row title="Coming up" sub={comingUpSub(comingUp, ending)} to="/home/coming-up" />
+          <Row title="Coming up" sub={comingUpSub(comingUp, ending)} to="/home/coming-up" wrap />
           <Row title="Activity" sub={data.activity.length ? 'What’s been done and added' : 'Fills in as you mark jobs done'} to="/home/activity" />
         </Group>
       </div>

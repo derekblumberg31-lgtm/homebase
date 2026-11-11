@@ -1,4 +1,4 @@
-import { useId, type InputHTMLAttributes, type ReactNode, type SelectHTMLAttributes, type TextareaHTMLAttributes } from 'react';
+import { useId, useRef, type KeyboardEvent, type InputHTMLAttributes, type ReactNode, type SelectHTMLAttributes, type TextareaHTMLAttributes } from 'react';
 import { Search, X } from './Icons';
 
 interface FieldShellProps {
@@ -120,6 +120,7 @@ export function Chips<T extends string | number>({
   label,
   describedBy,
   invalid,
+  single = false,
 }: {
   value: T | undefined;
   options: { value: T; label: string }[];
@@ -129,14 +130,33 @@ export function Chips<T extends string | number>({
   describedBy?: string;
   /** The group has an error: it is where focus goes on a failed save. */
   invalid?: boolean;
+  /** One answer to one question: radios with arrow keys, as the starter block's choices are. Otherwise toggle buttons. */
+  single?: boolean;
 }) {
+  const group = useRef<HTMLDivElement>(null);
+  const selected = options.findIndex((o) => o.value === value);
+  function onKeyDown(event: KeyboardEvent) {
+    if (!single) return;
+    const step = event.key === 'ArrowRight' || event.key === 'ArrowDown' ? 1 : event.key === 'ArrowLeft' || event.key === 'ArrowUp' ? -1 : 0;
+    if (!step) return;
+    event.preventDefault();
+    const index = (Math.max(selected, 0) + (selected < 0 && step > 0 ? 0 : step) + options.length) % options.length;
+    onChange(options[index].value);
+    group.current?.querySelectorAll<HTMLElement>('[role="radio"]')[index]?.focus();
+  }
   return (
-    <div className="chips" role="group" aria-label={label} aria-describedby={describedBy} data-invalid={invalid || undefined}>
-      {options.map((option) => (
-        <button key={String(option.value)} type="button" className="chip" aria-pressed={value === option.value} onClick={() => onChange(option.value)}>
-          {option.label}
-        </button>
-      ))}
+    <div ref={group} className="chips" role={single ? 'radiogroup' : 'group'} aria-label={label} aria-describedby={describedBy} data-invalid={invalid || undefined} onKeyDown={onKeyDown}>
+      {options.map((option, i) =>
+        single ? (
+          <button key={String(option.value)} type="button" role="radio" className="chip" aria-checked={value === option.value} tabIndex={i === Math.max(selected, 0) ? 0 : -1} onClick={() => onChange(option.value)}>
+            {option.label}
+          </button>
+        ) : (
+          <button key={String(option.value)} type="button" className="chip" aria-pressed={value === option.value} onClick={() => onChange(option.value)}>
+            {option.label}
+          </button>
+        ),
+      )}
     </div>
   );
 }

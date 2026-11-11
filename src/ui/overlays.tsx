@@ -8,6 +8,7 @@ import {
   useState,
   type PointerEvent,
   type ReactNode,
+  type Ref,
 } from 'react';
 import { createPortal } from 'react-dom';
 import { project, rubberband, velocityTracker } from './physics';
@@ -165,7 +166,7 @@ interface ConfirmProps {
   onCancel: () => void;
   destructive?: boolean;
   /** An optional third action, stacked above the confirm (for example "Save a backup first"). */
-  extra?: { label: string; onClick: () => void; disabled?: boolean };
+  extra?: { label: string; onClick: () => void; disabled?: boolean; busy?: boolean };
   /** When this becomes truthy, focus moves to the confirm button (after "Save a backup first" finishes). */
   focusConfirmWhen?: unknown;
   /** A status line under the message, announced politely. Only shown with `extra`. */
@@ -206,7 +207,7 @@ export function Confirm({ title, message, confirmLabel, onConfirm, onCancel, des
         </div>
         {extra ? (
           <div className="alert-actions is-stacked">
-            <button type="button" onClick={() => !extra.disabled && extra.onClick()} aria-disabled={extra.disabled || undefined}>
+            <button type="button" onClick={() => !extra.disabled && extra.onClick()} aria-disabled={extra.disabled || undefined} aria-busy={extra.busy || undefined}>
               {extra.label}
             </button>
             {confirm}
@@ -231,14 +232,76 @@ interface ToastMessage {
   text: string;
   tone: 'info' | 'error';
   action?: { label: string; run: () => void };
+  /** Playing its exit; removed when that ends. */
+  leaving?: boolean;
 }
 
 type ShowToast = (text: string, options?: { tone?: 'info' | 'error'; action?: { label: string; run: () => void } }) => void;
 
 const ToastContext = createContext<ShowToast>(() => {});
 
+/** How long a toast takes to leave. Under reduced motion it leaves at once. */
+export const TOAST_EXIT_MS = 150;
+
+const prefersReducedMotion = () => typeof window !== 'undefined' && Boolean(window.matchMedia?.('(prefers-reduced-motion: reduce)').matches);
+
+interface Announcement {
+  id: number;
+  text: string;
+}
+
+/**
+ * The stack is a "Notifications" landmark that is always in the page, with two live regions that are
+ * always present too. Text added to a region that already exists is announced reliably; a live region
+ * that arrives together with its text often is not. The toasts themselves stay plain, so nothing is read twice.
+ */
+export function ToastStack({
+  toasts,
+  polite,
+  assertive,
+  paused,
+  setPaused,
+  onDismiss,
+  stackRef,
+}: {
+  toasts: ToastMessage[];
+  polite: Announcement | null;
+  assertive: Announcement | null;
+  paused: boolean;
+  setPaused: (paused: boolean) => void;
+  onDismiss: (id: number) => void;
+  stackRef?: Ref<HTMLDivElement>;
+}) {
+  return (
+    <div
+      ref={stackRef}
+      className="toast-stack"
+      role="region"
+      aria-label="Notifications"
+      onPointerEnter={(event) => event.pointerType === 'mouse' && setPaused(true)}
+      onPointerLeave={(event) => event.pointerType === 'mouse' && setPaused(false)}
+      onFocus={() => setPaused(true)}
+      onBlur={(event) => {
+        if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setPaused(false);
+      }}
+    >
+      <div className="visually-hidden" aria-live="polite" aria-atomic="true">
+        {polite && <p key={polite.id}>{polite.text}</p>}
+      </div>
+      <div className="visually-hidden" aria-live="assertive" aria-atomic="true">
+        {assertive && <p key={assertive.id}>{assertive.text}</p>}
+      </div>
+      {toasts.map((toast) => (
+        <ToastView key={toast.id} toast={toast} paused={paused} onDismiss={onDismiss} />
+      ))}
+    </div>
+  );
+}
+
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
+  const [polite, setPolite] = useState<Announcement | null>(null);
+  const [assertive, setAssertive] = useState<Announcement | null>(null);
   const [paused, setPaused] = useState(false);
   const counter = useRef(0);
   const stackRef = useRef<HTMLDivElement>(null);
@@ -247,13 +310,22 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     counter.current += 1;
     const toast: ToastMessage = { id: counter.current, text, tone: options.tone ?? 'info', action: options.action };
     setToasts((list) => pushToast(list, toast));
+    // An Undo is part of what is announced, so a screen reader user knows there is one to reach.
+    const spoken = { id: toast.id, text: toast.action ? `${text}. ${toast.action.label} is available.` : text };
+    if (toast.tone === 'error') setAssertive(spoken);
+    else setPolite(spoken);
   }, []);
 
   const dismiss = useCallback((id: number) => {
     // A toast that had focus is leaving: hand focus to the page rather than dropping it on <body>.
     const stack = stackRef.current;
     if (stack?.contains(document.activeElement)) document.getElementById('main')?.focus();
-    setToasts((list) => removeToast(list, id));
+    if (prefersReducedMotion()) {
+      setToasts((list) => removeToast(list, id));
+      return;
+    }
+    setToasts((list) => list.map((t) => (t.id === id ? { ...t, leaving: true } : t)));
+    window.setTimeout(() => setToasts((list) => removeToast(list, id)), TOAST_EXIT_MS);
   }, []);
 
   // Nothing left to hover or focus, so nothing is paused.
@@ -264,40 +336,27 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   return (
     <ToastContext.Provider value={show}>
       {children}
-      {toasts.length > 0 && (
-        <div
-          ref={stackRef}
-          className="toast-stack"
-          onPointerEnter={(event) => event.pointerType === 'mouse' && setPaused(true)}
-          onPointerLeave={(event) => event.pointerType === 'mouse' && setPaused(false)}
-          onFocus={() => setPaused(true)}
-          onBlur={(event) => {
-            if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setPaused(false);
-          }}
-        >
-          {toasts.map((toast) => (
-            <ToastView key={toast.id} toast={toast} paused={paused} onDismiss={dismiss} />
-          ))}
-        </div>
-      )}
+      <ToastStack toasts={toasts} polite={polite} assertive={assertive} paused={paused} setPaused={setPaused} onDismiss={dismiss} stackRef={stackRef} />
     </ToastContext.Provider>
   );
 }
 
 /** One toast with its own timer: it pauses while the stack is hovered or focused, then restarts in full. */
 function ToastView({ toast, paused, onDismiss }: { toast: ToastMessage; paused: boolean; onDismiss: (id: number) => void }) {
+  const leaving = toast.leaving;
   useEffect(() => {
-    if (paused) return;
+    if (paused || leaving) return;
     const timer = window.setTimeout(() => onDismiss(toast.id), toast.action || toast.tone === 'error' ? 6000 : 3200);
     return () => window.clearTimeout(timer);
-  }, [paused, toast.id, toast.action, onDismiss]);
+  }, [paused, leaving, toast.id, toast.action, toast.tone, onDismiss]);
 
   return (
-    <div className={`toast ${toast.action ? 'has-action' : ''}`} role={toast.tone === 'error' ? 'alert' : 'status'}>
+    <div className={`toast ${toast.action ? 'has-action' : ''} ${leaving ? 'is-leaving' : ''}`}>
       <span>{toast.text}</span>
       {toast.action && (
         <button
           type="button"
+          tabIndex={leaving ? -1 : undefined}
           onClick={() => {
             toast.action?.run();
             onDismiss(toast.id);

@@ -159,7 +159,7 @@ export function TaskForm({ initial, draft, onClose, onSave }: TaskFormProps) {
         </button>
       }
       trailing={
-        <button type="button" className="sheet-action is-strong" onClick={save} disabled={saver.saving} aria-busy={saver.saving || undefined}>
+        <button type="button" className="sheet-action is-strong" onClick={save} aria-disabled={saver.saving || undefined} aria-busy={saver.saving || undefined}>
           {initial ? 'Save' : 'Add'}
         </button>
       }
@@ -233,6 +233,7 @@ export function TaskForm({ initial, draft, onClose, onSave }: TaskFormProps) {
                 </span>
                 <Chips<LastDoneChoice | 'date'>
                   label="Last done"
+                  single
                   value={lastDone}
                   onChange={pickLastDone}
                   options={[...LAST_DONE_OPTIONS, { value: 'date', label: 'Pick a date' }]}

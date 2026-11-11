@@ -2,8 +2,8 @@
 name: Homebase
 description: A calm homeowner assistant set in the grouped lists of an iPhone, with one muted brick accent.
 colors:
-  brick: "#a8503c"
-  brick-pressed: "#8f4232"
+  brick: "#9e4f34"
+  brick-pressed: "#86402a"
   brick-wash: "#f5e8e3"
   done-green: "#3d7a55"
   due-amber: "#8a5200"
@@ -200,7 +200,7 @@ Two signatures carry over from the apps it replaces:
 - From Replacely: the largest-unit countdown ("3 months", "Today", "4 days over") and the day strip, shown on the single most urgent task.
 - From KeyFinder: the rimmed code tag that names a key's blank, and the cut-profile chart.
 
-Density is low and the voice is soft. Everything is the system font, sentence case, with hierarchy from size and a narrow range of weights. There is one accent, a muted brick (#a8503c light, #df8f7b dark), spent on the next thing to tap and on anything overdue. Neutrals are warm. Dark mode is warm charcoal (#171716), never black.
+Density is low and the voice is soft. Everything is the system font, sentence case, with hierarchy from size and a narrow range of weights. There is one accent, a muted brick (#9e4f34 light, #d6957c dark), spent on the next thing to tap and on anything overdue. Neutrals are warm. Dark mode is warm charcoal (#171716), never black.
 
 **Key characteristics:**
 - Grouped-list structure everywhere: 12px corners, 0.5px separators inset 16px.
@@ -215,7 +215,7 @@ The palette is calm and Claude-like, defined in `src/styles/app.css` (`:root` an
 - **Light:** ivory ground #faf9f5, white surfaces, soft ink #29271f.
 - **Dark:** charcoal #262624, surfaces #2f2e2b, warm off-white ink #f3f1ea.
 - **Primary buttons are ink** (`--button-bg`), not colour.
-- **Terracotta** (#b5603f / #d08a6e) is muted and kept for things that need you: overdue text, the high-priority dot, the small Add circle.
+- **Terracotta** (#9e4f34 / #d6957c) is muted and kept for things that need you: overdue text, the high-priority dot, the small Add circle.
 - **Badges are neutral grey.**
 
 The rules:

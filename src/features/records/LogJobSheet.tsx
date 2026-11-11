@@ -43,7 +43,7 @@ export function LogJobSheet({ itemId = '', onClose, onLogged }: { itemId?: strin
         </button>
       }
       trailing={
-        <button type="button" className="sheet-action is-strong" onClick={() => void submit()} disabled={save.saving} aria-busy={save.saving || undefined}>
+        <button type="button" className="sheet-action is-strong" onClick={() => void submit()} aria-disabled={save.saving || undefined} aria-busy={save.saving || undefined}>
           Save
         </button>
       }

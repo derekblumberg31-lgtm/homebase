@@ -121,7 +121,7 @@ export function Onboarding() {
               </FormGroup>
             </div>
             <div className="button-stack">
-              <button type="submit" className="button is-primary is-block" disabled={saver.saving} aria-busy={saver.saving || undefined}>
+              <button type="submit" className="button is-primary is-block" aria-disabled={saver.saving || undefined} aria-busy={saver.saving || undefined}>
                 Continue
               </button>
             </div>
@@ -159,7 +159,7 @@ export function Onboarding() {
               />
             </div>
             <div className="button-stack">
-              <button type="submit" className="button is-primary is-block" disabled={saver.saving} aria-busy={saver.saving || undefined}>
+              <button type="submit" className="button is-primary is-block" aria-disabled={saver.saving || undefined} aria-busy={saver.saving || undefined}>
                 Go to Home
               </button>
             </div>

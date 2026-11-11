@@ -101,6 +101,8 @@ html {
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
   background: var(--bg);
+  /* A control focused from the keyboard scrolls clear of the fixed tab bar, not under it. */
+  scroll-padding-bottom: calc(88px + env(safe-area-inset-bottom));
 }
 
 body {
@@ -309,6 +311,10 @@ img {
   .tab-bar,
   .mobile-only {
     display: none;
+  }
+
+  html {
+    scroll-padding-bottom: 24px;
   }
 
   /* The right-hand lane stays clear for the Ask Homebase launcher, so it never covers content. */
@@ -1030,6 +1036,16 @@ button.row:focus-visible {
     grid-template-columns: repeat(4, auto);
     justify-content: start;
   }
+
+  /* Under a left-aligned list, the footer lines up with it. */
+  .starter-footer .button {
+    margin-left: 0;
+  }
+
+  .starter-links {
+    justify-content: flex-start;
+    margin-left: -12px;
+  }
 }
 
 .empty.is-inline {
@@ -1455,7 +1471,7 @@ select.input {
 
 .alert-actions button {
   min-height: 46px;
-  color: var(--accent);
+  color: var(--text);
   font-size: 17px;
 }
 
@@ -1545,6 +1561,19 @@ select.input {
   }
 }
 
+/* Leaves the way it arrived: down and out. Reduced motion removes the toast without this. */
+.toast.is-leaving {
+  animation: toast-out 0.15s var(--ease) forwards;
+  pointer-events: none;
+}
+
+@keyframes toast-out {
+  to {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+}
+
 @media (min-width: 768px) {
   .toast-stack {
     right: auto;
@@ -1628,9 +1657,10 @@ select.input {
     linear-gradient(-45deg, transparent 42%, var(--ink-x) 42%, var(--ink-x) 58%, transparent 58%);
 }
 
+/* Overdue days are filled in ink: brick is for overdue text, never a fill. */
 .day-strip i.is-late {
   box-shadow: none;
-  background: var(--red);
+  background: var(--text-2);
 }
 
 .day-strip i.is-today {
@@ -1642,8 +1672,8 @@ select.input {
 }
 
 .day-strip i.is-today.is-late {
-  box-shadow: inset 0 0 0 1.5px var(--red);
-  background-image: linear-gradient(90deg, var(--red) min(var(--day-fill, 0%), 75%), transparent min(var(--day-fill, 0%), 75%));
+  box-shadow: inset 0 0 0 1.5px var(--text-2);
+  background-image: linear-gradient(90deg, var(--text-2) min(var(--day-fill, 0%), 75%), transparent min(var(--day-fill, 0%), 75%));
 }
 
 .swipe-shell {
@@ -4179,4 +4209,11 @@ a.feed-row:focus-visible {
   font-family: var(--font-display);
   font-size: 17px;
   font-weight: 500;
+}
+
+/* A save in progress keeps focus on its button, so it is aria-disabled rather than disabled. */
+.sheet-action[aria-disabled='true'],
+.button[aria-disabled='true'] {
+  cursor: default;
+  opacity: 0.45;
 }

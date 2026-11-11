@@ -17,6 +17,9 @@ import { ImportButton } from './ImportButton';
 import { InstallSheet } from './InstallSheet';
 import { useSaveBackup } from './useSaveBackup';
 
+// Remembered between visits, so the Storage row is already filled in when Settings opens again.
+let lastPersisted: boolean | 'unsupported' | null = null;
+
 export function SettingsPage() {
   const store = useStore();
   const data = useData();
@@ -26,11 +29,14 @@ export function SettingsPage() {
   const [eraseOpen, setEraseOpen] = useState(false);
   const [installOpen, setInstallOpen] = useState(false);
   const { save: saveBackup, busy: savingBackup, dialog: backupDialog } = useSaveBackup();
-  const [persisted, setPersisted] = useState<boolean | 'unsupported' | null>(null);
+  const [persisted, setPersisted] = useState<boolean | 'unsupported' | null>(lastPersisted);
   const tabMatters = useMemo(() => installMatters(readDeviceEnv()), []);
   useEffect(() => {
     let live = true;
-    void storagePersisted().then((value) => live && setPersisted(value));
+    void storagePersisted().then((value) => {
+      lastPersisted = value;
+      if (live) setPersisted(value);
+    });
     return () => {
       live = false;
     };
@@ -135,7 +141,8 @@ export function SettingsPage() {
 
       <Section title="Data and privacy" foot="Everything you add stays on this device. A backup file is the only copy that leaves it, and only when you save one. If this device is lost or its browser data is cleared, a backup is how you get your home back.">
         <Group>
-          {persisted !== null && <Row title="Storage" sub={storageCopy(storageStatus({ persisted, installMatters: tabMatters }), deviceLabel(readDeviceEnv()))} wrap />}
+          {/* The row is always there; its line fills in when the browser answers, so nothing below jumps. */}
+          <Row title="Storage" sub={persisted === null ? '\u00a0' : storageCopy(storageStatus({ persisted, installMatters: tabMatters }), deviceLabel(readDeviceEnv()))} wrap />
           <Row title="Last backup" value={data.settings.lastBackupAt ? formatRelativeTime(data.settings.lastBackupAt) : 'Never'} />
           <Row title={savingBackup ? 'Saving…' : 'Save a backup'} tone="action" onClick={() => void saveBackup()} />
           <ImportButton label="Restore from a backup" />
@@ -194,7 +201,13 @@ export function SettingsPage() {
           destructive
           onCancel={() => setEraseOpen(false)}
           onConfirm={async () => {
-            await store.eraseAll();
+            try {
+              await store.eraseAll();
+            } catch {
+              // The dialog stays up so the choice is still there to make again.
+              toast('That wasn’t erased. Try again.', { tone: 'error' });
+              return;
+            }
             clearHomeFlags();
             setEraseOpen(false);
             navigate('/welcome', { replace: true });
@@ -222,7 +235,7 @@ function MemberSheet({ member, onClose, onSave, onRemove }: { member: Member | n
         <button
           type="button"
           className="sheet-action is-strong"
-          disabled={saver.saving}
+          aria-disabled={saver.saving || undefined}
           aria-busy={saver.saving || undefined}
           onClick={() => {
             if (!name.trim()) return setError('Add a name.');
@@ -242,7 +255,7 @@ function MemberSheet({ member, onClose, onSave, onRemove }: { member: Member | n
       </FormGroup>
       {member && !isOwner && (
         <div className="button-stack">
-          <button type="button" className="button is-danger-quiet" disabled={saver.saving} aria-busy={(saver.saving && action === 'remove') || undefined} onClick={() => { setAction('remove'); void saver.run(() => Promise.resolve(onRemove(member))); }}>
+          <button type="button" className="button is-danger-quiet" aria-disabled={saver.saving || undefined} aria-busy={(saver.saving && action === 'remove') || undefined} onClick={() => { setAction('remove'); void saver.run(() => Promise.resolve(onRemove(member))); }}>
             Remove from household
           </button>
         </div>

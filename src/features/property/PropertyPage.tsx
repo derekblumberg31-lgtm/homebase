@@ -104,7 +104,7 @@ export function RoomSheet({ room, onClose, onSave }: { room?: Room; onClose: () 
       title={room ? 'Edit room' : 'Add a room'}
       onClose={onClose}
       leading={<button type="button" className="sheet-action" onClick={onClose}>Cancel</button>}
-      trailing={<button type="button" className="sheet-action is-strong" onClick={save} disabled={saver.saving} aria-busy={saver.saving || undefined}>Save</button>}
+      trailing={<button type="button" className="sheet-action is-strong" onClick={save} aria-disabled={saver.saving || undefined} aria-busy={saver.saving || undefined}>Save</button>}
     >
       <SaveFailed show={saver.failed} />
       <FormGroup>
