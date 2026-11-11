@@ -81,7 +81,7 @@ describe('deviceFlags when localStorage is missing', () => {
 });
 
 describe('clearHomeFlags', () => {
-  it('removes every Home flag and leaves other keys alone', () => {
+  it('removes the Home flags, keeps the browser-level install flag, and leaves other keys alone', () => {
     vi.stubGlobal('localStorage', memoryStorage());
     writeFlag('homebase:starter-dismissed', '1');
     writeFlag('homebase:install-row-dismissed', '2026-01-01T00:00:00Z');
@@ -90,7 +90,7 @@ describe('clearHomeFlags', () => {
     localStorage.setItem('homebase:theme', 'dark');
     clearHomeFlags();
     expect(readFlag('homebase:starter-dismissed')).toBeNull();
-    expect(readFlag('homebase:install-row-dismissed')).toBeNull();
+    expect(readFlag('homebase:install-row-dismissed')).toBe('2026-01-01T00:00:00Z');
     expect(readFlag('homebase:backup-row-dismissed')).toBeNull();
     expect(readStringList('homebase:alert-rows-dismissed')).toEqual([]);
     expect(localStorage.getItem('homebase:theme')).toBe('dark');

@@ -62,12 +62,14 @@ export function addToStringList(key: DeviceFlagKey, id: string): string[] {
 
 const HOME_FLAGS: DeviceFlagKey[] = [
   'homebase:starter-dismissed',
-  'homebase:install-row-dismissed',
   'homebase:backup-row-dismissed',
   'homebase:alert-rows-dismissed',
 ];
 
-/** After "Erase everything": the Home dismissals described a home that no longer exists, so a fresh start shows its rows again. */
+/**
+ * After "Erase everything": the Home dismissals described a home that no longer exists, so a fresh
+ * start shows its rows again. The install row is about this browser, not the home, so it stays hidden.
+ */
 export function clearHomeFlags(): void {
   for (const key of HOME_FLAGS) clearFlag(key);
 }

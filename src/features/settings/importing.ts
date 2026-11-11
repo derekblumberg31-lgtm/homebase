@@ -15,7 +15,12 @@ export async function prepareRestore(store: HomeStore, file: File): Promise<Rest
   const { data, files } = parseHomebaseBackup(parsed);
   return {
     text: `This backup has ${data.tasks.length} tasks, ${data.items.length} items and ${data.records.length} records. Restoring it replaces everything on this device.`,
-    apply: () => store.replaceAll(data, files),
+    apply: async () => {
+      await store.replaceAll(data, files);
+      // The file in hand is a backup, so its home is not "only on this device". The restore already worked: a failed date write is not an error.
+      const exportedAt = parsed.exportedAt;
+      if (typeof exportedAt === 'string' && Number.isFinite(Date.parse(exportedAt))) await store.updateSettings({ lastBackupAt: exportedAt }).catch(() => {});
+    },
   };
 }
 
