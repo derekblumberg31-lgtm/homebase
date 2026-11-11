@@ -32,8 +32,17 @@ export function planDraftFor(tip: Pick<SeasonalTip, 'taskName' | 'category'>, no
 
 export async function planTip(store: HomeStore, tip: SeasonalTip, task: Task) {
   await store.put('tasks', task);
-  await store.log('task-added', `Planned: ${task.name}`, `/tasks/${task.id}`);
-  await setTipState(store, tip.id, { state: 'planned', taskId: task.id, at: new Date().toISOString() });
+  // The task is saved. Failing now would leave the form open, and a second Add would save it again.
+  try {
+    await store.log('task-added', `Planned: ${task.name}`, `/tasks/${task.id}`);
+  } catch {
+    // The activity entry is optional.
+  }
+  try {
+    await setTipState(store, tip.id, { state: 'planned', taskId: task.id, at: new Date().toISOString() });
+  } catch {
+    // A tip with a similar open task is hidden anyway.
+  }
 }
 
 export async function snoozeTip(store: HomeStore, tip: SeasonalTip) {
@@ -54,7 +63,13 @@ export async function completeTip(store: HomeStore, tip: SeasonalTip) {
   const undoState = undoTo(store, tip.id);
   const event: ServiceEvent = { id: uid(), date: toDateInput(), title: tip.taskName, notes: 'Seasonal recommendation', createdAt: new Date().toISOString() };
   const recorded = await recordServiceEvent(store, event, '/records/service-history');
-  await setTipState(store, tip.id, { state: 'done', at: new Date().toISOString() });
+  try {
+    await setTipState(store, tip.id, { state: 'done', at: new Date().toISOString() });
+  } catch (error) {
+    // Take the event back so the retry logs one visit, not two.
+    await recorded.undo().catch(() => {});
+    throw error;
+  }
   return async () => {
     await recorded.undo();
     await undoState();

@@ -7,7 +7,7 @@ import { LocalGuideProvider } from '../assistant/provider';
 import { taskCategory, taskMetaParts } from '../tasks/meta';
 import { getTaskInfo } from '../tasks/taskMath';
 import { alertsFor, arrangeAttention, attentionFor, endingSoon, healthCheckFor, homeStatusFor, seasonalTipsFor, snapshotFor, timelineFor } from './insights';
-import { completeTip, hideTip, planDraftFor, snoozeTip } from './tipActions';
+import { completeTip, hideTip, planDraftFor, planTip, snoozeTip } from './tipActions';
 import { buildStarterTask, chooseStarter, starterJobsFor, starterSubLine, toggleStarter } from './starter';
 import { addStarterJobs } from './starterActions';
 import { completeTask } from '../tasks/actions';
@@ -92,6 +92,37 @@ describe('task metadata', () => {
   it('describes where, when, cost and season in one line', () => {
     const t = task({ category: 'air', cost: 24, seasonal: true });
     expect(taskMetaParts(t, getTaskInfo(t, NOW))).toEqual(['Hallway', 'Air', 'Due Oct 30', '$24', 'Seasonal']);
+  });
+});
+
+describe('seasonal recommendations, when a later write fails', () => {
+  it('planTip resolves once the task is saved, so a retry cannot save it twice', async () => {
+    const store = await freshStore();
+    const [tip] = seasonalTipsFor(store.getSnapshot(), NOW).tips;
+    store.log = () => Promise.reject(new Error('no'));
+    store.updateSettings = () => Promise.reject(new Error('no'));
+    await expect(planTip(store, tip, task({ id: 'p1', name: tip.taskName }))).resolves.toBeUndefined();
+    expect(store.getSnapshot().tasks.map((t) => t.id)).toEqual(['p1']);
+  });
+
+  it('planTip throws and saves nothing when the task cannot be saved', async () => {
+    const store = await freshStore();
+    const [tip] = seasonalTipsFor(store.getSnapshot(), NOW).tips;
+    store.put = () => Promise.reject(new Error('no'));
+    await expect(planTip(store, tip, task({ id: 'p1' }))).rejects.toThrow();
+    expect(store.getSnapshot().tasks).toHaveLength(0);
+  });
+
+  it('completeTip takes its event back when the tip state cannot be saved, so a retry logs one', async () => {
+    const store = await freshStore();
+    const [tip] = seasonalTipsFor(store.getSnapshot(), NOW).tips;
+    const real = store.updateSettings.bind(store);
+    store.updateSettings = () => Promise.reject(new Error('no'));
+    await expect(completeTip(store, tip)).rejects.toThrow();
+    expect(store.getSnapshot().serviceEvents).toHaveLength(0);
+    store.updateSettings = real;
+    await completeTip(store, tip);
+    expect(store.getSnapshot().serviceEvents).toHaveLength(1);
   });
 });
 

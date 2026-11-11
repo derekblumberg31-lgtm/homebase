@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useData } from '../../data/DataProvider';
 import { uid } from '../../data/ids';
 import type { Task, TaskCategory, TaskKind, TaskPriority } from '../../data/types';
@@ -66,7 +66,16 @@ export function TaskForm({ initial, draft, onClose, onSave }: TaskFormProps) {
   const [category, setCategory] = useState<TaskCategory>(initial ? taskCategory(initial) : draft?.category ?? 'other');
   const [seasonal, setSeasonal] = useState(initial?.seasonal ?? draft?.seasonal ?? false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [failedSaves, setFailedSaves] = useState(0);
   const saver = useSave();
+
+  // A failed Add can leave its message below the fold: bring the first problem into view and put focus on it.
+  useEffect(() => {
+    if (failedSaves === 0) return;
+    const target = document.querySelector<HTMLElement>('[aria-invalid="true"], .chips[data-invalid] .chip');
+    target?.focus();
+    target?.scrollIntoView({ block: 'center' });
+  }, [failedSaves]);
 
   const recurring = kind === 'maintenance';
   const belongings = useMemo(() => items.filter((item) => item.kind !== 'key'), [items]);
@@ -109,7 +118,10 @@ export function TaskForm({ initial, draft, onClose, onSave }: TaskFormProps) {
     if (!recurring && dueDate && !isRealDate(dueDate)) next.dueDate = 'Pick a real date.';
     if (price !== undefined && !(price >= 0)) next.cost = 'Use a positive amount, or leave it empty.';
     setErrors(next);
-    if (Object.keys(next).length) return;
+    if (Object.keys(next).length) {
+      setFailedSaves((n) => n + 1);
+      return;
+    }
 
     const room = rooms.find((r) => r.id === roomId);
     const now = new Date().toISOString();
@@ -216,14 +228,29 @@ export function TaskForm({ initial, draft, onClose, onSave }: TaskFormProps) {
           {recurring ? (
             <>
               <div className="field">
-                <span className="field-label">Last done</span>
-                <Chips<LastDoneChoice | 'date'> label="Last done" value={lastDone} onChange={pickLastDone} options={[...LAST_DONE_OPTIONS, { value: 'date', label: 'Pick a date' }]} />
+                <span className="field-label" aria-hidden="true">
+                  Last done
+                </span>
+                <Chips<LastDoneChoice | 'date'>
+                  label="Last done"
+                  value={lastDone}
+                  onChange={pickLastDone}
+                  options={[...LAST_DONE_OPTIONS, { value: 'date', label: 'Pick a date' }]}
+                  describedBy={lastDone === 'date' ? undefined : 'last-done-note'}
+                  invalid={lastDone !== 'date' && Boolean(errors.lastDoneAt)}
+                />
                 {lastDone === 'date' ? (
                   <TextField label="Date" type="date" value={lastDoneDate} max={toDateInput()} onChange={(e) => setLastDoneDate(e.target.value)} error={errors.lastDoneAt} />
                 ) : errors.lastDoneAt ? (
-                  <p className="field-error">{errors.lastDoneAt}</p>
+                  <p className="field-error" id="last-done-note" role="alert">
+                    {errors.lastDoneAt}
+                  </p>
                 ) : (
-                  lastDoneHint && <p className="field-hint">{lastDoneHint}</p>
+                  lastDoneHint && (
+                    <p className="field-hint" id="last-done-note">
+                      {lastDoneHint}
+                    </p>
+                  )
                 )}
               </div>
               <div className="field">

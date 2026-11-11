@@ -272,7 +272,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
 function ToastView({ toast, paused, onDismiss }: { toast: ToastMessage; paused: boolean; onDismiss: (id: number) => void }) {
   useEffect(() => {
     if (paused) return;
-    const timer = window.setTimeout(() => onDismiss(toast.id), toast.action ? 6000 : 3200);
+    const timer = window.setTimeout(() => onDismiss(toast.id), toast.action || toast.tone === 'error' ? 6000 : 3200);
     return () => window.clearTimeout(timer);
   }, [paused, toast.id, toast.action, onDismiss]);
 

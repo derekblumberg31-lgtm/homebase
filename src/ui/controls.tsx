@@ -20,7 +20,7 @@ function FieldShell({ label, optional, error, hint, children }: FieldShellProps)
       </label>
       {children(id, error || hint ? noteId : undefined)}
       {error ? (
-        <p className="field-error" id={noteId}>
+        <p className="field-error" id={noteId} role="alert">
           {error}
         </p>
       ) : hint ? (
@@ -113,9 +113,25 @@ export function Switch({ checked, onChange, label }: { checked: boolean; onChang
   return <button type="button" role="switch" className="switch" aria-checked={checked} aria-label={label} onClick={() => onChange(!checked)} />;
 }
 
-export function Chips<T extends string | number>({ value, options, onChange, label }: { value: T | undefined; options: { value: T; label: string }[]; onChange: (value: T) => void; label: string }) {
+export function Chips<T extends string | number>({
+  value,
+  options,
+  onChange,
+  label,
+  describedBy,
+  invalid,
+}: {
+  value: T | undefined;
+  options: { value: T; label: string }[];
+  onChange: (value: T) => void;
+  label: string;
+  /** The id of the hint or error that goes with the group. */
+  describedBy?: string;
+  /** The group has an error: it is where focus goes on a failed save. */
+  invalid?: boolean;
+}) {
   return (
-    <div className="chips" role="group" aria-label={label}>
+    <div className="chips" role="group" aria-label={label} aria-describedby={describedBy} data-invalid={invalid || undefined}>
       {options.map((option) => (
         <button key={String(option.value)} type="button" className="chip" aria-pressed={value === option.value} onClick={() => onChange(option.value)}>
           {option.label}
