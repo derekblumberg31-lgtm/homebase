@@ -899,7 +899,7 @@ button.row:focus-visible {
 }
 
 .starter-label {
-  margin: 16px 0 8px;
+  margin: 12px 0 8px;
   padding: 0 4px;
 }
 
@@ -930,7 +930,7 @@ button.row:focus-visible {
   gap: 12px;
   width: 100%;
   min-height: 56px;
-  padding: 8px 16px;
+  padding: 6px 16px;
   color: inherit;
   text-align: left;
   background: var(--surface);
@@ -984,7 +984,7 @@ button.row:focus-visible {
 }
 
 .starter-footer {
-  margin-top: 16px;
+  margin-top: 12px;
 }
 
 .starter-footer .button {
@@ -996,7 +996,7 @@ button.row:focus-visible {
   display: flex;
   justify-content: center;
   gap: 8px;
-  margin-top: 8px;
+  margin-top: 4px;
 }
 
 .starter-links .text-button {
@@ -3634,6 +3634,10 @@ a.feed-row:focus-visible {
   flex: 1;
   min-width: 0;
   width: auto;
+}
+
+.home-alert-row .row-title.is-wrap {
+  line-height: 1.3;
 }
 
 .home-alert-icon {

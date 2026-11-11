@@ -66,7 +66,7 @@ export function HomeAlertRow({
     <>
       <span className="row-lead">{lead}</span>
       <span className="row-main">
-        <span className="row-title">{title}</span>
+        <span className="row-title is-wrap">{title}</span>
         <span className="row-sub">{detail}</span>
       </span>
       <ChevronRight size={17} className="row-chevron" />
