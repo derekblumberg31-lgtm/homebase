@@ -1,18 +1,22 @@
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { QuickAdd } from '../../app/QuickAdd';
 import { useData, useNow } from '../../data/DataProvider';
 import { useSession } from '../../session/session';
 import { useToast } from '../../ui/overlays';
-import { MessageCircle } from '../../ui/Icons';
+import { backupNudge, dataSafetyRow } from '../../lib/dataSafety';
+import { MessageCircle, Share } from '../../ui/Icons';
 import { Group, Page, Row } from '../../ui/layout';
+import { InstallSheet } from '../settings/InstallSheet';
+import { useSaveBackup } from '../settings/useSaveBackup';
 import { TaskRow } from '../tasks/components';
 import { compareUrgency, withInfo } from '../tasks/taskMath';
 import { useTaskActions } from '../tasks/useTaskActions';
-import { HomeAlertRows, HomeStatusLine } from './HomeSections';
+import { HomeAlertRow, HomeAlertRows, HomeStatusLine } from './HomeSections';
 import { arrangeAttention, attentionFor, healthCheckFor, homeStatusFor, seasonalTipsFor, timelineFor, type AttentionItem } from './insights';
 import { StarterJobs } from './StarterJobs';
 import { useAlertDismissals } from './useAlertDismissals';
+import { useInstallRow } from './useInstallRow';
 
 const UP_NEXT = 3;
 
@@ -33,6 +37,9 @@ export function HomePage() {
   const { complete } = useTaskActions();
   const toast = useToast();
   const { dismissed, backupDismissedAt, dismiss, restore, dismissBackup, restoreBackup } = useAlertDismissals();
+  const install = useInstallRow();
+  const [installOpen, setInstallOpen] = useState(false);
+  const { save: saveBackup, dialog: backupDialog } = useSaveBackup();
   // After a row is hidden, focus moves to the row now in its place, else the one before it, else Ask Homebase.
   const focusRow = useRef<number | null>(null);
   const alertsRef = useRef<HTMLDivElement>(null);
@@ -40,7 +47,12 @@ export function HomePage() {
   const nextRef = useRef<HTMLElement>(null);
 
   const next = useMemo(() => withInfo(data.tasks.filter((t) => t.status === 'open'), now).sort(compareUrgency).slice(0, UP_NEXT), [data.tasks, now]);
-  const attention = useMemo(() => attentionFor(data, now, backupDismissedAt), [data, now, backupDismissedAt]);
+  // One data-safety row at a time: while the install row shows (a Safari tab), the backup row waits.
+  const safetyRow = dataSafetyRow({ installMatters: install.matters, installDismissed: install.dismissed, nudge: backupNudge(data, now, backupDismissedAt) });
+  const attention = useMemo(() => {
+    const items = attentionFor(data, now, backupDismissedAt);
+    return safetyRow === 'install' ? items.filter((item) => item.kind !== 'backup') : items;
+  }, [data, now, backupDismissedAt, safetyRow]);
   const { rows, more, counted } = useMemo(() => arrangeAttention(attention, dismissed), [attention, dismissed]);
   const status = useMemo(() => homeStatusFor(data, now, counted), [data, now, counted]);
   const health = useMemo(() => healthCheckFor(data, now), [data, now]);
@@ -67,6 +79,17 @@ export function HomePage() {
       dismiss(key);
       toast(`Hidden from Home. It’s still in ${item.kind === 'warranty' ? 'Coming up' : 'Systems'}.`, { action: { label: 'Undo', run: () => restore(key) } });
     }
+  }
+
+  // The install row is outside the alert slot, so focus goes to Ask Homebase once it is gone.
+  function focusAsk() {
+    setTimeout(() => document.querySelector<HTMLElement>('#home-ask a')?.focus(), 0);
+  }
+
+  function hideInstall() {
+    install.dismiss();
+    toast('Hidden from Home. The steps are still in Settings.', { action: { label: 'Undo', run: install.restore } });
+    focusAsk();
   }
 
   return (
@@ -98,8 +121,22 @@ export function HomePage() {
       </section>
 
       <div ref={alertsRef}>
-        <HomeAlertRows rows={rows} more={more} onDismiss={hide} />
+        <HomeAlertRows rows={rows} more={more} onDismiss={hide} onBackup={() => void saveBackup()} />
       </div>
+
+      {safetyRow === 'install' && (
+        <section className="section home-alerts" aria-label="This device">
+          <ul className="group">
+            <HomeAlertRow
+              title="Add Homebase to your Home Screen"
+              detail="So Safari doesn’t clear your data"
+              lead={<Share size={18} />}
+              onSelect={() => setInstallOpen(true)}
+              onDismiss={hideInstall}
+            />
+          </ul>
+        </section>
+      )}
 
       <div className="section" id="home-ask">
         <Group>
@@ -115,6 +152,17 @@ export function HomePage() {
           <Row title="Activity" sub={data.activity.length ? 'What’s been done and added' : 'Fills in as you mark jobs done'} to="/home/activity" />
         </Group>
       </div>
+      {installOpen && (
+        <InstallSheet
+          onClose={() => {
+            // The steps have been seen, and Settings keeps the way back.
+            setInstallOpen(false);
+            install.dismiss();
+            focusAsk();
+          }}
+        />
+      )}
+      {backupDialog}
     </Page>
   );
 }

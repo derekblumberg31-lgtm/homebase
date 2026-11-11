@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react';
 import { useStore } from '../../data/DataProvider';
-import { Confirm, useToast } from '../../ui/overlays';
+import { useToast } from '../../ui/overlays';
+import { ConfirmWithBackup } from './ConfirmWithBackup';
 import { prepareRestore, type RestoreSummary } from './importing';
 
 /** Pick a Homebase backup, see what restoring it will do, then confirm. */
@@ -58,7 +59,8 @@ export function ImportButton({ label = 'Restore from a backup', className = 'row
         }}
       />
       {pending && (
-        <Confirm
+        <ConfirmWithBackup
+          verb="restore"
           title="Restore this backup?"
           message={pending.text}
           confirmLabel="Restore"

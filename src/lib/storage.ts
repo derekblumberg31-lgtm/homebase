@@ -11,3 +11,14 @@ export async function requestPersistentStorage(): Promise<boolean> {
     return false;
   }
 }
+
+/** Reads whether the browser has promised to keep the data. Read-only: it never prompts. */
+export async function storagePersisted(): Promise<boolean | 'unsupported'> {
+  try {
+    const storage = navigator.storage;
+    if (!storage?.persisted) return 'unsupported';
+    return await storage.persisted();
+  } catch {
+    return 'unsupported';
+  }
+}

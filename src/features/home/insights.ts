@@ -1,6 +1,7 @@
 import type { HomeData } from '../../data/store';
 import type { HomeRecord, TaskCategory, TipState } from '../../data/types';
-import { addDays, DAY_MS, formatCurrency, formatDateShort, formatRelativeTime, toDateInput } from '../../lib/dates';
+import { addDays, formatCurrency, formatDateShort, formatRelativeTime, toDateInput } from '../../lib/dates';
+import { backupNudge } from '../../lib/dataSafety';
 import { SYSTEM_LIFESPAN } from '../property/labels';
 import { EXPIRY_WARNING_DAYS } from '../records/labels';
 import { taskCategory } from '../tasks/meta';
@@ -50,8 +51,6 @@ export interface HealthCheck {
   next: HealthStep[];
 }
 
-const BACKUP_NUDGE_DAYS = 30;
-
 export type AttentionKind = 'warranty' | 'system' | 'backup';
 
 /** A fact about the home or this device that deserves a look, before it becomes a problem. */
@@ -88,17 +87,13 @@ function endsText(expiresAt: string, now: number): string {
 
 /** This device holds the only copy, so ask for a backup once there's something worth keeping. */
 export function backupAttention(data: HomeData, now: number, backupDismissedAt?: string): AttentionItem | null {
-  const hasData = data.tasks.length + data.items.length + data.records.length > 0;
-  const lastBackup = data.settings.lastBackupAt;
-  const since = lastBackup ?? data.household?.onboardedAt;
-  if (!(hasData && since && now - new Date(since).getTime() >= BACKUP_NUDGE_DAYS * DAY_MS)) return null;
-  // Hidden from Home: stays away until a backup is saved after it was hidden.
-  if (backupDismissedAt && !(lastBackup && lastBackup > backupDismissedAt)) return null;
+  const nudge = backupNudge(data, now, backupDismissedAt);
+  if (!nudge) return null;
   return {
     id: 'backup',
     kind: 'backup',
     title: 'Save a backup',
-    detail: lastBackup ? `Last saved ${formatRelativeTime(lastBackup, now).toLowerCase()}` : 'Your home’s information is only on this device',
+    detail: nudge.kind === 'stale' ? `Last saved ${formatRelativeTime(nudge.lastBackupAt, now).toLowerCase()}` : 'Your data is only on this device',
     href: '/settings',
   };
 }

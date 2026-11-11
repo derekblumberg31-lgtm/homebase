@@ -1,9 +1,10 @@
-import { lazy, Suspense, useEffect, type ReactNode } from 'react';
+import { lazy, Suspense, useEffect, useRef, type ReactNode } from 'react';
 import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { DataProvider, useData } from '../data/DataProvider';
 import { SessionProvider, useSession } from '../session/session';
 import { Skeleton } from '../ui/layout';
 import { ToastProvider } from '../ui/overlays';
+import { entryCount } from '../lib/dataSafety';
 import { requestPersistentStorage } from '../lib/storage';
 import { AppShell } from './AppShell';
 import { AppErrorBoundary } from './CrashScreen';
@@ -76,13 +77,20 @@ function ScrollToTop() {
 }
 
 function Effects() {
-  const { settings } = useData();
+  const data = useData();
+  const { settings } = data;
   const { ready } = useSession();
   useApplyTheme(settings.theme);
   useReminders();
+  // Ask once per launch, and only after the user has saved something worth keeping.
+  const asked = useRef(false);
+  const hasEntries = entryCount(data) > 0;
   useEffect(() => {
-    if (ready) void requestPersistentStorage();
-  }, [ready]);
+    if (ready && hasEntries && !asked.current) {
+      asked.current = true;
+      void requestPersistentStorage();
+    }
+  }, [ready, hasEntries]);
   return null;
 }
 

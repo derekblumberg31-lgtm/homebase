@@ -38,7 +38,7 @@ function CrashScreen() {
   const saveBackup = () =>
     run(async () => {
       await downloadBackup(await openStore());
-      setMessage('Backup saved.');
+      setMessage('Backup downloaded.');
     }, 'The backup couldn’t be saved.');
 
   const pick = (file: File) =>

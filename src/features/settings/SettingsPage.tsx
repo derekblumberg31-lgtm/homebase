@@ -1,19 +1,19 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PRODUCT } from '../../app/areas';
 import { useData, useStore } from '../../data/DataProvider';
 import { uid } from '../../data/ids';
 import type { Member, ThemePreference } from '../../data/types';
 import { formatRelativeTime } from '../../lib/dates';
+import { installMatters, isStandalone, readDeviceEnv, STORAGE_COPY, storageStatus } from '../../lib/dataSafety';
+import { storagePersisted } from '../../lib/storage';
 import { FormGroup, Segmented, Switch, TextField } from '../../ui/controls';
 import { Group, Page, Row, Section } from '../../ui/layout';
-import { Confirm, Sheet, useToast } from '../../ui/overlays';
+import { Sheet, useToast } from '../../ui/overlays';
+import { ConfirmWithBackup } from './ConfirmWithBackup';
 import { ImportButton } from './ImportButton';
-import { downloadBackup } from './importing';
-
-function isStandalone() {
-  return window.matchMedia?.('(display-mode: standalone)').matches || (navigator as Navigator & { standalone?: boolean }).standalone === true;
-}
+import { InstallSheet } from './InstallSheet';
+import { useSaveBackup } from './useSaveBackup';
 
 export function SettingsPage() {
   const store = useStore();
@@ -23,6 +23,16 @@ export function SettingsPage() {
   const [memberSheet, setMemberSheet] = useState<Member | 'new' | null>(null);
   const [eraseOpen, setEraseOpen] = useState(false);
   const [installOpen, setInstallOpen] = useState(false);
+  const { save: saveBackup, busy: savingBackup, dialog: backupDialog } = useSaveBackup();
+  const [persisted, setPersisted] = useState<boolean | 'unsupported' | null>(null);
+  const tabMatters = useMemo(() => installMatters(readDeviceEnv()), []);
+  useEffect(() => {
+    let live = true;
+    void storagePersisted().then((value) => live && setPersisted(value));
+    return () => {
+      live = false;
+    };
+  }, []);
   const notificationsSupported = typeof Notification !== 'undefined';
   const household = data.household;
 
@@ -113,17 +123,9 @@ export function SettingsPage() {
 
       <Section title="Data and privacy" foot="Everything you add stays on this device. A backup file is the only copy that leaves it, and only when you save one. If this device is lost or its browser data is cleared, a backup is how you get your home back.">
         <Group>
+          {persisted !== null && <Row title="Storage" sub={STORAGE_COPY[storageStatus({ persisted, installMatters: tabMatters })]} wrap />}
           <Row title="Last backup" value={data.settings.lastBackupAt ? formatRelativeTime(data.settings.lastBackupAt) : 'Never'} />
-          <Row
-            title="Save a backup"
-            tone="action"
-            onClick={() =>
-              downloadBackup(store).then(
-                () => toast('Backup saved'),
-                () => toast('The backup couldn’t be saved. Try again.', { tone: 'error' }),
-              )
-            }
-          />
+          <Row title={savingBackup ? 'Saving…' : 'Save a backup'} tone="action" onClick={() => void saveBackup()} />
           <ImportButton label="Restore from a backup" />
           <Row title="Erase everything on this device" tone="danger" onClick={() => setEraseOpen(true)} />
         </Group>
@@ -172,9 +174,10 @@ export function SettingsPage() {
       )}
 
       {eraseOpen && (
-        <Confirm
+        <ConfirmWithBackup
+          verb="erase"
           title="Erase everything?"
-          message="Every task, item, key, record and file on this device will be removed. Save a backup first if you might want them back."
+          message="Every task, item, key, record and file on this device will be removed. Save a backup first if you might want them back later."
           confirmLabel="Erase"
           destructive
           onCancel={() => setEraseOpen(false)}
@@ -186,18 +189,8 @@ export function SettingsPage() {
         />
       )}
 
-      {installOpen && (
-        <Sheet title="Add to Home Screen" onClose={() => setInstallOpen(false)}>
-          <p className="muted">Homebase then opens like an app and works without internet.</p>
-          <div className="section">
-            <Group>
-              <Row title="On iPhone or iPad" sub="Open in Safari, tap Share, then Add to Home Screen" />
-              <Row title="On Android" sub="Open the browser menu and choose Install app" />
-              <Row title="On a computer" sub="Use the install button in the address bar" />
-            </Group>
-          </div>
-        </Sheet>
-      )}
+      {installOpen && <InstallSheet onClose={() => setInstallOpen(false)} />}
+      {backupDialog}
     </Page>
   );
 }

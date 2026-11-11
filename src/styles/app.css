@@ -1450,6 +1450,35 @@ select.input {
   color: var(--red);
 }
 
+.alert-actions button:disabled {
+  opacity: 0.5;
+}
+
+/* A third action: one column, Save a backup first, then the confirm, then Cancel. */
+.alert-actions.is-stacked {
+  grid-template-columns: 1fr;
+}
+
+.alert-actions.is-stacked button + button {
+  border-top: 0.5px solid var(--line-strong);
+  border-left: 0;
+  font-weight: 400;
+}
+
+.alert-actions.is-stacked .is-confirm {
+  font-weight: 600;
+}
+
+.alert-status {
+  margin-top: 8px;
+  color: var(--text-2);
+  font-size: 13px;
+}
+
+.alert-status:empty {
+  margin-top: 0;
+}
+
 .toast-stack {
   position: fixed;
   right: 16px;

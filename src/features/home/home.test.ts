@@ -54,16 +54,20 @@ describe('backup nudge', () => {
   const hasNudge = (data: HomeData) => alertsFor(data, NOW).some((alert) => alert.id === 'backup');
   const settings = (lastBackupAt?: string) => ({ ...emptyData().settings, lastBackupAt });
 
-  it('waits until there is data and a month has passed', () => {
+  it('nudges once there are 3 entries, whatever the onboarding date', () => {
+    const three = [task({ id: 'a' }), task({ id: 'b' }), task({ id: 'c' })];
     expect(hasNudge(home({ household: household('2026-01-01T00:00:00.000Z') }))).toBe(false);
-    expect(hasNudge(home({ household: household('2026-10-20T00:00:00.000Z'), tasks: [task({})] }))).toBe(false);
-    expect(hasNudge(home({ household: household('2026-01-01T00:00:00.000Z'), tasks: [task({})] }))).toBe(true);
+    expect(hasNudge(home({ household: household('2026-01-01T00:00:00.000Z'), tasks: [task({})] }))).toBe(false);
+    expect(hasNudge(home({ household: household('2026-10-26T00:00:00.000Z'), tasks: three }))).toBe(true);
+    expect(hasNudge(home({ tasks: three }))).toBe(true);
   });
 
   it('goes quiet after a backup and returns a month later', () => {
-    const base = { household: household('2026-01-01T00:00:00.000Z'), records: [record({})] };
+    const changed = [{ id: 'x', at: '2026-09-01T00:00:00.000Z', kind: 'task-added' as const, text: 'Added' }];
+    const base = { household: household('2026-01-01T00:00:00.000Z'), records: [record({})], activity: changed };
     expect(hasNudge(home({ ...base, settings: settings('2026-10-20T00:00:00.000Z') }))).toBe(false);
     expect(hasNudge(home({ ...base, settings: settings('2026-08-01T00:00:00.000Z') }))).toBe(true);
+    expect(hasNudge(home({ ...base, activity: [], settings: settings('2026-08-01T00:00:00.000Z') }))).toBe(false);
   });
 });
 
@@ -193,7 +197,7 @@ describe('what needs a look', () => {
     expect(more.map((i) => i.id)).toEqual(['record-r2', 'system-s1']);
     expect(counted).toHaveLength(3);
 
-    const noBackup = arrangeAttention(attentionFor({ ...busy, household: undefined }, NOW), new Set());
+    const noBackup = arrangeAttention(attentionFor({ ...busy, settings: { ...busy.settings, lastBackupAt: '2026-10-20T00:00:00.000Z' } }, NOW), new Set());
     expect(noBackup.rows.map((i) => i.id)).toEqual(['record-r1', 'record-r2']);
     expect(noBackup.more.map((i) => i.id)).toEqual(['system-s1']);
   });
@@ -209,7 +213,7 @@ describe('what needs a look', () => {
   });
 
   it('keeps a hidden backup row away until a backup is saved after hiding it', () => {
-    const data = home({ household, tasks: [task({})] });
+    const data = home({ household, tasks: [task({ id: 'a' }), task({ id: 'b' }), task({ id: 'c' })] });
     expect(attentionFor(data, NOW).map((i) => i.id)).toContain('backup');
     expect(attentionFor(data, NOW, '2026-10-20T00:00:00.000Z').map((i) => i.id)).not.toContain('backup');
     const saved = home({ ...data, settings: { ...emptyData().settings, lastBackupAt: '2026-10-21T00:00:00.000Z' } });

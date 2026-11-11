@@ -1,6 +1,7 @@
 import { buildBackup, parseHomebaseBackup, readBackup } from '../../data/backup';
 import type { HomeStore } from '../../data/store';
 import { toDateInput } from '../../lib/dates';
+import { deliverBackup, readDeviceEnv, recordsBackup, recordsOnDownload, type DeliverCaps, type Delivery, type DeviceEnv } from '../../lib/dataSafety';
 
 export interface RestoreSummary {
   text: string;
@@ -18,16 +19,76 @@ export async function prepareRestore(store: HomeStore, file: File): Promise<Rest
   };
 }
 
-export async function downloadBackup(store: HomeStore) {
+function backupName() {
+  return `homebase-backup-${toDateInput()}.json`;
+}
+
+/** Builds the backup as a file. Throws if the data can't be read. */
+export async function prepareBackupFile(store: HomeStore): Promise<File> {
   const text = await buildBackup(store.getSnapshot(), await store.allFiles());
-  const blob = new Blob([text], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
+  return new File([text], backupName(), { type: 'application/json' });
+}
+
+function downloadFile(file: File) {
+  const url = URL.createObjectURL(file);
   const anchor = document.createElement('a');
   anchor.href = url;
-  anchor.download = `homebase-backup-${toDateInput()}.json`;
+  anchor.download = file.name;
   document.body.appendChild(anchor);
   anchor.click();
   anchor.remove();
   window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+/** The real browser's way out for a file: the share sheet where it takes files, else a download. */
+export function browserDeliverCaps(): DeliverCaps {
+  return {
+    canShareFile: (file) => typeof navigator.share === 'function' && typeof navigator.canShare === 'function' && navigator.canShare({ files: [file] }),
+    // No title, text or url: on iOS extra fields can be saved as a second item beside the file.
+    share: (file) => navigator.share({ files: [file] }),
+    download: downloadFile,
+  };
+}
+
+export type DateNote = 'written' | 'skipped' | 'failed';
+
+export interface BackupResult {
+  outcome: Delivery | 'failed';
+  /** Whether "Last backup" was updated. Only a share, or a download the device can vouch for, writes it. */
+  date: DateNote;
+  /** Kept when the tap ran out ('needs-tap') so a second tap can share the same file. */
+  file?: File;
+}
+
+/** Delivers a prepared file and writes `lastBackupAt` only if the save went through. */
+export async function deliverAndRecord(store: HomeStore, file: File, caps: DeliverCaps = browserDeliverCaps(), env: DeviceEnv = readDeviceEnv()): Promise<BackupResult> {
+  const outcome = await deliverBackup(file, caps);
+  if (outcome === 'needs-tap') return { outcome, date: 'skipped', file };
+  if (!recordsBackup(outcome, env)) return { outcome, date: 'skipped' };
+  try {
+    await store.updateSettings({ lastBackupAt: new Date().toISOString() });
+    return { outcome, date: 'written' };
+  } catch {
+    return { outcome, date: 'failed' };
+  }
+}
+
+/** Builds the backup, hands it to the share sheet or a download, and notes the date only on a real save. */
+export async function saveBackup(store: HomeStore, caps?: DeliverCaps, env?: DeviceEnv): Promise<BackupResult> {
+  let file: File;
+  try {
+    file = await prepareBackupFile(store);
+  } catch {
+    return { outcome: 'failed', date: 'skipped' };
+  }
+  return deliverAndRecord(store, file, caps, env);
+}
+
+/** Download only (the crash screen). Returns whether the date was recorded. */
+export async function downloadBackup(store: HomeStore): Promise<boolean> {
+  const file = await prepareBackupFile(store);
+  downloadFile(file);
+  if (!recordsOnDownload(readDeviceEnv())) return false;
   await store.updateSettings({ lastBackupAt: new Date().toISOString() });
+  return true;
 }

@@ -153,27 +153,54 @@ interface ConfirmProps {
   onConfirm: () => void;
   onCancel: () => void;
   destructive?: boolean;
+  /** An optional third action, stacked above the confirm (for example "Save a backup first"). */
+  extra?: { label: string; onClick: () => void; disabled?: boolean };
+  /** A status line under the message, announced politely. Only shown with `extra`. */
+  status?: ReactNode;
+  /** Disables the confirm while something else is in progress. */
+  confirmDisabled?: boolean;
 }
 
 /** A native-style alert for anything that can't easily be undone. Cancel has focus by default. */
-export function Confirm({ title, message, confirmLabel, onConfirm, onCancel, destructive = false }: ConfirmProps) {
+export function Confirm({ title, message, confirmLabel, onConfirm, onCancel, destructive = false, extra, status, confirmDisabled = false }: ConfirmProps) {
   const titleId = useId();
   const ref = useDialogFocus(onCancel);
+  const confirm = (
+    <button type="button" className={`${destructive ? 'is-destructive ' : ''}is-confirm`} onClick={onConfirm} disabled={confirmDisabled}>
+      {confirmLabel}
+    </button>
+  );
+  const cancel = (
+    <button type="button" onClick={onCancel} autoFocus>
+      Cancel
+    </button>
+  );
   return createPortal(
     <div className="alert-overlay" onClick={onCancel}>
       <div ref={ref} className="alert" role="alertdialog" aria-modal="true" aria-labelledby={titleId} onClick={(e) => e.stopPropagation()}>
         <div className="alert-content">
           <h2 id={titleId}>{title}</h2>
           <div className="alert-message">{message}</div>
+          {extra && (
+            <p className="alert-status" role="status">
+              {status}
+            </p>
+          )}
         </div>
-        <div className="alert-actions">
-          <button type="button" onClick={onCancel} autoFocus>
-            Cancel
-          </button>
-          <button type="button" className={destructive ? 'is-destructive' : ''} onClick={onConfirm}>
-            {confirmLabel}
-          </button>
-        </div>
+        {extra ? (
+          <div className="alert-actions is-stacked">
+            <button type="button" onClick={extra.onClick} disabled={extra.disabled}>
+              {extra.label}
+            </button>
+            {confirm}
+            {cancel}
+          </div>
+        ) : (
+          <div className="alert-actions">
+            {cancel}
+            {confirm}
+          </div>
+        )}
       </div>
     </div>,
     document.body,

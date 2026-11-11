@@ -1,11 +1,13 @@
-import { useState, type FormEvent } from 'react';
+import { useMemo, useState, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PRODUCT } from '../../app/areas';
 import { useStore } from '../../data/DataProvider';
 import { uid } from '../../data/ids';
 import type { PropertyType } from '../../data/types';
 import { FormGroup, SelectField, TextField, Segmented } from '../../ui/controls';
+import { deviceLabel, installMatters, mayOpenEmptyWhenInstalled, readDeviceEnv } from '../../lib/dataSafety';
 import { ImportButton } from '../settings/ImportButton';
+import { InstallSheet } from '../settings/InstallSheet';
 
 type Step = 'welcome' | 'household' | 'property';
 const STEPS: Step[] = ['welcome', 'household', 'property'];
@@ -23,6 +25,11 @@ export function Onboarding() {
   const [ownership, setOwnership] = useState<'own' | 'rent'>('own');
   const [yearBuilt, setYearBuilt] = useState('');
   const [error, setError] = useState('');
+  const [installOpen, setInstallOpen] = useState(false);
+  const env = useMemo(readDeviceEnv, []);
+  const tabMatters = installMatters(env);
+  const fromSafari = mayOpenEmptyWhenInstalled(env);
+  const label = deviceLabel(env);
 
   async function saveHousehold(event: FormEvent) {
     event.preventDefault();
@@ -74,12 +81,23 @@ export function Onboarding() {
               One place for your home: what needs doing, what you own, where the paperwork is, and help when something breaks.
             </p>
             <p className="lead">Everything stays on this device. No account needed.</p>
+            {tabMatters && (
+              <>
+                <p className="lead">
+                  {label === 'Mac' ? 'Using Safari? Add Homebase to your Dock first, then set it up there.' : `On ${label}? Add Homebase to your Home Screen first, then set it up there.`}
+                </p>
+                <button type="button" className="text-button" onClick={() => setInstallOpen(true)}>
+                  How to add it
+                </button>
+              </>
+            )}
             <div className="button-stack">
               <button type="button" className="button is-primary is-block" onClick={() => setStep('household')}>
                 Get started
               </button>
-              <ImportButton label="Moving from another device? Restore a backup" className="button is-quiet is-block" />
+              <ImportButton label={fromSafari ? 'Started in Safari? Restore your backup' : 'Moving from another device? Restore a backup'} className="button is-quiet is-block" />
             </div>
+            {fromSafari && <p className="section-foot">To make one, open Homebase in Safari, go to Settings and choose Save a backup.</p>}
           </>
         )}
 
@@ -137,6 +155,8 @@ export function Onboarding() {
             </div>
           </form>
         )}
+
+        {installOpen && <InstallSheet onClose={() => setInstallOpen(false)} />}
 
         <div className="steps-dots" aria-label={`Step ${index + 1} of ${STEPS.length}`}>
           {STEPS.map((s, i) => (
