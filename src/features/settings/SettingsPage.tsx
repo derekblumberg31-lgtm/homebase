@@ -5,7 +5,7 @@ import { useData, useStore } from '../../data/DataProvider';
 import { uid } from '../../data/ids';
 import type { Member, Settings, ThemePreference } from '../../data/types';
 import { formatRelativeTime } from '../../lib/dates';
-import { deviceLabel, installMatters, isStandalone, readDeviceEnv, storageCopy, storageStatus } from '../../lib/dataSafety';
+import { deviceLabel, installMatters, isStandalone, readDeviceEnv, storageCopy, storageCopyOptions, storageStatus } from '../../lib/dataSafety';
 import { clearHomeFlags } from '../../lib/deviceFlags';
 import { storagePersisted } from '../../lib/storage';
 import { FormGroup, Segmented, Switch, TextField } from '../../ui/controls';
@@ -19,6 +19,24 @@ import { useSaveBackup } from './useSaveBackup';
 
 // Remembered between visits, so the Storage row is already filled in when Settings opens again.
 let lastPersisted: boolean | 'unsupported' | null = null;
+
+/**
+ * The Storage line. Every line it can become is laid in the same cell, hidden, so the row is already as
+ * tall as its tallest answer on the first paint and nothing below it moves when the browser replies.
+ */
+function StorageLine({ persisted, installMatters: matters }: { persisted: boolean | 'unsupported' | null; installMatters: boolean }) {
+  const label = deviceLabel(readDeviceEnv());
+  const shown = persisted === null ? null : storageCopy(storageStatus({ persisted, installMatters: matters }), label);
+  return (
+    <span className="storage-line">
+      {storageCopyOptions(matters, label).map((text) => (
+        <span key={text} className="storage-line-option" aria-hidden={text === shown ? undefined : true} data-shown={text === shown || undefined}>
+          {text}
+        </span>
+      ))}
+    </span>
+  );
+}
 
 export function SettingsPage() {
   const store = useStore();
@@ -142,7 +160,7 @@ export function SettingsPage() {
       <Section title="Data and privacy" foot="Everything you add stays on this device. A backup file is the only copy that leaves it, and only when you save one. If this device is lost or its browser data is cleared, a backup is how you get your home back.">
         <Group>
           {/* The row is always there; its line fills in when the browser answers, so nothing below jumps. */}
-          <Row title="Storage" sub={persisted === null ? '\u00a0' : storageCopy(storageStatus({ persisted, installMatters: tabMatters }), deviceLabel(readDeviceEnv()))} wrap />
+          <Row title="Storage" sub={<StorageLine persisted={persisted} installMatters={tabMatters} />} wrap />
           <Row title="Last backup" value={data.settings.lastBackupAt ? formatRelativeTime(data.settings.lastBackupAt) : 'Never'} />
           <Row title={savingBackup ? 'Saving…' : 'Save a backup'} tone="action" onClick={() => void saveBackup()} />
           <ImportButton label="Restore from a backup" />

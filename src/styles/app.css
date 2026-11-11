@@ -1790,8 +1790,33 @@ select.input {
   min-height: 42px;
 }
 
+/* A long title wraps to two lines, then ends in an ellipsis. */
+.task-row .row-title {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-height: 1.2;
+  overflow: hidden;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  text-wrap: pretty;
+}
+
 .task-row .day-strip {
   margin-top: 10px;
+}
+
+.storage-line {
+  display: grid;
+}
+
+.storage-line-option {
+  grid-area: 1 / 1;
+  visibility: hidden;
+}
+
+.storage-line-option[data-shown] {
+  visibility: visible;
 }
 
 /* ---------- key code tag ---------- */

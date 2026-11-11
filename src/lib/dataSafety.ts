@@ -133,6 +133,12 @@ export function storageCopy(status: StorageStatus, label: DeviceLabel): string {
   }
 }
 
+/** Every line the Storage row can show on this device, so its space can be held before the browser answers. */
+export function storageCopyOptions(installMatters: boolean, label: DeviceLabel): string[] {
+  const statuses: StorageStatus[] = installMatters ? ['protected', 'tab-at-risk', 'unknown'] : ['protected', 'best-effort', 'unknown'];
+  return statuses.map((status) => storageCopy(status, label));
+}
+
 /** The words of Home's install row, for the device it is on. */
 export function installRowCopy(label: DeviceLabel): { title: string; detail: string } {
   return { title: `Add to ${installPlace(label)}`, detail: 'Safari can clear data in a tab' };

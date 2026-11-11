@@ -13,6 +13,7 @@ import {
   shareOutcome,
   installRowCopy,
   storageCopy,
+  storageCopyOptions,
   storageStatus,
   worthLosing,
   type DeliverCaps,
@@ -115,6 +116,17 @@ describe('storageStatus', () => {
     expect(storageStatus({ persisted: false, installMatters: true })).toBe('tab-at-risk');
     expect(storageStatus({ persisted: false, installMatters: false })).toBe('best-effort');
     expect(storageStatus({ persisted: 'unsupported', installMatters: true })).toBe('unknown');
+  });
+});
+
+describe('storage copy options', () => {
+  it('holds every line the row can show, and the line for each answer is among them', () => {
+    for (const matters of [true, false]) {
+      const options = storageCopyOptions(matters, 'iPhone');
+      for (const persisted of [true, false, 'unsupported'] as const) {
+        expect(options).toContain(storageCopy(storageStatus({ persisted, installMatters: matters }), 'iPhone'));
+      }
+    }
   });
 });
 
