@@ -31,14 +31,14 @@ export async function addStarterJobs(store: HomeStore, picks: StarterPick[], now
     await store.updateSettings({ tipStates: { ...(previousTipStates ?? {}), ...planned } }).catch(() => {});
   }
 
-  const activityIds: string[] = [];
+  const entries: { id: string; taskId: string }[] = [];
   for (const [i, task] of tasks.entries()) {
     const text = `${picks[i].job.seasonal ? 'Planned' : 'Added'}: ${task.name}`;
     const href = `/tasks/${task.id}`;
     try {
       await store.log('task-added', text, href);
       const id = newEntryId(activityBefore, store.getSnapshot().activity, { kind: 'task-added', text, href });
-      if (id) activityIds.push(id);
+      if (id) entries.push({ id, taskId: task.id });
     } catch {
       /* the task is saved; the activity line is a nicety */
     }
@@ -51,9 +51,21 @@ export async function addStarterJobs(store: HomeStore, picks: StarterPick[], now
     undo: async () => {
       // First, so the starter block that returns when the last task goes reads the flag as cleared.
       clearFlag('homebase:starter-dismissed');
-      for (const task of tasks) await store.remove('tasks', task.id);
-      if (Object.keys(planned).length > 0) await store.updateSettings({ tipStates: previousTipStates });
-      for (const id of activityIds) await store.remove('activity', id);
+      // Only tasks still as they were added: one done or edited since is the user's now.
+      const current = store.getSnapshot().tasks;
+      const removable = tasks.filter((task) => current.some((t) => t.id === task.id && t.updatedAt === task.updatedAt));
+      const removedIds = new Set(removable.map((t) => t.id));
+      for (const task of removable) await store.remove('tasks', task.id);
+      const undoneTips = Object.keys(planned).filter((tipId) => removedIds.has(planned[tipId].taskId!));
+      if (undoneTips.length > 0) {
+        const tipStates = { ...(store.getSnapshot().settings.tipStates ?? {}) };
+        for (const tipId of undoneTips) {
+          if (previousTipStates?.[tipId]) tipStates[tipId] = previousTipStates[tipId];
+          else delete tipStates[tipId];
+        }
+        await store.updateSettings({ tipStates });
+      }
+      for (const entry of entries) if (removedIds.has(entry.taskId)) await store.remove('activity', entry.id);
     },
   };
 }

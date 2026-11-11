@@ -10,6 +10,7 @@ import { alertsFor, arrangeAttention, attentionFor, endingSoon, healthCheckFor, 
 import { completeTip, hideTip, planDraftFor, snoozeTip } from './tipActions';
 import { buildStarterTask, chooseStarter, starterJobsFor, starterSubLine, toggleStarter } from './starter';
 import { addStarterJobs } from './starterActions';
+import { completeTask } from '../tasks/actions';
 
 // A fixed autumn evening, so the seasonal list and dates are predictable.
 const NOW = new Date('2026-10-27T19:00:00').getTime();
@@ -374,6 +375,32 @@ describe('starter jobs', () => {
     expect(after.tasks).toHaveLength(0);
     expect(after.activity.filter((a) => a.kind === 'task-added')).toHaveLength(0);
     expect(after.settings.tipStates ?? {}).toEqual({});
+  });
+
+  it('Undo of the starter add leaves a task that was done since, and a later Undo of the Done keeps it', async () => {
+    const store = await freshStore();
+    const [furnace, , , hvac] = starterJobsFor(store.getSnapshot(), NOW);
+    const added = await addStarterJobs(store, [{ job: furnace, choice: 'not-sure' }, { job: hvac, choice: 'this-month' }], NOW);
+    const furnaceTask = store.getSnapshot().tasks.find((t) => t.name === 'Service the furnace')!;
+    const done = await completeTask(store, furnaceTask, { date: '2026-10-27' });
+
+    await added.undo();
+    expect(store.getSnapshot().tasks.map((t) => t.name)).toEqual(['Service the furnace']);
+    expect(store.getSnapshot().activity.some((a) => a.text === 'Planned: Service the furnace')).toBe(true);
+    expect(store.getSnapshot().settings.tipStates?.['fall-2026:Service the furnace']).toMatchObject({ state: 'planned' });
+
+    await done.undo();
+    expect(store.getSnapshot().tasks.map((t) => t.name)).toEqual(['Service the furnace']);
+    expect(store.getSnapshot().serviceEvents).toEqual([]);
+  });
+
+  it('Undo of the starter add keeps a tip choice made in the meantime', async () => {
+    const store = await freshStore();
+    const [furnace, other] = starterJobsFor(store.getSnapshot(), NOW);
+    const added = await addStarterJobs(store, [{ job: furnace, choice: 'not-sure' }], NOW);
+    await store.updateSettings({ tipStates: { ...store.getSnapshot().settings.tipStates, [other.tipId!]: { state: 'hidden', at: '2026-10-27T20:00:00.000Z' } } });
+    await added.undo();
+    expect(store.getSnapshot().settings.tipStates).toEqual({ [other.tipId!]: { state: 'hidden', at: '2026-10-27T20:00:00.000Z' } });
   });
 
   it('keeps the tasks when only the extras fail', async () => {

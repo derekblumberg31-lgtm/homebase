@@ -52,7 +52,8 @@ export async function completeTask(store: HomeStore, task: Task, input: Completi
     message,
     undo: async () => {
       await recorded.undo();
-      await store.put('tasks', task);
+      // A task removed since (deleted, or taken out by the starter Undo) stays removed.
+      if (store.getSnapshot().tasks.some((t) => t.id === task.id)) await store.put('tasks', task);
     },
   };
 }

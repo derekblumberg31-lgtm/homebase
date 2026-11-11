@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { Task } from '../../data/types';
 import { freshStore } from '../../test/freshStore';
-import { addTask, completeTask } from './actions';
+import { addTask, completeTask, removeTask } from './actions';
 
 const task = (over: Partial<Task>): Task => ({
   id: 't1',
@@ -76,6 +76,20 @@ describe('completeTask', () => {
     const { undo } = await completeTask(store, planned, { date: '2026-10-27' });
     await undo();
     expect(store.getSnapshot().tasks.find((t) => t.id === 't1')!.dueDate).toBe('2026-11-10');
+    expect(store.getSnapshot().activity.some((a) => a.text === 'Done: Clean the gutters')).toBe(false);
+  });
+});
+
+describe('completeTask undo after the task is gone', () => {
+  it('does not bring back a task deleted since it was done', async () => {
+    const store = await freshStore();
+    const original = task({});
+    await store.put('tasks', original);
+    const { undo } = await completeTask(store, original, { date: '2026-11-10' });
+    await removeTask(store, store.getSnapshot().tasks[0]);
+    await undo();
+    expect(store.getSnapshot().tasks).toEqual([]);
+    expect(store.getSnapshot().serviceEvents).toEqual([]);
     expect(store.getSnapshot().activity.some((a) => a.text === 'Done: Clean the gutters')).toBe(false);
   });
 });
