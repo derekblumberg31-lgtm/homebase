@@ -157,11 +157,17 @@ export interface DeliverCaps {
   download: (file: File) => void;
 }
 
-export type Delivery = 'shared' | 'downloaded' | 'cancelled' | 'needs-tap';
+export type Delivery = 'shared' | 'downloaded' | 'downloaded-after-failed-share' | 'cancelled' | 'needs-tap';
 
-/** Hands a backup to the share sheet where it can, else downloads it. A cancelled share downloads nothing. */
+/**
+ * Hands a backup to the share sheet where it can, else downloads it. A cancelled share downloads
+ * nothing. A download that follows a failed share runs after an await, with no tap left to
+ * authorise it, so it is reported on its own.
+ */
 export async function deliverBackup(file: File, caps: DeliverCaps): Promise<Delivery> {
+  let attemptedShare = false;
   if (caps.canShareFile(file)) {
+    attemptedShare = true;
     try {
       await caps.share(file);
       return 'shared';
@@ -172,12 +178,13 @@ export async function deliverBackup(file: File, caps: DeliverCaps): Promise<Deli
     }
   }
   caps.download(file);
-  return 'downloaded';
+  return attemptedShare ? 'downloaded-after-failed-share' : 'downloaded';
 }
 
-/** Whether "Last backup" should be written for this delivery. A cancelled share never counts. */
+/** Whether "Last backup" should be written for this delivery. A cancelled share never counts, and on iOS neither does a download that came after a failed share. */
 export function recordsBackup(delivery: Delivery, env: DeviceEnv): boolean {
   if (delivery === 'shared') return true;
   if (delivery === 'downloaded') return recordsOnDownload(env);
+  if (delivery === 'downloaded-after-failed-share') return !isIOS(env) && recordsOnDownload(env);
   return false;
 }

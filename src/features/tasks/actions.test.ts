@@ -94,6 +94,46 @@ describe('completeTask undo after the task is gone', () => {
   });
 });
 
+describe('completeTask when a write fails', () => {
+  it('leaves the task alone and keeps no history when the task cannot be saved', async () => {
+    const store = await freshStore();
+    const original = task({});
+    await store.put('tasks', original);
+    const real = store.put.bind(store);
+    vi.spyOn(store, 'put').mockImplementation(((table: string, row: unknown) => (table === 'tasks' ? Promise.reject(new Error('put failed')) : real(table as never, row as never))) as never);
+    await expect(completeTask(store, original, { date: '2026-11-10' })).rejects.toThrow('put failed');
+    expect(store.getSnapshot().tasks[0]).toEqual(original);
+    expect(store.getSnapshot().serviceEvents).toEqual([]);
+    expect(store.getSnapshot().activity.some((a) => a.text === 'Done: Clean the gutters')).toBe(false);
+  });
+
+  it('never moves the task on when the history cannot be written', async () => {
+    const store = await freshStore();
+    const original = task({});
+    await store.put('tasks', original);
+    vi.spyOn(store, 'log').mockRejectedValue(new Error('log failed'));
+    await expect(completeTask(store, original, { date: '2026-11-10' })).rejects.toThrow('log failed');
+    expect(store.getSnapshot().tasks[0]).toEqual(original);
+    expect(store.getSnapshot().serviceEvents).toEqual([]);
+  });
+
+  it('a failed undo leaves the task done with its history, so a retry finishes the job', async () => {
+    const store = await freshStore();
+    const original = task({});
+    await store.put('tasks', original);
+    const { undo } = await completeTask(store, original, { date: '2026-11-10' });
+    const done = store.getSnapshot().tasks[0];
+    const put = vi.spyOn(store, 'put').mockRejectedValueOnce(new Error('put failed'));
+    await expect(undo()).rejects.toThrow('put failed');
+    expect(store.getSnapshot().tasks[0]).toEqual(done);
+    expect(store.getSnapshot().serviceEvents).toHaveLength(1);
+    put.mockRestore();
+    await undo();
+    expect(store.getSnapshot().tasks[0]).toEqual(original);
+    expect(store.getSnapshot().serviceEvents).toEqual([]);
+  });
+});
+
 describe('addTask', () => {
   it('resolves when the task is saved but the activity entry fails', async () => {
     const store = await freshStore();

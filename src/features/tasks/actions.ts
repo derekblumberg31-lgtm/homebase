@@ -35,12 +35,12 @@ export async function completeTask(store: HomeStore, task: Task, input: Completi
     ? { ...task, lastDoneAt: date, dueDate: undefined, updatedAt: new Date().toISOString() }
     : { ...task, status: 'done', lastDoneAt: date, updatedAt: new Date().toISOString() };
 
-  await store.put('tasks', updated);
-  let recorded: Awaited<ReturnType<typeof recordServiceEvent>>;
+  // History first, the task last: if anything fails, the worst leftover is an extra history line, never a task that moved on with no record.
+  const recorded = await recordServiceEvent(store, event, `/tasks/${task.id}`);
   try {
-    recorded = await recordServiceEvent(store, event, `/tasks/${task.id}`);
+    await store.put('tasks', updated);
   } catch (error) {
-    await store.put('tasks', task).catch(() => {});
+    await recorded.undo().catch(() => {});
     throw error;
   }
 
@@ -51,9 +51,9 @@ export async function completeTask(store: HomeStore, task: Task, input: Completi
   return {
     message,
     undo: async () => {
-      await recorded.undo();
-      // A task removed since (deleted, or taken out by the starter Undo) stays removed.
+      // The task goes back first, so a failure leaves it done with its history intact. A task removed since (deleted, or taken out by the starter Undo) stays removed.
       if (store.getSnapshot().tasks.some((t) => t.id === task.id)) await store.put('tasks', task);
+      await recorded.undo();
     },
   };
 }

@@ -5,6 +5,7 @@ import { prepareBackupFile, prepareRestore, saveBackup } from './importing';
 import { backupNudge } from '../../lib/dataSafety';
 
 const env: DeviceEnv = { ua: 'Mozilla/5.0 (Windows NT 10.0) Chrome/126', platform: 'Win32', maxTouchPoints: 0, standalone: false };
+const iosTab: DeviceEnv = { ua: 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 Version/17.5 Mobile/15E148 Safari/604.1', platform: 'iPhone', maxTouchPoints: 5, standalone: false };
 const iosApp: DeviceEnv = { ua: 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 Version/17.5 Mobile/15E148 Safari/604.1', platform: 'iPhone', maxTouchPoints: 5, standalone: true };
 const caps = (over: Partial<DeliverCaps> = {}): DeliverCaps => ({ canShareFile: () => true, share: vi.fn(async () => {}), download: vi.fn(), ...over });
 
@@ -40,6 +41,21 @@ describe('saveBackup', () => {
     const result = await saveBackup(store, caps({ canShareFile: () => false }), iosApp);
     expect(result).toMatchObject({ outcome: 'downloaded', date: 'skipped' });
     expect(store.getSnapshot().settings.lastBackupAt).toBeUndefined();
+  });
+
+  it('does not write the date for a download that follows a failed share on an iOS tab', async () => {
+    const store = await freshStore();
+    const c = caps({ share: vi.fn(async () => { throw new TypeError('x'); }) });
+    const result = await saveBackup(store, c, iosTab);
+    expect(c.download).toHaveBeenCalledTimes(1);
+    expect(result).toMatchObject({ outcome: 'downloaded', date: 'skipped' });
+    expect(store.getSnapshot().settings.lastBackupAt).toBeUndefined();
+  });
+
+  it('still writes the date for that download on a desktop browser', async () => {
+    const store = await freshStore();
+    const result = await saveBackup(store, caps({ share: vi.fn(async () => { throw new TypeError('x'); }) }), env);
+    expect(result).toMatchObject({ outcome: 'downloaded', date: 'written' });
   });
 
   it('keeps the file for a second tap when the tap ran out', async () => {

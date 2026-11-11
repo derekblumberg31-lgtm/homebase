@@ -58,7 +58,7 @@ export function browserDeliverCaps(): DeliverCaps {
 export type DateNote = 'written' | 'skipped' | 'failed';
 
 export interface BackupResult {
-  outcome: Delivery | 'failed';
+  outcome: Exclude<Delivery, 'downloaded-after-failed-share'> | 'failed';
   /** Whether "Last backup" was updated. Only a share, or a download the device can vouch for, writes it. */
   date: DateNote;
   /** Kept when the tap ran out ('needs-tap') so a second tap can share the same file. */
@@ -67,9 +67,11 @@ export interface BackupResult {
 
 /** Delivers a prepared file and writes `lastBackupAt` only if the save went through. */
 export async function deliverAndRecord(store: HomeStore, file: File, caps: DeliverCaps = browserDeliverCaps(), env: DeviceEnv = readDeviceEnv()): Promise<BackupResult> {
-  const outcome = await deliverBackup(file, caps);
-  if (outcome === 'needs-tap') return { outcome, date: 'skipped', file };
-  if (!recordsBackup(outcome, env)) return { outcome, date: 'skipped' };
+  const delivery = await deliverBackup(file, caps);
+  if (delivery === 'needs-tap') return { outcome: delivery, date: 'skipped', file };
+  // To the screens a download after a failed share is a download; only the date rule differs.
+  const outcome = delivery === 'downloaded-after-failed-share' ? 'downloaded' : delivery;
+  if (!recordsBackup(delivery, env)) return { outcome, date: 'skipped' };
   try {
     await store.updateSettings({ lastBackupAt: new Date().toISOString() });
     return { outcome, date: 'written' };

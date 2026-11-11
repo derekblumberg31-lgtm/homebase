@@ -187,8 +187,12 @@ describe('deliverBackup and recordsBackup', () => {
     expect(await deliverBackup(file, a)).toBe('downloaded');
     expect(a.share).not.toHaveBeenCalled();
     const b = caps({ share: vi.fn(async () => { throw new TypeError('x'); }) });
-    expect(await deliverBackup(file, b)).toBe('downloaded');
+    expect(await deliverBackup(file, b)).toBe('downloaded-after-failed-share');
     expect(b.download).toHaveBeenCalledTimes(1);
+  });
+  it('does not note a download that came after a failed share on iOS', () => {
+    expect(recordsBackup('downloaded-after-failed-share', iphone())).toBe(false);
+    expect(recordsBackup('downloaded-after-failed-share', chrome)).toBe(true);
   });
   it('does not note a download in the installed iOS app', () => {
     expect(recordsBackup('downloaded', iphone(true))).toBe(false);
