@@ -4,7 +4,7 @@ import { QuickAdd } from '../../app/QuickAdd';
 import { useData, useNow } from '../../data/DataProvider';
 import { useSession } from '../../session/session';
 import { useToast } from '../../ui/overlays';
-import { backupNudge, dataSafetyRow } from '../../lib/dataSafety';
+import { backupNudge, dataSafetyRow, deviceLabel, installRowCopy, readDeviceEnv } from '../../lib/dataSafety';
 import { MessageCircle, Share } from '../../ui/Icons';
 import { Group, Page, Row } from '../../ui/layout';
 import { InstallSheet } from '../settings/InstallSheet';
@@ -86,6 +86,8 @@ export function HomePage() {
     setTimeout(() => document.querySelector<HTMLElement>('#home-ask a')?.focus(), 0);
   }
 
+  const installCopy = useMemo(() => installRowCopy(deviceLabel(readDeviceEnv())), []);
+
   function hideInstall() {
     install.dismiss();
     toast('Hidden from Home. The steps are still in Settings.', { action: { label: 'Undo', run: install.restore } });
@@ -128,8 +130,8 @@ export function HomePage() {
         <section className="section home-alerts" aria-label="This device">
           <ul className="group">
             <HomeAlertRow
-              title="Add Homebase to your Home Screen"
-              detail="So Safari doesn’t clear your data"
+              title={installCopy.title}
+              detail={installCopy.detail}
               lead={<Share size={18} />}
               onSelect={() => setInstallOpen(true)}
               onDismiss={hideInstall}

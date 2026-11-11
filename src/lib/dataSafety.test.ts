@@ -11,6 +11,8 @@ import {
   recordsBackup,
   recordsOnDownload,
   shareOutcome,
+  installRowCopy,
+  storageCopy,
   storageStatus,
   worthLosing,
   type DeliverCaps,
@@ -113,6 +115,22 @@ describe('storageStatus', () => {
     expect(storageStatus({ persisted: false, installMatters: true })).toBe('tab-at-risk');
     expect(storageStatus({ persisted: false, installMatters: false })).toBe('best-effort');
     expect(storageStatus({ persisted: 'unsupported', installMatters: true })).toBe('unknown');
+  });
+});
+
+describe('install copy', () => {
+  it('says Dock on a Mac and Home Screen elsewhere', () => {
+    expect(installRowCopy(deviceLabel(mac)).title).toBe('Add to Dock');
+    expect(installRowCopy(deviceLabel(iphone())).title).toBe('Add to Home Screen');
+    expect(installRowCopy(deviceLabel(ipad)).title).toBe('Add to Home Screen');
+    expect(storageCopy('tab-at-risk', 'Mac')).toContain('Dock');
+    expect(storageCopy('tab-at-risk', 'Mac')).not.toContain('Home Screen');
+    expect(storageCopy('tab-at-risk', 'iPhone')).toContain('Home Screen');
+  });
+
+  it('does not promise the data is kept', () => {
+    expect(storageCopy('tab-at-risk', 'iPhone')).not.toMatch(/to keep it/);
+    expect(installRowCopy('iPhone').detail).toBe('Safari can clear data in a tab');
   });
 });
 

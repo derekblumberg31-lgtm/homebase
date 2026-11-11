@@ -119,12 +119,28 @@ export function storageStatus(state: { persisted: boolean | 'unsupported'; insta
   return state.installMatters ? 'tab-at-risk' : 'best-effort';
 }
 
-export const STORAGE_COPY: Record<StorageStatus, string> = {
-  protected: 'Protected by this browser. It won’t be cleared to free up space.',
-  'tab-at-risk': 'Safari can clear it after a week without a visit. Add Homebase to your Home Screen to keep it.',
-  'best-effort': 'Kept on this device. The browser may clear it if space runs low.',
-  unknown: 'Kept on this device. This browser doesn’t say whether it will keep it.',
-};
+/** Where a Safari tab's data is safe from the 7-day rule: the Dock on a Mac, the Home Screen elsewhere. */
+function installPlace(label: DeviceLabel): string {
+  return label === 'Mac' ? 'Dock' : 'Home Screen';
+}
+
+export function storageCopy(status: StorageStatus, label: DeviceLabel): string {
+  switch (status) {
+    case 'protected':
+      return 'Protected by this browser. It won’t be cleared to free up space.';
+    case 'tab-at-risk':
+      return `Safari can clear it after a week without a visit. Add Homebase to your ${installPlace(label)} so the 7-day rule doesn’t apply.`;
+    case 'best-effort':
+      return 'Kept on this device. The browser may clear it if space runs low.';
+    case 'unknown':
+      return 'Kept on this device. This browser doesn’t say whether it will keep it.';
+  }
+}
+
+/** The words of Home's install row, for the device it is on. */
+export function installRowCopy(label: DeviceLabel): { title: string; detail: string } {
+  return { title: `Add to ${installPlace(label)}`, detail: 'Safari can clear data in a tab' };
+}
 
 // ---------- saving a backup ----------
 

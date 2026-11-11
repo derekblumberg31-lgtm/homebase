@@ -13,7 +13,7 @@ export function InstallSheet({ onClose }: { onClose: () => void }) {
     <>
       <Sheet title="Add to Home Screen" onClose={onClose}>
         <p className="muted">
-          Homebase then opens like an app and works without internet. In a Safari tab, Safari can clear a website’s data after a week without a visit. Apps on the Home Screen are kept.
+          Homebase then opens like an app and works without internet. In a Safari tab, Safari can clear a website’s data after a week without a visit. Apps on the Home Screen aren’t on that 7-day clock.
         </p>
         <div className="section">
           <Group>

@@ -5,7 +5,7 @@ import { useData, useStore } from '../../data/DataProvider';
 import { uid } from '../../data/ids';
 import type { Member, Settings, ThemePreference } from '../../data/types';
 import { formatRelativeTime } from '../../lib/dates';
-import { installMatters, isStandalone, readDeviceEnv, STORAGE_COPY, storageStatus } from '../../lib/dataSafety';
+import { deviceLabel, installMatters, isStandalone, readDeviceEnv, storageCopy, storageStatus } from '../../lib/dataSafety';
 import { clearHomeFlags } from '../../lib/deviceFlags';
 import { storagePersisted } from '../../lib/storage';
 import { FormGroup, Segmented, Switch, TextField } from '../../ui/controls';
@@ -135,7 +135,7 @@ export function SettingsPage() {
 
       <Section title="Data and privacy" foot="Everything you add stays on this device. A backup file is the only copy that leaves it, and only when you save one. If this device is lost or its browser data is cleared, a backup is how you get your home back.">
         <Group>
-          {persisted !== null && <Row title="Storage" sub={STORAGE_COPY[storageStatus({ persisted, installMatters: tabMatters })]} wrap />}
+          {persisted !== null && <Row title="Storage" sub={storageCopy(storageStatus({ persisted, installMatters: tabMatters }), deviceLabel(readDeviceEnv()))} wrap />}
           <Row title="Last backup" value={data.settings.lastBackupAt ? formatRelativeTime(data.settings.lastBackupAt) : 'Never'} />
           <Row title={savingBackup ? 'Saving…' : 'Save a backup'} tone="action" onClick={() => void saveBackup()} />
           <ImportButton label="Restore from a backup" />
