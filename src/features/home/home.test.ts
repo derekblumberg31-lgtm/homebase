@@ -6,8 +6,8 @@ import { firstNameOf } from '../../session/session';
 import { LocalGuideProvider } from '../assistant/provider';
 import { taskCategory, taskMetaParts } from '../tasks/meta';
 import { getTaskInfo } from '../tasks/taskMath';
-import { alertsFor, healthCheckFor, seasonalTipsFor, snapshotFor, timelineFor } from './insights';
-import { completeTip, hideTip, snoozeTip } from './tipActions';
+import { alertsFor, arrangeAttention, attentionFor, endingSoon, healthCheckFor, homeStatusFor, seasonalTipsFor, snapshotFor, timelineFor } from './insights';
+import { completeTip, hideTip, planDraftFor, snoozeTip } from './tipActions';
 
 // A fixed autumn evening, so the seasonal list and dates are predictable.
 const NOW = new Date('2026-10-27T19:00:00').getTime();
@@ -142,10 +142,126 @@ describe('Home overview', () => {
     expect(months[2].entries[0]).toMatchObject({ kind: 'warranty', title: 'Water heater warranty ends' });
   });
 
-  it('counts a home with no tasks as having nothing overdue', () => {
+  it('gives no Health Check credit for "0 overdue" when there are no tasks', () => {
     const health = healthCheckFor(home(), NOW);
-    expect(health.done).toBe(1);
-    expect(health.steps.find((s) => s.title.startsWith('Catch up'))?.ok).toBe(true);
+    expect(health.done).toBe(0);
+    expect(health.score).toBe(0);
+    expect(health.steps.find((s) => s.title === 'Keep your tasks on schedule')?.ok).toBe(false);
+  });
+
+  it('credits the schedule step once tasks exist and none is overdue', () => {
+    const step = (data: HomeData) => healthCheckFor(data, NOW).steps.find((s) => s.title === 'Keep your tasks on schedule' || s.title.startsWith('Catch up'));
+    expect(step(home({ tasks: [task({ lastDoneAt: '2026-10-20' })] }))).toMatchObject({ title: 'Keep your tasks on schedule', ok: true });
+    expect(step(home({ tasks: [task({ lastDoneAt: '2026-01-01' })] }))).toMatchObject({ title: 'Catch up on 1 overdue task', ok: false });
+  });
+});
+
+describe('seasonal plan draft', () => {
+  it('is due in two weeks with no invented last-done date', () => {
+    const draft = planDraftFor({ taskName: 'Swap the HVAC filter', category: 'air' }, NOW);
+    expect(draft).toMatchObject({ dueDate: '2026-11-10', intervalDays: 365, seasonal: true, kind: 'maintenance' });
+    expect('lastDoneAt' in draft).toBe(false);
+  });
+});
+
+describe('what needs a look', () => {
+  const household = { id: 'household' as const, name: 'Home', members: [], createdAt: '2026-01-01T00:00:00.000Z', onboardedAt: '2026-01-01T00:00:00.000Z' };
+  const system = { id: 's1', kind: 'water-heater' as const, name: 'Water heater', installYear: 2010, createdAt: '', updatedAt: '' };
+  const busy = home({
+    household,
+    records: [record({ id: 'r2', title: 'Roof warranty', expiresAt: '2026-12-01' }), record({ id: 'r1', expiresAt: '2026-11-05' })],
+    systems: [system],
+  });
+
+  it('keeps one 60-day window: the end date is in, a day later is out', () => {
+    const ids = (expiresAt: string) => endingSoon([record({ expiresAt })], NOW).length;
+    expect(ids('2026-12-26')).toBe(1);
+    expect(ids('2026-12-27')).toBe(0);
+    expect(ids('2026-10-26')).toBe(0);
+    expect(ids('2026-10-27')).toBe(1);
+  });
+
+  it('orders warranties soonest first, then systems, then the backup', () => {
+    expect(attentionFor(busy, NOW).map((i) => i.id)).toEqual(['record-r1', 'record-r2', 'system-s1', 'backup']);
+  });
+
+  it('gives the backup a guaranteed slot and counts the rest', () => {
+    const { rows, more, counted } = arrangeAttention(attentionFor(busy, NOW), new Set());
+    expect(rows.map((i) => i.id)).toEqual(['record-r1', 'backup']);
+    expect(more.map((i) => i.id)).toEqual(['record-r2', 'system-s1']);
+    expect(counted).toHaveLength(3);
+
+    const noBackup = arrangeAttention(attentionFor({ ...busy, household: undefined }, NOW), new Set());
+    expect(noBackup.rows.map((i) => i.id)).toEqual(['record-r1', 'record-r2']);
+    expect(noBackup.more.map((i) => i.id)).toEqual(['system-s1']);
+  });
+
+  it('hides a dismissed row until its end date changes', () => {
+    const key = 'record-r1:2026-11-05';
+    const hidden = arrangeAttention(attentionFor(busy, NOW), new Set([key]));
+    expect(hidden.rows.map((i) => i.id)).not.toContain('record-r1');
+    expect(hidden.counted.map((i) => i.id)).not.toContain('record-r1');
+
+    const moved = home({ ...busy, records: [record({ id: 'r1', expiresAt: '2026-11-06' })] });
+    expect(arrangeAttention(attentionFor(moved, NOW), new Set([key])).counted.map((i) => i.id)).toContain('record-r1');
+  });
+
+  it('keeps a hidden backup row away until a backup is saved after hiding it', () => {
+    const data = home({ household, tasks: [task({})] });
+    expect(attentionFor(data, NOW).map((i) => i.id)).toContain('backup');
+    expect(attentionFor(data, NOW, '2026-10-20T00:00:00.000Z').map((i) => i.id)).not.toContain('backup');
+    const saved = home({ ...data, settings: { ...emptyData().settings, lastBackupAt: '2026-10-21T00:00:00.000Z' } });
+    expect(attentionFor(saved, NOW, '2026-10-20T00:00:00.000Z').map((i) => i.id)).not.toContain('backup');
+  });
+});
+
+describe('the status sentence', () => {
+  const household = { id: 'household' as const, name: 'Home', members: [], createdAt: '2026-01-01T00:00:00.000Z', onboardedAt: '2026-01-01T00:00:00.000Z' };
+  const status = (data: HomeData) => homeStatusFor(data, NOW, arrangeAttention(attentionFor(data, NOW), new Set()).counted);
+  const late = (id: string) => task({ id, lastDoneAt: '2026-06-01' });
+  const dueNov3 = (id: string) => task({ id, lastDoneAt: '2026-08-05' });
+  const hvacNov30 = task({ id: 'next', lastDoneAt: '2026-09-01' });
+  const warranty = (id: string, expiresAt: string) => record({ id, expiresAt });
+  const oldSystem = { id: 's1', kind: 'water-heater' as const, name: 'Water heater', installYear: 2010, createdAt: '', updatedAt: '' };
+
+  it('says what to do on an empty home', () => {
+    expect(status(home())).toMatchObject({ tone: 'empty', text: 'Add the jobs your home needs' });
+  });
+
+  it('names overdue jobs first and keeps to two clauses', () => {
+    const two = status(home({ tasks: [late('a'), late('b')], records: [warranty('r1', '2026-11-05')] }));
+    expect(two.text).toBe('2 jobs are overdue, and 1 warranty ends soon');
+    expect(two.clauses).toHaveLength(2);
+    expect(two.tone).toBe('overdue');
+    expect(status(home({ tasks: [late('a')], records: [warranty('r1', '2026-11-05')], systems: [oldSystem] })).text).toBe('1 job is overdue, and 2 other things need a look');
+  });
+
+  it('describes systems and end dates', () => {
+    expect(status(home({ tasks: [hvacNov30], systems: [oldSystem] })).text).toBe('Nothing is overdue, and 1 system is past its usual life');
+    expect(status(home({ tasks: [hvacNov30], records: [warranty('r1', '2026-11-05'), warranty('r2', '2026-11-06')] })).text).toBe('Nothing is overdue, and 2 warranties end soon');
+    expect(status(home({ tasks: [hvacNov30], records: [record({ id: 'c', kind: 'insurance', expiresAt: '2026-11-05' })] })).text).toBe('Nothing is overdue, and 1 end date is coming up');
+    expect(status(home({ records: [warranty('r1', '2026-11-05')] })).text).toBe('1 warranty ends soon');
+  });
+
+  it('is all clear only when nothing is overdue, due this week, or alerting', () => {
+    const clear = status(home({ tasks: [{ ...hvacNov30, name: 'Swap the HVAC filter' }] }));
+    expect(clear).toMatchObject({ tone: 'clear', text: 'All clear. Next up on Nov 30: Swap the HVAC filter' });
+    // A stale backup is about this device, not the home.
+    expect(status(home({ household, tasks: [hvacNov30] })).tone).toBe('clear');
+    expect(status(home({ tasks: [task({ id: 'x', lastDoneAt: '2026-08-06' })] })).tone).toBe('clear');
+    expect(status(home({ tasks: [{ ...hvacNov30, status: 'done' }] })).text).toBe('All clear. Nothing else is planned');
+  });
+
+  it('counts jobs due within seven days', () => {
+    expect(status(home({ tasks: [dueNov3('a'), dueNov3('b')] }))).toMatchObject({ tone: 'attention', text: '2 jobs are due this week' });
+    expect(status(home({ tasks: [task({ lastDoneAt: '2026-07-29' })] })).text).toBe('1 job is due this week');
+    expect(status(home({ tasks: [late('a'), dueNov3('b'), dueNov3('c')] })).text).toBe('1 job is overdue, and 2 more are due this week');
+    expect(status(home({ tasks: [dueNov3('a')], records: [warranty('r1', '2026-11-05')] })).text).toBe('1 job is due this week, and 1 warranty ends soon');
+  });
+
+  it('reads "N jobs are due this week" for freshly added not-sure starter jobs', () => {
+    const starters = ['a', 'b', 'c'].map((id) => task({ id, lastDoneAt: '2026-10-27', dueDate: '2026-11-03', intervalDays: 365 }));
+    expect(status(home({ tasks: starters })).text).toBe('3 jobs are due this week');
   });
 });
 

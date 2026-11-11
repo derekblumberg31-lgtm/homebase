@@ -3351,8 +3351,58 @@ a.feed-row:focus-visible {
   font-weight: 500;
 }
 
-.home-status.is-overdue {
+.home-status-clause.is-overdue {
   color: var(--accent);
+}
+
+/* The alert slot under the next jobs: up to two rows, one anatomy for every row. */
+.home-alerts {
+  margin-top: 16px;
+}
+
+.home-alerts > ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.home-alert-row {
+  display: flex;
+  align-items: stretch;
+  background: var(--surface);
+}
+
+.home-alert-row > .row {
+  flex: 1;
+  min-width: 0;
+  width: auto;
+}
+
+.home-alert-icon {
+  color: var(--amber);
+}
+
+.home-alert-dismiss {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  align-self: center;
+  margin-right: 4px;
+  border-radius: 10px;
+  color: var(--text-3);
+  background: var(--surface);
+}
+
+.home-alert-dismiss:active {
+  background: var(--fill);
+}
+
+@media (hover: hover) {
+  .home-alert-dismiss:hover {
+    background: var(--fill);
+  }
 }
 
 .home-next {

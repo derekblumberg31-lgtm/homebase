@@ -1,15 +1,17 @@
-import { useState, type ComponentType } from 'react';
+import { useState, type ComponentType, type ReactNode } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useData, useStore } from '../../data/DataProvider';
 import type { ActivityKind, Task } from '../../data/types';
-import { addDays, formatDateShort, formatRelativeTime, toDateInput } from '../../lib/dates';
+import { formatDateShort, formatRelativeTime, toDateInput } from '../../lib/dates';
 import {
   AlertTriangle,
   Calendar,
   Check,
+  ChevronRight,
   CircleCheck,
   Clock,
   DoorOpen,
+  Download,
   FileText,
   HeartPulse,
   House,
@@ -20,14 +22,114 @@ import {
   Thermometer,
   Trash2,
   Upload,
+  X,
   type IconProps,
 } from '../../ui/Icons';
 import { Menu } from '../../ui/menu';
 import { useToast } from '../../ui/overlays';
 import { TaskForm } from '../tasks/TaskForm';
 import { getTaskInfo } from '../tasks/taskMath';
-import type { Alert, HealthCheck, SeasonalTip, SnapshotFact, TimelineMonth } from './insights';
-import { completeTip, hideTip, planTip, resetTip, snoozeTip, wakeSnoozedTips } from './tipActions';
+import type { Alert, AttentionItem, HealthCheck, HomeStatus, SeasonalTip, SnapshotFact, TimelineMonth } from './insights';
+import { completeTip, hideTip, planDraftFor, planTip, resetTip, snoozeTip, wakeSnoozedTips } from './tipActions';
+
+// ---------- Home status sentence and alert rows ----------
+
+/** The sentence under the greeting. Only the overdue clause is brick; the rest stays grey. */
+export function HomeStatusLine({ status }: { status: HomeStatus }) {
+  if (status.tone !== 'overdue') return <span className="home-status">{status.text}</span>;
+  const [first, second] = status.clauses;
+  return (
+    <span className="home-status">
+      <span className="home-status-clause is-overdue">{first}</span>
+      {second && `, and ${second}`}
+    </span>
+  );
+}
+
+/** One Home attention row: a link or a button, then the 44px hide button. */
+export function HomeAlertRow({
+  title,
+  detail,
+  lead,
+  href,
+  onSelect,
+  onDismiss,
+}: {
+  title: string;
+  detail: string;
+  lead: ReactNode;
+  href?: string;
+  onSelect?: () => void;
+  onDismiss: () => void;
+}) {
+  const body = (
+    <>
+      <span className="row-lead">{lead}</span>
+      <span className="row-main">
+        <span className="row-title">{title}</span>
+        <span className="row-sub">{detail}</span>
+      </span>
+      <ChevronRight size={17} className="row-chevron" />
+    </>
+  );
+  return (
+    <li className="row-wrap home-alert-row">
+      {onSelect || !href ? (
+        <button type="button" className="row" onClick={onSelect}>
+          {body}
+        </button>
+      ) : (
+        <Link className="row" to={href}>
+          {body}
+        </Link>
+      )}
+      <button type="button" className="home-alert-dismiss" aria-label={`Hide from Home: ${title}`} onClick={onDismiss}>
+        <X size={16} />
+      </button>
+    </li>
+  );
+}
+
+/** The alert slot: at most ALERT_ROW_CAP rows, then a count of what did not fit. */
+export function HomeAlertRows({
+  rows,
+  more,
+  onDismiss,
+  onBackup,
+}: {
+  rows: AttentionItem[];
+  more: AttentionItem[];
+  onDismiss: (item: AttentionItem) => void;
+  /** Tap on the backup row. Until it is passed, the backup row links to its href. */
+  onBackup?: () => void;
+}) {
+  if (rows.length === 0) return null;
+  return (
+    <section className="section home-alerts" aria-labelledby="home-alerts-title">
+      <h2 id="home-alerts-title" className="visually-hidden">
+        Needs a look
+      </h2>
+      <ul className="group">
+        {rows.map((item) => (
+          <HomeAlertRow
+            key={item.id}
+            title={item.title}
+            detail={item.detail}
+            lead={item.kind === 'backup' ? <Download size={18} /> : <AlertTriangle size={18} className="home-alert-icon" />}
+            href={item.href}
+            onSelect={item.kind === 'backup' ? onBackup : undefined}
+            onDismiss={() => onDismiss(item)}
+          />
+        ))}
+      </ul>
+      {more.length > 0 && (
+        <p className="section-foot">
+          <Link to={more[0].href}>{more.length === 1 ? '1 more needs a look' : `${more.length} more need a look`}</Link>
+        </p>
+      )}
+    </section>
+  );
+}
 
 // ---------- Home overview: the one primary panel ----------
 
@@ -323,8 +425,7 @@ export function SeasonalSection({ season, tips, snoozed }: { season: string; tip
 
       {planning && (
         <TaskForm
-          // A seasonal job comes round once a year; start it two weeks out so it's on the list now.
-          draft={{ name: planning.taskName, kind: 'maintenance', category: planning.category, seasonal: true, intervalDays: 365, lastDoneAt: toDateInput(addDays(new Date(), 14 - 365)) }}
+          draft={planDraftFor(planning, Date.now())}
           onClose={() => setPlanning(null)}
           onSave={(task: Task) =>
             void act(async () => {

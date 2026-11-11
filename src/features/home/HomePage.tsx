@@ -1,14 +1,17 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { QuickAdd } from '../../app/QuickAdd';
 import { useData, useNow } from '../../data/DataProvider';
 import { useSession } from '../../session/session';
+import { useToast } from '../../ui/overlays';
 import { MessageCircle } from '../../ui/Icons';
 import { EmptyState, Group, Page, Row } from '../../ui/layout';
 import { TaskRow } from '../tasks/components';
 import { compareUrgency, withInfo } from '../tasks/taskMath';
 import { useTaskActions } from '../tasks/useTaskActions';
-import { alertsFor, healthCheckFor, seasonalTipsFor, timelineFor } from './insights';
+import { HomeAlertRows, HomeStatusLine } from './HomeSections';
+import { arrangeAttention, attentionFor, healthCheckFor, homeStatusFor, seasonalTipsFor, timelineFor, type AttentionItem } from './insights';
+import { useAlertDismissals } from './useAlertDismissals';
 
 const UP_NEXT = 3;
 
@@ -27,25 +30,46 @@ export function HomePage() {
   const session = useSession();
   const now = useNow();
   const { complete } = useTaskActions();
+  const toast = useToast();
+  const { dismissed, backupDismissedAt, dismiss, restore, dismissBackup, restoreBackup } = useAlertDismissals();
+  // After a row is hidden, focus moves to the row now in its place, else the one before it, else Ask Homebase.
+  const focusRow = useRef<number | null>(null);
+  const alertsRef = useRef<HTMLDivElement>(null);
 
   const next = useMemo(() => withInfo(data.tasks.filter((t) => t.status === 'open'), now).sort(compareUrgency).slice(0, UP_NEXT), [data.tasks, now]);
-  const alerts = useMemo(() => alertsFor(data, now), [data, now]);
+  const attention = useMemo(() => attentionFor(data, now, backupDismissedAt), [data, now, backupDismissedAt]);
+  const { rows, more, counted } = useMemo(() => arrangeAttention(attention, dismissed), [attention, dismissed]);
+  const status = useMemo(() => homeStatusFor(data, now, counted), [data, now, counted]);
   const health = useMemo(() => healthCheckFor(data, now), [data, now]);
   const season = useMemo(() => seasonalTipsFor(data, now).tips.filter((t) => !t.status).length, [data, now]);
   const comingUp = useMemo(() => timelineFor(data, now).reduce((sum, m) => sum + m.entries.length, 0), [data, now]);
 
-  const overdue = alerts.filter((a) => a.tone === 'overdue').length;
-  const ending = alerts.filter((a) => a.id.startsWith('record-')).length;
-  const status = overdue
-    ? `${overdue} ${overdue === 1 ? 'job is' : 'jobs are'} overdue`
-    : data.tasks.length
-      ? 'Nothing is overdue'
-      : 'Add the jobs your home needs';
+  const ending = counted.filter((a) => a.kind === 'warranty').length;
+
+  useEffect(() => {
+    if (focusRow.current === null) return;
+    const index = Math.min(focusRow.current, rows.length - 1);
+    focusRow.current = null;
+    const target = index >= 0 ? alertsRef.current?.querySelectorAll<HTMLElement>('.home-alert-row > .row')[index] : document.querySelector<HTMLElement>('#home-ask a');
+    target?.focus();
+  }, [rows]);
+
+  function hide(item: AttentionItem) {
+    focusRow.current = rows.indexOf(item);
+    if (item.kind === 'backup') {
+      dismissBackup();
+      toast('Hidden from Home. It’s still in Settings.', { action: { label: 'Undo', run: restoreBackup } });
+    } else if (item.dismissKey) {
+      const key = item.dismissKey;
+      dismiss(key);
+      toast(`Hidden from Home. It’s still in ${item.kind === 'warranty' ? 'Coming up' : 'Systems'}.`, { action: { label: 'Undo', run: () => restore(key) } });
+    }
+  }
 
   return (
     <Page
       title={`${greeting(now)}, ${session.firstName ?? 'there'}`}
-      subtitle={<span className={overdue ? 'home-status is-overdue' : 'home-status'}>{status}</span>}
+      subtitle={<HomeStatusLine status={status} />}
       profile
       actions={
         <span className="mobile-only">
@@ -74,7 +98,11 @@ export function HomePage() {
         )}
       </section>
 
-      <div className="section">
+      <div ref={alertsRef}>
+        <HomeAlertRows rows={rows} more={more} onDismiss={hide} />
+      </div>
+
+      <div className="section" id="home-ask">
         <Group>
           <Row title="Ask Homebase" sub="Something broken, leaking or beeping? Get steps, or look up a warranty." lead={<MessageCircle size={20} />} to="/assistant" wrap />
         </Group>

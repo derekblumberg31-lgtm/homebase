@@ -1,6 +1,6 @@
 import type { HomeData } from '../../data/store';
-import type { TaskCategory, TipState } from '../../data/types';
-import { addDays, DAY_MS, formatCurrency, formatDate, formatDateShort, formatRelativeTime, toDateInput } from '../../lib/dates';
+import type { HomeRecord, TaskCategory, TipState } from '../../data/types';
+import { addDays, DAY_MS, formatCurrency, formatDateShort, formatRelativeTime, toDateInput } from '../../lib/dates';
 import { SYSTEM_LIFESPAN } from '../property/labels';
 import { EXPIRY_WARNING_DAYS } from '../records/labels';
 import { taskCategory } from '../tasks/meta';
@@ -52,42 +52,179 @@ export interface HealthCheck {
 
 const BACKUP_NUDGE_DAYS = 30;
 
+export type AttentionKind = 'warranty' | 'system' | 'backup';
+
+/** A fact about the home or this device that deserves a look, before it becomes a problem. */
+export interface AttentionItem {
+  /** 'record-<id>' | 'system-<id>' | 'backup' */
+  id: string;
+  kind: AttentionKind;
+  title: string;
+  detail: string;
+  /** The backup item points to '/settings'; its Home row is a button when the page passes `onBackup`. */
+  href: string;
+  /** Key kept in homebase:alert-rows-dismissed. Absent for 'backup', which has its own dismissal. */
+  dismissKey?: string;
+}
+
+/** The most alert rows Home shows. The rest are counted in "N more need a look". */
+export const ALERT_ROW_CAP = 2;
+
+/** Records whose end date falls from today through the warranty warning window, soonest first. */
+export function endingSoon(records: HomeRecord[], now: number): HomeRecord[] {
+  const today = toDateInput(new Date(now));
+  const soon = toDateInput(addDays(new Date(now), EXPIRY_WARNING_DAYS));
+  return records
+    .filter((record) => record.expiresAt && record.expiresAt >= today && record.expiresAt <= soon)
+    .sort((a, b) => (a.expiresAt ?? '').localeCompare(b.expiresAt ?? ''));
+}
+
+function endsText(expiresAt: string, now: number): string {
+  const today = toDateInput(new Date(now));
+  if (expiresAt === today) return 'Ends today';
+  if (expiresAt === toDateInput(addDays(new Date(now), 1))) return 'Ends tomorrow';
+  return `Ends ${formatDateShort(expiresAt, now)}`;
+}
+
+/** This device holds the only copy, so ask for a backup once there's something worth keeping. */
+export function backupAttention(data: HomeData, now: number, backupDismissedAt?: string): AttentionItem | null {
+  const hasData = data.tasks.length + data.items.length + data.records.length > 0;
+  const lastBackup = data.settings.lastBackupAt;
+  const since = lastBackup ?? data.household?.onboardedAt;
+  if (!(hasData && since && now - new Date(since).getTime() >= BACKUP_NUDGE_DAYS * DAY_MS)) return null;
+  // Hidden from Home: stays away until a backup is saved after it was hidden.
+  if (backupDismissedAt && !(lastBackup && lastBackup > backupDismissedAt)) return null;
+  return {
+    id: 'backup',
+    kind: 'backup',
+    title: 'Save a backup',
+    detail: lastBackup ? `Last saved ${formatRelativeTime(lastBackup, now).toLowerCase()}` : 'Your home’s information is only on this device',
+    href: '/settings',
+  };
+}
+
+/** Everything that needs a look, uncapped: warranties ending, systems past their life, then backup. */
+export function attentionFor(data: HomeData, now: number, backupDismissedAt?: string): AttentionItem[] {
+  const items: AttentionItem[] = endingSoon(data.records, now).map((record) => ({
+    id: `record-${record.id}`,
+    kind: 'warranty' as const,
+    title: record.title,
+    detail: endsText(record.expiresAt!, now),
+    href: `/records/${record.id}`,
+    dismissKey: `record-${record.id}:${record.expiresAt}`,
+  }));
+
+  const year = new Date(now).getFullYear();
+  const systems: { item: AttentionItem; over: number }[] = [];
+  for (const system of data.systems) {
+    const life = SYSTEM_LIFESPAN[system.kind];
+    if (!life || !system.installYear) continue;
+    const age = year - system.installYear;
+    if (age < life) continue;
+    systems.push({
+      over: age - life,
+      item: {
+        id: `system-${system.id}`,
+        kind: 'system',
+        title: system.name,
+        detail: `${age} years old, past its usual ${life}`,
+        href: '/property/systems',
+        dismissKey: `system-${system.id}:${system.installYear}`,
+      },
+    });
+  }
+  systems.sort((a, b) => b.over - a.over || a.item.title.localeCompare(b.item.title));
+  items.push(...systems.map((s) => s.item));
+
+  const backup = backupAttention(data, now, backupDismissedAt);
+  if (backup) items.push(backup);
+  return items;
+}
+
+/**
+ * Hides what was dismissed, then fills the alert slot. A backup row, when there is one, always
+ * takes the last slot: home facts read first, but losing the only copy of the data costs everything.
+ * `counted` is what the status sentence talks about (never the backup).
+ */
+export function arrangeAttention(
+  items: AttentionItem[],
+  dismissed: ReadonlySet<string>,
+): { rows: AttentionItem[]; more: AttentionItem[]; counted: AttentionItem[] } {
+  const visible = items.filter((item) => !(item.dismissKey && dismissed.has(item.dismissKey)));
+  const counted = visible.filter((item) => item.kind !== 'backup');
+  const backup = visible.find((item) => item.kind === 'backup');
+  const rows = backup ? [...counted.slice(0, ALERT_ROW_CAP - 1), backup] : counted.slice(0, ALERT_ROW_CAP);
+  return { rows, more: counted.filter((item) => !rows.includes(item)), counted };
+}
+
 export function alertsFor(data: HomeData, now: number): Alert[] {
   const alerts: Alert[] = [];
   const open = withInfo(data.tasks.filter((t) => t.status === 'open'), now).sort(compareUrgency);
   for (const { task, info } of open.filter((i) => i.info.status === 'overdue')) {
     alerts.push({ id: `task-${task.id}`, title: task.name, detail: countdownText(info), href: `/tasks/${task.id}`, tone: 'overdue' });
   }
-  const today = toDateInput(new Date(now));
-  const soon = toDateInput(addDays(new Date(now), EXPIRY_WARNING_DAYS));
-  for (const record of data.records) {
-    if (record.expiresAt && record.expiresAt >= today && record.expiresAt <= soon) {
-      alerts.push({ id: `record-${record.id}`, title: record.title, detail: `Ends ${formatDate(record.expiresAt)}`, href: `/records/${record.id}`, tone: 'soon' });
-    }
-  }
-  const year = new Date(now).getFullYear();
-  for (const system of data.systems) {
-    const life = SYSTEM_LIFESPAN[system.kind];
-    if (!life || !system.installYear) continue;
-    const age = year - system.installYear;
-    if (age >= life) {
-      alerts.push({ id: `system-${system.id}`, title: system.name, detail: `${age} years old, past its usual ${life}. Worth an inspection.`, href: '/property/systems', tone: 'soon' });
-    }
-  }
-  // This device holds the only copy, so ask for a backup once there's something worth keeping.
-  const hasData = data.tasks.length + data.items.length + data.records.length > 0;
-  const lastBackup = data.settings.lastBackupAt;
-  const since = lastBackup ?? data.household?.onboardedAt;
-  if (hasData && since && now - new Date(since).getTime() >= BACKUP_NUDGE_DAYS * DAY_MS) {
-    alerts.push({
-      id: 'backup',
-      title: 'Save a backup',
-      detail: lastBackup ? `Last saved ${formatRelativeTime(lastBackup, now).toLowerCase()}` : 'Your home’s information is only on this device',
-      href: '/settings',
-      tone: 'soon',
-    });
+  for (const item of attentionFor(data, now)) {
+    alerts.push({ id: item.id, title: item.title, detail: item.detail, href: item.href, tone: 'soon' });
   }
   return alerts;
+}
+
+// ---------- The status sentence ----------
+
+export interface HomeStatus {
+  tone: 'empty' | 'overdue' | 'attention' | 'clear';
+  /** One or two clauses; the first is the overdue one when tone is 'overdue'. */
+  clauses: [string] | [string, string];
+  text: string;
+}
+
+const plural = (n: number, one: string, many: string) => (n === 1 ? one : many);
+const NAME_LIMIT = 40;
+
+function statusOf(tone: HomeStatus['tone'], clauses: HomeStatus['clauses']): HomeStatus {
+  return { tone, clauses, text: clauses.join(', and ') };
+}
+
+function alertClause(data: HomeData, counted: AttentionItem[], afterOverdue: boolean): string {
+  const n = counted.length;
+  const systems = counted.filter((item) => item.kind === 'system').length;
+  const records = counted.filter((item) => item.kind === 'warranty');
+  const allWarranties = records.every((item) => data.records.find((r) => `record-${r.id}` === item.id)?.kind === 'warranty');
+  if (systems === 0) {
+    return allWarranties ? (n === 1 ? '1 warranty ends soon' : `${n} warranties end soon`) : n === 1 ? '1 end date is coming up' : `${n} end dates are coming up`;
+  }
+  if (records.length === 0) return n === 1 ? '1 system is past its usual life' : `${n} systems are past their usual life`;
+  return `${n} ${afterOverdue ? 'other ' : ''}things need a look`;
+}
+
+/** The one sentence under the greeting. Says only what Homebase was told; the backup is never in it. */
+export function homeStatusFor(data: HomeData, now: number, counted: AttentionItem[]): HomeStatus {
+  const open = withInfo(data.tasks.filter((t) => t.status === 'open'), now).sort(compareUrgency);
+  const overdue = open.filter((i) => i.info.status === 'overdue').length;
+  const dueSoon = open.filter((i) => i.info.status !== 'overdue' && i.info.daysLeft <= 7).length;
+
+  if (overdue > 0) {
+    const a = `${overdue} ${plural(overdue, 'job is', 'jobs are')} overdue`;
+    if (counted.length > 0) return statusOf('overdue', [a, alertClause(data, counted, true)]);
+    if (dueSoon > 0) return statusOf('overdue', [a, `${dueSoon} ${plural(dueSoon, 'more is', 'more are')} due this week`]);
+    return statusOf('overdue', [a]);
+  }
+
+  const w = `${dueSoon} ${plural(dueSoon, 'job is', 'jobs are')} due this week`;
+  if (data.tasks.length === 0) {
+    if (counted.length === 0) return statusOf('empty', ['Add the jobs your home needs']);
+    const b = alertClause(data, counted, false);
+    return statusOf('attention', [b.charAt(0).toUpperCase() + b.slice(1)]);
+  }
+  if (dueSoon > 0) {
+    return statusOf('attention', counted.length > 0 ? [w, alertClause(data, counted, false)] : [w]);
+  }
+  if (counted.length > 0) return statusOf('attention', ['Nothing is overdue', alertClause(data, counted, false)]);
+
+  const first = open[0];
+  if (!first) return statusOf('clear', ['All clear. Nothing else is planned']);
+  const name = first.task.name.length > NAME_LIMIT ? `${first.task.name.slice(0, NAME_LIMIT)}…` : first.task.name;
+  return statusOf('clear', [`All clear. Next up on ${formatDateShort(first.info.dueDate, now)}: ${name}`]);
 }
 
 type Season = 'spring' | 'summer' | 'fall' | 'winter';
@@ -169,12 +306,19 @@ export function recommendationsFor(data: HomeData, now: number): Recommendation[
 export function healthCheckFor(data: HomeData, now: number): HealthCheck {
   const overdue = withInfo(data.tasks.filter((t) => t.status === 'open'), now).filter((i) => i.info.status === 'overdue').length;
   const appliances = data.items.filter((i) => i.kind === 'appliance');
+  // "0 overdue" is only progress once there are tasks to be on schedule with.
+  const overdueStep: HealthStep =
+    data.tasks.length === 0
+      ? { ok: false, title: 'Keep your tasks on schedule', why: 'Add a task first. This step is done while nothing is overdue.', href: '/tasks?new=1' }
+      : overdue === 0
+        ? { ok: true, title: 'Keep your tasks on schedule', why: 'Mark them done, or move the date if they can wait.', href: '/tasks' }
+        : { ok: false, title: `Catch up on ${overdue} overdue ${overdue === 1 ? 'task' : 'tasks'}`, why: 'Mark them done, or move the date if they can wait.', href: '/tasks' };
   const steps: HealthStep[] = [
     { ok: Boolean(data.property?.yearBuilt), title: 'Add the year your home was built', why: 'Older homes need different checks, like wiring and pipe inspections.', href: '/property/details' },
     { ok: data.rooms.length > 0, title: 'Add your rooms', why: 'Tasks and belongings can then be filed by room.', href: '/property' },
     { ok: data.systems.some((s) => s.installYear), title: 'Add your heating, cooling or water heater', why: 'With an install year, Homebase warns you before one reaches the end of its usual life.', href: '/property/systems' },
     { ok: data.tasks.length >= 3, title: 'Plan at least three upkeep tasks', why: 'Start with filters, smoke alarms and gutters.', href: '/tasks?new=1' },
-    { ok: overdue === 0, title: `Catch up on ${overdue} overdue ${overdue === 1 ? 'task' : 'tasks'}`, why: 'Mark them done, or move the date if they can wait.', href: '/tasks' },
+    overdueStep,
     { ok: appliances.length > 0, title: 'List your main appliances', why: 'Model and serial numbers save time on repairs and warranty claims.', href: '/property/inventory' },
     { ok: data.records.some((r) => r.kind === 'warranty'), title: 'Save a warranty in the Warranty Vault', why: 'You’ll get a reminder two months before it ends.', href: '/records?new=warranty' },
     { ok: data.items.some((i) => i.kind === 'key'), title: 'Save your house keys', why: 'A photo tells a locksmith exactly which blank to cut.', href: '/property/identify-key' },

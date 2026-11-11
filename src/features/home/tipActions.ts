@@ -2,6 +2,7 @@ import type { HomeStore } from '../../data/store';
 import type { ServiceEvent, Task, TipState } from '../../data/types';
 import { uid } from '../../data/ids';
 import { addDays, toDateInput } from '../../lib/dates';
+import type { TaskDraft } from '../tasks/TaskForm';
 import { SNOOZE_DAYS, type SeasonalTip } from './insights';
 
 /**
@@ -18,6 +19,14 @@ async function setTipState(store: HomeStore, id: string, state: TipState | undef
 function undoTo(store: HomeStore, id: string) {
   const previous = store.getSnapshot().settings.tipStates?.[id];
   return () => setTipState(store, id, previous);
+}
+
+/**
+ * The form draft for planning a seasonal job. It comes round once a year; start it two weeks out
+ * so it is on the list now. No last-done date is invented: it is first due on `dueDate`.
+ */
+export function planDraftFor(tip: Pick<SeasonalTip, 'taskName' | 'category'>, now: number): TaskDraft {
+  return { name: tip.taskName, kind: 'maintenance', category: tip.category, seasonal: true, intervalDays: 365, dueDate: toDateInput(addDays(new Date(now), 14)) };
 }
 
 export async function planTip(store: HomeStore, tip: SeasonalTip, task: Task) {
