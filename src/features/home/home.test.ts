@@ -434,6 +434,23 @@ describe('starter jobs', () => {
     expect(store.getSnapshot().serviceEvents).toEqual([]);
   });
 
+  it('Undoing the Done first, then the starter add, leaves nothing behind', async () => {
+    const store = await freshStore();
+    const [furnace, , , hvac] = starterJobsFor(store.getSnapshot(), NOW);
+    const added = await addStarterJobs(store, [{ job: furnace, choice: 'not-sure' }, { job: hvac, choice: 'this-month' }], NOW);
+    const furnaceTask = store.getSnapshot().tasks.find((t) => t.name === 'Service the furnace')!;
+    const done = await completeTask(store, furnaceTask, { date: '2026-10-27' });
+
+    await done.undo();
+    expect(store.getSnapshot().tasks.find((t) => t.name === 'Service the furnace')).toEqual(furnaceTask);
+    await added.undo();
+    const after = store.getSnapshot();
+    expect(after.tasks).toEqual([]);
+    expect(after.serviceEvents).toEqual([]);
+    expect(after.activity.filter((a) => a.kind === 'task-added' || a.kind === 'task-done')).toEqual([]);
+    expect(after.settings.tipStates ?? {}).toEqual({});
+  });
+
   it('Undo of the starter add keeps a tip choice made in the meantime', async () => {
     const store = await freshStore();
     const [furnace, other] = starterJobsFor(store.getSnapshot(), NOW);
