@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { Task } from '../../data/types';
 import { toDateInput } from '../../lib/dates';
 import { presetCostHint } from './presets';
-import { annualCost, compareUrgency, countdownText, getTaskInfo, lastDoneKnown, recurringSchedule, withInfo } from './taskMath';
+import { annualCost, compareUrgency, countdownText, getTaskInfo, lastDoneKnown, withInfo } from './taskMath';
 
 const now = new Date(2026, 9, 27, 12).getTime();
 const daysAgo = (n: number) => toDateInput(new Date(2026, 9, 27 - n));
@@ -101,21 +101,6 @@ describe('a recurring job whose last-done date is unknown', () => {
     expect(lastDoneKnown({ recurring: true, dueDate: '2026-11-10' })).toBe(false);
     expect(lastDoneKnown({ recurring: true, dueDate: undefined })).toBe(true);
     expect(lastDoneKnown({ recurring: false, dueDate: '2026-11-10' })).toBe(true);
-  });
-});
-
-describe('recurringSchedule', () => {
-  it('keeps the first due date when the last-done field is left empty', () => {
-    expect(recurringSchedule('', '2026-11-10', '2026-10-27')).toEqual({ lastDoneAt: '2026-10-27', dueDate: '2026-11-10' });
-  });
-
-  it('counts from a typed date and drops the first due date', () => {
-    expect(recurringSchedule('2026-09-01', '2026-11-10', '2026-10-27')).toEqual({ lastDoneAt: '2026-09-01', dueDate: undefined });
-  });
-
-  it('asks for a date when there is nothing to go on', () => {
-    expect(recurringSchedule('', undefined, '2026-10-27')).toEqual({ error: 'Pick the date it was last done.' });
-    expect(recurringSchedule('2026-13-45', '2026-11-10', '2026-10-27')).toEqual({ error: 'Pick the date it was last done.' });
   });
 });
 

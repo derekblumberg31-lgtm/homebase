@@ -49,15 +49,6 @@ export function writeStringList(key: DeviceFlagKey, list: string[]): boolean {
   return writeFlag(key, JSON.stringify(list));
 }
 
-/** Adds one id to a stored list without duplicating it. */
-export function addToStringList(key: DeviceFlagKey, id: string): string[] {
-  const list = readStringList(key);
-  if (list.includes(id)) return list;
-  const next = [...list, id];
-  writeStringList(key, next);
-  return next;
-}
-
 const HOME_FLAGS: DeviceFlagKey[] = [
   'homebase:starter-dismissed',
   'homebase:backup-row-dismissed',

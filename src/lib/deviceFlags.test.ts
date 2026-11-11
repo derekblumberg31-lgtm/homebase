@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { addToStringList, clearFlag, clearHomeFlags, readFlag, readStringList, writeFlag, writeStringList } from './deviceFlags';
+import { clearFlag, clearHomeFlags, readFlag, readStringList, writeFlag, writeStringList } from './deviceFlags';
 
 function memoryStorage(): Storage {
   const map = new Map<string, string>();
@@ -39,11 +39,9 @@ describe('deviceFlags with working storage', () => {
     expect(readFlag('homebase:install-row-dismissed')).toBeNull();
   });
 
-  it('round-trips the id list and does not duplicate', () => {
+  it('round-trips the id list', () => {
     expect(readStringList('homebase:alert-rows-dismissed')).toEqual([]);
-    addToStringList('homebase:alert-rows-dismissed', 'a');
-    addToStringList('homebase:alert-rows-dismissed', 'b');
-    addToStringList('homebase:alert-rows-dismissed', 'a');
+    expect(writeStringList('homebase:alert-rows-dismissed', ['a', 'b'])).toBe(true);
     expect(readStringList('homebase:alert-rows-dismissed')).toEqual(['a', 'b']);
   });
 
@@ -67,7 +65,6 @@ describe('deviceFlags when localStorage throws', () => {
     expect(() => clearFlag('homebase:starter-dismissed')).not.toThrow();
     expect(readStringList('homebase:alert-rows-dismissed')).toEqual([]);
     expect(writeStringList('homebase:alert-rows-dismissed', ['a'])).toBe(false);
-    expect(addToStringList('homebase:alert-rows-dismissed', 'a')).toEqual(['a']);
   });
 });
 

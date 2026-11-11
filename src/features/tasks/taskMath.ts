@@ -1,5 +1,5 @@
 import type { Task } from '../../data/types';
-import { addDays, DAY_MS, isRealDate, parseDateInput, startOfDay } from '../../lib/dates';
+import { addDays, DAY_MS, parseDateInput, startOfDay } from '../../lib/dates';
 
 export type TaskStatus = 'healthy' | 'due' | 'overdue' | 'done';
 
@@ -104,15 +104,4 @@ export function annualCost(task: Pick<Task, 'cost' | 'intervalDays' | 'recurring
 
 export function withInfo(tasks: Task[], now: number): TaskItem[] {
   return tasks.map((task) => ({ task, info: getTaskInfo(task, now) }));
-}
-
-/** Superseded by `resolveLastDone` in lastDone.ts. */
-export function recurringSchedule(
-  lastDoneAt: string,
-  firstDue: string | undefined,
-  addedOn: string,
-): { lastDoneAt: string; dueDate: string | undefined } | { error: string } {
-  if (isRealDate(lastDoneAt)) return { lastDoneAt, dueDate: undefined };
-  if (!lastDoneAt && firstDue) return { lastDoneAt: addedOn, dueDate: firstDue };
-  return { error: 'Pick the date it was last done.' };
 }

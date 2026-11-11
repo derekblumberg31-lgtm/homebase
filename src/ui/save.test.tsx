@@ -1,5 +1,8 @@
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it, vi } from 'vitest';
+import type { Task } from '../data/types';
+import { freshStore } from '../test/freshStore';
+import { addTask } from '../features/tasks/actions';
 import { createSaveRunner, SAVE_FAILED_COPY, SaveFailed, type SaveState } from './save';
 
 function runner() {
@@ -60,35 +63,40 @@ describe('createSaveRunner', () => {
   });
 });
 
-describe('TasksPage-style handler (put then optional log)', () => {
-  const handler = (put: () => Promise<void>, log: () => Promise<void>) => async () => {
-    await put();
-    try {
-      await log();
-    } catch {
-      /* activity is optional */
-    }
-  };
-
-  it('resolves when only the log fails', async () => {
-    await expect(
-      handler(
-        async () => {},
-        async () => {
-          throw new Error('log');
-        },
-      )(),
-    ).resolves.toBeUndefined();
+describe('createSaveRunner with the real addTask', () => {
+  const newTask = (id: string): Task => ({
+    id,
+    kind: 'maintenance',
+    name: 'Clean the gutters',
+    typeId: 'custom',
+    location: '',
+    lastDoneAt: '2026-10-27',
+    intervalDays: 365,
+    recurring: true,
+    status: 'open',
+    createdAt: '2026-10-27T00:00:00.000Z',
+    updatedAt: '2026-10-27T00:00:00.000Z',
   });
 
-  it('rejects and skips the log when put fails', async () => {
-    const log = vi.fn(async () => {});
-    await expect(
-      handler(async () => {
-        throw new Error('put');
-      }, log)(),
-    ).rejects.toThrow('put');
-    expect(log).not.toHaveBeenCalled();
+  it('reports a failed task save, keeps nothing, and a retry saves exactly one', async () => {
+    const store = await freshStore();
+    const { run, last } = runner();
+    const put = vi.spyOn(store, 'put').mockRejectedValueOnce(new Error('quota'));
+    expect(await run(() => addTask(store, newTask('a')))).toBe(false);
+    expect(last()).toEqual({ saving: false, failed: true });
+    expect(store.getSnapshot().tasks).toEqual([]);
+    put.mockRestore();
+    expect(await run(() => addTask(store, newTask('a')))).toBe(true);
+    expect(store.getSnapshot().tasks.map((t) => t.id)).toEqual(['a']);
+  });
+
+  it('counts the save as good when only the activity entry fails', async () => {
+    const store = await freshStore();
+    const { run, last } = runner();
+    vi.spyOn(store, 'log').mockRejectedValue(new Error('log'));
+    expect(await run(() => addTask(store, newTask('b')))).toBe(true);
+    expect(last().failed).toBe(false);
+    expect(store.getSnapshot().tasks).toHaveLength(1);
   });
 });
 
