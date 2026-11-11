@@ -616,7 +616,8 @@ img {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  min-height: 40px;
+  min-height: 44px;
+  margin-block: -2px;
   margin-left: -4px;
   color: var(--accent);
   font-size: 15px;
@@ -832,14 +833,14 @@ button.row:focus-visible {
 }
 
 .button.is-quiet {
-  min-height: 40px;
+  min-height: 44px;
   padding: 0 8px;
   color: var(--accent);
   font-weight: 500;
 }
 
 .button.is-danger-quiet {
-  min-height: 40px;
+  min-height: 44px;
   padding: 0 8px;
   color: var(--text-2);
   font-weight: 500;
@@ -1050,7 +1051,7 @@ select.input {
 .chips {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 10px 8px;
   margin-top: 8px;
 }
 
@@ -1079,7 +1080,7 @@ select.input {
 
 .segmented button {
   flex: 1;
-  min-height: 34px;
+  min-height: 40px;
   padding: 0 10px;
   border-radius: 8px;
   color: var(--text-2);
@@ -1232,7 +1233,7 @@ select.input {
 }
 
 .sheet-action {
-  min-height: 40px;
+  min-height: 44px;
   padding: 0 6px;
   color: var(--accent);
   font-size: 17px;
@@ -1644,7 +1645,7 @@ select.input {
 .bubble .bubble-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px 14px;
+  gap: 10px 14px;
   margin-top: 10px;
 }
 
@@ -2260,6 +2261,26 @@ select.input {
 
 .icon-button:active {
   background: var(--fill-strong);
+}
+
+/* 44px hit areas. The visual size stays; an invisible box grows to at least 44 x 44, centred on
+   the control. :where() keeps specificity at zero so existing position rules win. */
+:where(.chip, .segmented button, .button.is-small, .icon-button, .round-button, .search-field button,
+  .toast button, .bubble .bubble-actions button, .bubble .bubble-actions a, .switch,
+  .section-aside a, .section-aside button) {
+  position: relative;
+}
+
+:is(.chip, .segmented button, .button.is-small, .icon-button, .round-button, .search-field button,
+  .toast button, .bubble .bubble-actions button, .bubble .bubble-actions a, .switch,
+  .section-aside a, .section-aside button)::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: max(100%, 44px);
+  height: max(100%, 44px);
+  transform: translate(-50%, -50%);
 }
 
 @media (hover: hover) {
@@ -3009,7 +3030,7 @@ select.input {
 .tip-actions {
   display: flex;
   align-items: center;
-  gap: 2px;
+  gap: 8px;
 }
 
 .module .module-note:last-child {
@@ -3287,7 +3308,8 @@ a.feed-row:focus-visible {
   flex-wrap: nowrap;
   overflow-x: auto;
   scrollbar-width: none;
-  padding-bottom: 2px;
+  padding-block: 5px;
+  margin-block: -5px;
 }
 
 .records-tools .chip {
