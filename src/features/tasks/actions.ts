@@ -1,6 +1,7 @@
 import type { HomeStore } from '../../data/store';
 import type { ServiceEvent, Task } from '../../data/types';
 import { uid } from '../../data/ids';
+import { lastDoneKnown } from './taskMath';
 import { addDays, formatDate, parseDateInput, toDateInput } from '../../lib/dates';
 
 export interface CompletionInput {
@@ -23,14 +24,14 @@ export async function completeTask(store: HomeStore, task: Task, input: Completi
     title: task.name,
     taskId: task.id,
     itemId: task.itemId,
-    previousDoneAt: task.recurring ? task.lastDoneAt : undefined,
+    previousDoneAt: task.recurring && lastDoneKnown(task) ? task.lastDoneAt : undefined,
     cost: input.cost ?? task.cost,
     provider: input.provider,
     notes: input.notes?.trim() || undefined,
     createdAt: new Date().toISOString(),
   };
   const updated: Task = task.recurring
-    ? { ...task, lastDoneAt: date, updatedAt: new Date().toISOString() }
+    ? { ...task, lastDoneAt: date, dueDate: undefined, updatedAt: new Date().toISOString() }
     : { ...task, status: 'done', lastDoneAt: date, updatedAt: new Date().toISOString() };
 
   await store.put('tasks', updated);

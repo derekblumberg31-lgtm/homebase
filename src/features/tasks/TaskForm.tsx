@@ -2,12 +2,13 @@ import { useMemo, useState } from 'react';
 import { useData } from '../../data/DataProvider';
 import { uid } from '../../data/ids';
 import type { Task, TaskCategory, TaskKind, TaskPriority } from '../../data/types';
-import { isRealDate, toDateInput } from '../../lib/dates';
+import { formatDate, isRealDate, toDateInput } from '../../lib/dates';
 import { Chips, FormGroup, Segmented, SelectField, Switch, TextArea, TextField } from '../../ui/controls';
 import { Section } from '../../ui/layout';
 import { Sheet } from '../../ui/overlays';
 import { taskCategory } from './meta';
-import { CATEGORY_META, CATEGORY_ORDER, TASK_PRESETS, findType } from './presets';
+import { CATEGORY_META, CATEGORY_ORDER, TASK_PRESETS, findType, presetCostHint } from './presets';
+import { lastDoneKnown, recurringSchedule } from './taskMath';
 
 const INTERVALS = [
   { value: 7, label: '1 wk' },
@@ -30,6 +31,8 @@ export interface TaskDraft {
   /** Recurring drafts: when it was last done and how often, e.g. a yearly seasonal job due soon. */
   lastDoneAt?: string;
   intervalDays?: number;
+  /** First due date when the last-done date is not known. */
+  dueDate?: string;
 }
 
 interface TaskFormProps {
@@ -48,7 +51,9 @@ export function TaskForm({ initial, draft, onClose, onSave }: TaskFormProps) {
   const [roomId, setRoomId] = useState(initial?.roomId ?? draft?.roomId ?? '');
   const [location, setLocation] = useState(initial?.location ?? '');
   const [itemId, setItemId] = useState(initial?.itemId ?? draft?.itemId ?? '');
-  const [lastDoneAt, setLastDoneAt] = useState(initial?.lastDoneAt ?? draft?.lastDoneAt ?? toDateInput());
+  // Set when the last-done date is not known: the job is first due on this date.
+  const firstDue = initial?.recurring ? initial.dueDate : draft?.dueDate;
+  const [lastDoneAt, setLastDoneAt] = useState(firstDue ? '' : initial?.lastDoneAt ?? draft?.lastDoneAt ?? toDateInput());
   const [interval, setInterval] = useState(String(initial?.intervalDays ?? draft?.intervalDays ?? 90));
   const [dueDate, setDueDate] = useState(initial?.dueDate ?? '');
   const [cost, setCost] = useState(initial?.cost != null ? String(initial.cost) : '');
@@ -68,7 +73,6 @@ export function TaskForm({ initial, draft, onClose, onSave }: TaskFormProps) {
       if (!name || TASK_PRESETS.some((p) => p.label === name)) setName(preset.label);
       setInterval(String(preset.lifespanDays));
       setCategory(preset.category);
-      if (!cost) setCost(String(preset.cost));
     }
   }
 
@@ -78,7 +82,8 @@ export function TaskForm({ initial, draft, onClose, onSave }: TaskFormProps) {
     const price = cost.trim() ? Number(cost) : undefined;
     if (!name.trim()) next.name = 'Give the task a name.';
     if (recurring && !(days >= 1 && days <= 3650)) next.interval = 'Use a number of days between 1 and 3650.';
-    if (recurring && !isRealDate(lastDoneAt)) next.lastDoneAt = 'Pick the date it was last done.';
+    const schedule = recurring ? recurringSchedule(lastDoneAt, firstDue, initial && !lastDoneKnown(initial) ? initial.lastDoneAt : toDateInput()) : null;
+    if (schedule && 'error' in schedule) next.lastDoneAt = schedule.error;
     if (!recurring && dueDate && !isRealDate(dueDate)) next.dueDate = 'Pick a real date.';
     if (price !== undefined && !(price >= 0)) next.cost = 'Use a positive amount, or leave it empty.';
     setErrors(next);
@@ -94,10 +99,10 @@ export function TaskForm({ initial, draft, onClose, onSave }: TaskFormProps) {
       location: room?.name ?? location.trim(),
       roomId: room?.id,
       itemId: itemId || undefined,
-      lastDoneAt: recurring ? lastDoneAt : initial?.lastDoneAt ?? toDateInput(),
+      lastDoneAt: schedule && !('error' in schedule) ? schedule.lastDoneAt : initial?.lastDoneAt ?? toDateInput(),
       intervalDays: recurring ? days : initial?.intervalDays ?? 30,
       recurring,
-      dueDate: recurring ? undefined : dueDate || toDateInput(),
+      dueDate: schedule && !('error' in schedule) ? schedule.dueDate : dueDate || toDateInput(),
       status: initial?.status === 'done' && !recurring ? 'done' : 'open',
       cost: price,
       priority,
@@ -186,7 +191,16 @@ export function TaskForm({ initial, draft, onClose, onSave }: TaskFormProps) {
         <FormGroup>
           {recurring ? (
             <>
-              <TextField label="Last done" type="date" value={lastDoneAt} max={toDateInput()} onChange={(e) => setLastDoneAt(e.target.value)} error={errors.lastDoneAt} />
+              <TextField
+                label="Last done"
+                type="date"
+                optional={Boolean(firstDue)}
+                value={lastDoneAt}
+                max={toDateInput()}
+                onChange={(e) => setLastDoneAt(e.target.value)}
+                error={errors.lastDoneAt}
+                hint={firstDue && !lastDoneAt ? `Not sure? Leave it empty. It’s due ${formatDate(firstDue)}.` : undefined}
+              />
               <div className="field">
                 <TextField label="Repeat every" inputMode="numeric" value={interval} onChange={(e) => setInterval(e.target.value)} suffix="days" error={errors.interval} />
                 <Chips label="Common intervals" value={Number(interval)} onChange={(v) => setInterval(String(v))} options={INTERVALS} />
@@ -195,7 +209,7 @@ export function TaskForm({ initial, draft, onClose, onSave }: TaskFormProps) {
           ) : (
             <TextField label="Do by" optional type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} error={errors.dueDate} hint="Leave empty for today." />
           )}
-          <TextField label={recurring ? 'Cost each time' : 'Estimated cost'} optional inputMode="decimal" prefix="$" value={cost} onChange={(e) => setCost(e.target.value)} error={errors.cost} />
+          <TextField label={recurring ? 'Cost each time' : 'Estimated cost'} optional inputMode="decimal" prefix="$" value={cost} onChange={(e) => setCost(e.target.value)} error={errors.cost} hint={presetCostHint(typeId, cost)} />
           <TextArea label="Notes" optional value={notes} onChange={(e) => setNotes(e.target.value)} placeholder={recurring ? 'Filter size, part number…' : 'What needs doing, who to call…'} />
         </FormGroup>
       </Section>

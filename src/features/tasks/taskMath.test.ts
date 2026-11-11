@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import type { Task } from '../../data/types';
 import { toDateInput } from '../../lib/dates';
-import { annualCost, compareUrgency, countdownText, getTaskInfo, withInfo } from './taskMath';
+import { presetCostHint } from './presets';
+import { annualCost, compareUrgency, countdownText, getTaskInfo, lastDoneKnown, recurringSchedule, withInfo } from './taskMath';
 
 const now = new Date(2026, 9, 27, 12).getTime();
 const daysAgo = (n: number) => toDateInput(new Date(2026, 9, 27 - n));
@@ -72,5 +73,56 @@ describe('ordering and cost', () => {
   it('annualises recurring costs and ignores one-offs', () => {
     expect(annualCost(task({ cost: 24, intervalDays: 90 }))).toBeCloseTo(97.33, 1);
     expect(annualCost(task({ cost: 500, recurring: false }))).toBe(0);
+  });
+});
+
+describe('a recurring job whose last-done date is unknown', () => {
+  const unknown = (dueDate: string) => task({ lastDoneAt: '2026-10-27', dueDate, intervalDays: 365 });
+
+  it('is first due on its due date, not counted from the day it was added', () => {
+    const info = getTaskInfo(unknown('2026-11-10'), now);
+    expect(info.daysLeft).toBe(14);
+    expect(info.status).toBe('healthy');
+    expect(info.percentUsed).toBe(0);
+  });
+
+  it('is due, in neutral terms, on and just before its due date', () => {
+    const info = getTaskInfo(unknown('2026-10-27'), now);
+    expect(info.status).toBe('due');
+    expect(countdownText(info)).toBe('Today');
+    expect(getTaskInfo(unknown('2026-11-03'), now).status).toBe('due');
+  });
+
+  it('is overdue once its due date has passed', () => {
+    expect(getTaskInfo(unknown('2026-10-24'), now).status).toBe('overdue');
+  });
+
+  it('knows when last done is recorded', () => {
+    expect(lastDoneKnown({ recurring: true, dueDate: '2026-11-10' })).toBe(false);
+    expect(lastDoneKnown({ recurring: true, dueDate: undefined })).toBe(true);
+    expect(lastDoneKnown({ recurring: false, dueDate: '2026-11-10' })).toBe(true);
+  });
+});
+
+describe('recurringSchedule', () => {
+  it('keeps the first due date when the last-done field is left empty', () => {
+    expect(recurringSchedule('', '2026-11-10', '2026-10-27')).toEqual({ lastDoneAt: '2026-10-27', dueDate: '2026-11-10' });
+  });
+
+  it('counts from a typed date and drops the first due date', () => {
+    expect(recurringSchedule('2026-09-01', '2026-11-10', '2026-10-27')).toEqual({ lastDoneAt: '2026-09-01', dueDate: undefined });
+  });
+
+  it('asks for a date when there is nothing to go on', () => {
+    expect(recurringSchedule('', undefined, '2026-10-27')).toEqual({ error: 'Pick the date it was last done.' });
+    expect(recurringSchedule('2026-13-45', '2026-11-10', '2026-10-27')).toEqual({ error: 'Pick the date it was last done.' });
+  });
+});
+
+describe('presetCostHint', () => {
+  it('shows a typical cost as a hint only while the cost is empty', () => {
+    expect(presetCostHint('gutters', '')).toBe('Often about $25');
+    expect(presetCostHint('gutters', '40')).toBeUndefined();
+    expect(presetCostHint('custom', '')).toBeUndefined();
   });
 });

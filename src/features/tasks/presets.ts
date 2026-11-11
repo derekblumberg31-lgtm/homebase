@@ -1,5 +1,6 @@
 /** Maintenance Planner presets: typical jobs with how often they repeat and a typical cost. */
 import type { TaskCategory } from '../../data/types';
+import { formatCurrency } from '../../lib/dates';
 
 export type Category = TaskCategory;
 
@@ -107,3 +108,9 @@ export const CATEGORY_ORDER: Category[] = [
   'appliance',
   'other',
 ];
+
+/** A hint under the cost field. The typical cost is only ever shown, never saved as the user's cost. */
+export function presetCostHint(typeId: string, cost: string): string | undefined {
+  if (typeId === 'custom' || cost.trim() !== '') return undefined;
+  return `Often about ${formatCurrency(findType(typeId).cost)}`;
+}

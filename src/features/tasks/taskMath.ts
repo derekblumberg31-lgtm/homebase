@@ -1,5 +1,5 @@
 import type { Task } from '../../data/types';
-import { addDays, DAY_MS, parseDateInput, startOfDay } from '../../lib/dates';
+import { addDays, DAY_MS, isRealDate, parseDateInput, startOfDay } from '../../lib/dates';
 
 export type TaskStatus = 'healthy' | 'due' | 'overdue' | 'done';
 
@@ -20,9 +20,17 @@ export interface TaskItem {
 const DUE_SOON_DAYS = 7;
 const DUE_SOON_PERCENT = 85;
 
+/**
+ * A recurring task with a `dueDate` means "last done is not recorded; first due on `dueDate`".
+ * Its `lastDoneAt` is only the day it was added and is never shown as a last-done date.
+ */
+export function lastDoneKnown(task: Pick<Task, 'recurring' | 'dueDate'>): boolean {
+  return !(task.recurring && task.dueDate);
+}
+
 /** When a task is due: the next repeat for recurring tasks, the due date for one-offs. */
 export function dueDateOf(task: Pick<Task, 'recurring' | 'lastDoneAt' | 'intervalDays' | 'dueDate'>): Date {
-  if (!task.recurring && task.dueDate) return parseDateInput(task.dueDate);
+  if (task.dueDate) return parseDateInput(task.dueDate);
   return addDays(parseDateInput(task.lastDoneAt), task.intervalDays);
 }
 
@@ -31,7 +39,7 @@ export function getTaskInfo(task: Task, nowMs: number): TaskInfo {
   const today = startOfDay(nowMs);
   const daysLeft = Math.round((dueDate.getTime() - today.getTime()) / DAY_MS);
   const elapsed = nowMs - parseDateInput(task.lastDoneAt).getTime();
-  const percentUsed = task.recurring ? Math.max(0, (elapsed / (task.intervalDays * DAY_MS)) * 100) : 0;
+  const percentUsed = task.recurring && lastDoneKnown(task) ? Math.max(0, (elapsed / (task.intervalDays * DAY_MS)) * 100) : 0;
 
   let status: TaskStatus;
   if (task.status === 'done') status = 'done';
@@ -96,4 +104,19 @@ export function annualCost(task: Pick<Task, 'cost' | 'intervalDays' | 'recurring
 
 export function withInfo(tasks: Task[], now: number): TaskItem[] {
   return tasks.map((task) => ({ task, info: getTaskInfo(task, now) }));
+}
+
+/**
+ * What a recurring task stores from the form's "last done" field. A real date is stored as the
+ * last-done date with no `dueDate`. An empty field with a first-due date stores that date as
+ * `dueDate` and keeps `addedOn` as the placeholder `lastDoneAt` (never shown as last done).
+ */
+export function recurringSchedule(
+  lastDoneAt: string,
+  firstDue: string | undefined,
+  addedOn: string,
+): { lastDoneAt: string; dueDate: string | undefined } | { error: string } {
+  if (isRealDate(lastDoneAt)) return { lastDoneAt, dueDate: undefined };
+  if (!lastDoneAt && firstDue) return { lastDoneAt: addedOn, dueDate: firstDue };
+  return { error: 'Pick the date it was last done.' };
 }

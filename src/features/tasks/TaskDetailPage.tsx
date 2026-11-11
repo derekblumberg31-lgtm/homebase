@@ -11,7 +11,7 @@ import { Countdown, DayStrip } from './components';
 import { TaskForm } from './TaskForm';
 import { PRIORITY_LABEL, taskCategory, taskPriority } from './meta';
 import { CATEGORY_META } from './presets';
-import { annualCost, getTaskInfo } from './taskMath';
+import { annualCost, getTaskInfo, lastDoneKnown } from './taskMath';
 import { useTaskActions } from './useTaskActions';
 
 export function TaskDetailPage() {
@@ -50,11 +50,11 @@ export function TaskDetailPage() {
         <Group>
           <div className="row is-stacked is-hero">
             <Countdown info={info} large />
-            {task.recurring && task.status === 'open' && <DayStrip task={task} now={now} />}
+            {task.recurring && task.status === 'open' && lastDoneKnown(task) && <DayStrip task={task} now={now} />}
           </div>
           {task.recurring ? (
             <>
-              <Row title="Last done" value={formatDate(task.lastDoneAt)} />
+              <Row title="Last done" value={lastDoneKnown(task) ? formatDate(task.lastDoneAt) : 'Not recorded yet'} />
               <Row title={info.status === 'overdue' ? 'Was due' : 'Due'} value={formatDate(info.dueDate)} />
               <Row title="Repeats" value={`Every ${formatInterval(task.intervalDays)}`} />
             </>

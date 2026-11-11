@@ -5,7 +5,7 @@ import { DAY_MS, parseDateInput } from '../../lib/dates';
 import { Check } from '../../ui/Icons';
 import { project, rubberband, velocityTracker } from '../../ui/physics';
 import { PRIORITY_LABEL, taskMetaParts, taskPriority } from './meta';
-import { countdownParts, type TaskInfo } from './taskMath';
+import { countdownParts, lastDoneKnown, type TaskInfo } from './taskMath';
 
 export function Countdown({ info, large = false }: { info: TaskInfo; large?: boolean }) {
   const parts = countdownParts(info);
@@ -162,7 +162,7 @@ export function TaskRow({ task, info, now, featured = false, onDone }: TaskRowPr
           </span>
           <Countdown info={info} />
         </span>
-        {featured && task.recurring && <DayStrip task={task} now={now} />}
+        {featured && task.recurring && lastDoneKnown(task) && <DayStrip task={task} now={now} />}
       </button>
     </div>
   );
