@@ -2,13 +2,14 @@ import { useMemo, useState } from 'react';
 import { useData } from '../../data/DataProvider';
 import { uid } from '../../data/ids';
 import type { Task, TaskCategory, TaskKind, TaskPriority } from '../../data/types';
-import { formatDate, isRealDate, toDateInput } from '../../lib/dates';
+import { daysBetween, formatDate, isRealDate, startOfDay, toDateInput } from '../../lib/dates';
 import { Chips, FormGroup, Segmented, SelectField, Switch, TextArea, TextField } from '../../ui/controls';
 import { Section } from '../../ui/layout';
 import { Sheet } from '../../ui/overlays';
 import { taskCategory } from './meta';
 import { CATEGORY_META, CATEGORY_ORDER, TASK_PRESETS, findType, presetCostHint } from './presets';
-import { lastDoneKnown, recurringSchedule } from './taskMath';
+import { firstDueFor, LAST_DONE_OPTIONS, resolveLastDone, type LastDoneChoice } from './lastDone';
+import { dueDateOf } from './taskMath';
 
 const INTERVALS = [
   { value: 7, label: '1 wk' },
@@ -53,7 +54,9 @@ export function TaskForm({ initial, draft, onClose, onSave }: TaskFormProps) {
   const [itemId, setItemId] = useState(initial?.itemId ?? draft?.itemId ?? '');
   // Set when the last-done date is not known: the job is first due on this date.
   const firstDue = initial?.recurring ? initial.dueDate : draft?.dueDate;
-  const [lastDoneAt, setLastDoneAt] = useState(firstDue ? '' : initial?.lastDoneAt ?? draft?.lastDoneAt ?? toDateInput());
+  // No silent "today": a new job starts with nothing chosen. A draft that carries a real date opens on "Pick a date".
+  const [lastDone, setLastDone] = useState<LastDoneChoice | 'date' | undefined>(!initial && !firstDue && draft?.lastDoneAt ? 'date' : undefined);
+  const [lastDoneDate, setLastDoneDate] = useState(!initial && !firstDue ? draft?.lastDoneAt ?? '' : '');
   const [interval, setInterval] = useState(String(initial?.intervalDays ?? draft?.intervalDays ?? 90));
   const [dueDate, setDueDate] = useState(initial?.dueDate ?? '');
   const [cost, setCost] = useState(initial?.cost != null ? String(initial.cost) : '');
@@ -76,13 +79,25 @@ export function TaskForm({ initial, draft, onClose, onSave }: TaskFormProps) {
     }
   }
 
+  const intervalDays = Math.round(Number(interval));
+  const lastDoneHint = (() => {
+    if (lastDone && lastDone !== 'date' && intervalDays >= 1) {
+      const due = firstDueFor(lastDone, intervalDays, Date.now());
+      return daysBetween(toDateInput(startOfDay(Date.now())), due) <= 7 ? 'Due within a week, so it’s on your list now.' : `Next due ${formatDate(due)}`;
+    }
+    if (lastDone) return undefined;
+    if (initial?.recurring) return `Next due ${formatDate(dueDateOf(initial))}. Pick one to change it.`;
+    if (draft?.dueDate) return `If you skip this, it’s due ${formatDate(draft.dueDate)}.`;
+    return 'A rough guess is fine.';
+  })();
+
   function save() {
     const next: Record<string, string> = {};
     const days = Math.round(Number(interval));
     const price = cost.trim() ? Number(cost) : undefined;
     if (!name.trim()) next.name = 'Give the task a name.';
     if (recurring && !(days >= 1 && days <= 3650)) next.interval = 'Use a number of days between 1 and 3650.';
-    const schedule = recurring ? recurringSchedule(lastDoneAt, firstDue, initial && !lastDoneKnown(initial) ? initial.lastDoneAt : toDateInput()) : null;
+    const schedule = recurring ? resolveLastDone({ choice: lastDone, date: lastDoneDate, intervalDays: days, now: Date.now(), initial: initial ?? undefined, draftDueDate: draft?.dueDate }) : null;
     if (schedule && 'error' in schedule) next.lastDoneAt = schedule.error;
     if (!recurring && dueDate && !isRealDate(dueDate)) next.dueDate = 'Pick a real date.';
     if (price !== undefined && !(price >= 0)) next.cost = 'Use a positive amount, or leave it empty.';
@@ -191,16 +206,17 @@ export function TaskForm({ initial, draft, onClose, onSave }: TaskFormProps) {
         <FormGroup>
           {recurring ? (
             <>
-              <TextField
-                label="Last done"
-                type="date"
-                optional={Boolean(firstDue)}
-                value={lastDoneAt}
-                max={toDateInput()}
-                onChange={(e) => setLastDoneAt(e.target.value)}
-                error={errors.lastDoneAt}
-                hint={firstDue && !lastDoneAt ? `Not sure? Leave it empty. It’s due ${formatDate(firstDue)}.` : undefined}
-              />
+              <div className="field">
+                <span className="field-label">Last done</span>
+                <Chips<LastDoneChoice | 'date'> label="Last done" value={lastDone} onChange={setLastDone} options={[...LAST_DONE_OPTIONS, { value: 'date', label: 'Pick a date' }]} />
+                {lastDone === 'date' ? (
+                  <TextField label="Date" type="date" value={lastDoneDate} max={toDateInput()} onChange={(e) => setLastDoneDate(e.target.value)} error={errors.lastDoneAt} />
+                ) : errors.lastDoneAt ? (
+                  <p className="field-error">{errors.lastDoneAt}</p>
+                ) : (
+                  lastDoneHint && <p className="field-hint">{lastDoneHint}</p>
+                )}
+              </div>
               <div className="field">
                 <TextField label="Repeat every" inputMode="numeric" value={interval} onChange={(e) => setInterval(e.target.value)} suffix="days" error={errors.interval} />
                 <Chips label="Common intervals" value={Number(interval)} onChange={(v) => setInterval(String(v))} options={INTERVALS} />
