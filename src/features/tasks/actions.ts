@@ -1,6 +1,7 @@
 import type { HomeStore } from '../../data/store';
 import type { ServiceEvent, Task } from '../../data/types';
 import { uid } from '../../data/ids';
+import { recordServiceEvent } from '../records/serviceLog';
 import { lastDoneKnown } from './taskMath';
 import { addDays, formatDate, parseDateInput, toDateInput } from '../../lib/dates';
 
@@ -35,8 +36,13 @@ export async function completeTask(store: HomeStore, task: Task, input: Completi
     : { ...task, status: 'done', lastDoneAt: date, updatedAt: new Date().toISOString() };
 
   await store.put('tasks', updated);
-  await store.put('serviceEvents', event);
-  await store.log('task-done', `Done: ${task.name}`, `/tasks/${task.id}`);
+  let recorded: Awaited<ReturnType<typeof recordServiceEvent>>;
+  try {
+    recorded = await recordServiceEvent(store, event, `/tasks/${task.id}`);
+  } catch (error) {
+    await store.put('tasks', task).catch(() => {});
+    throw error;
+  }
 
   const message = task.recurring
     ? `${task.name} done. Next ${formatDate(addDays(parseDateInput(date), task.intervalDays))}`
@@ -45,8 +51,8 @@ export async function completeTask(store: HomeStore, task: Task, input: Completi
   return {
     message,
     undo: async () => {
+      await recorded.undo();
       await store.put('tasks', task);
-      await store.remove('serviceEvents', event.id);
     },
   };
 }

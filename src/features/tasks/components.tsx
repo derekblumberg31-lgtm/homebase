@@ -1,10 +1,11 @@
-import { useRef, useState, type CSSProperties, type MouseEvent, type PointerEvent } from 'react';
+import { useEffect, useRef, useState, type CSSProperties, type MouseEvent, type PointerEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { Task } from '../../data/types';
 import { DAY_MS, parseDateInput } from '../../lib/dates';
 import { Check } from '../../ui/Icons';
 import { project, rubberband, velocityTracker } from '../../ui/physics';
 import { PRIORITY_LABEL, taskMetaParts, taskPriority } from './meta';
+import { finishTimeline } from './finish';
 import { countdownParts, lastDoneKnown, type TaskInfo } from './taskMath';
 
 export function Countdown({ info, large = false }: { info: TaskInfo; large?: boolean }) {
@@ -27,7 +28,7 @@ export function Countdown({ info, large = false }: { info: TaskInfo; large?: boo
 }
 
 /** Most days one strip shows; longer jobs show their final stretch, every square still one day. */
-const MAX_SQUARES = 25;
+const MAX_SQUARES = 20;
 
 /** A recurring task's run as calendar days: gone by are crossed off, today fills, late days are red. */
 export function DayStrip({ task, now }: { task: Pick<Task, 'lastDoneAt' | 'intervalDays'>; now: number }) {
@@ -61,31 +62,106 @@ interface TaskRowProps {
   info: TaskInfo;
   now: number;
   featured?: boolean;
-  onDone: () => void;
+  /** Resolves true when the completion was saved; false returns the row to rest. */
+  onDone: () => Promise<boolean> | boolean | void;
 }
 
-/** A task line: tap to open, swipe left to mark done. The most urgent one shows its day strip. */
+interface Finish {
+  trigger: 'check' | 'swipe';
+  collapseDelayMs: number;
+}
+
+/**
+ * A task line: a check circle completes it, tap the row to open it, swipe left for Done. The most
+ * urgent one shows its day strip. The write happens after the short finish so the list does not
+ * jump mid-collapse; leaving the page inside that window still saves it.
+ */
 export function TaskRow({ task, info, now, featured = false, onDone }: TaskRowProps) {
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [dragX, setDragX] = useState<number | null>(null);
+  const [finish, setFinish] = useState<Finish | null>(null);
   const start = useRef<{ x: number; y: number; base: number; horizontal: boolean | null } | null>(null);
   const moved = useRef(false);
   const tracker = useRef(velocityTracker());
+  const shellRef = useRef<HTMLDivElement>(null);
+  const checkRef = useRef<HTMLButtonElement>(null);
+  const timer = useRef<number | undefined>(undefined);
+  const pending = useRef(false);
+  const mounted = useRef(true);
+  const focusNext = useRef<(() => void) | null>(null);
+  const onDoneRef = useRef(onDone);
+  onDoneRef.current = onDone;
 
-  function down(event: PointerEvent<HTMLButtonElement>) {
-    if (event.pointerType === 'mouse' && event.button !== 0) return;
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+      // Left the page inside the commit window: do the write now so the completion is never lost.
+      if (pending.current) {
+        pending.current = false;
+        window.clearTimeout(timer.current);
+        void Promise.resolve(onDoneRef.current()).catch(() => {});
+      }
+    };
+  }, []);
+
+  async function commit() {
+    if (!pending.current) return;
+    pending.current = false;
+    window.clearTimeout(timer.current);
+    let ok = false;
+    try {
+      ok = (await onDoneRef.current()) !== false;
+    } catch {
+      ok = false;
+    }
+    const refocus = ok ? focusNext.current : null;
+    focusNext.current = null;
+    // The row may leave the list once saved (it is not one of the next three any more), so this runs
+    // after the re-render and whether or not this row is still mounted.
+    if (refocus) window.requestAnimationFrame(refocus);
+    if (!mounted.current) return;
+    // Saved or not, the row is back at rest: a recurring task re-expands with its new countdown.
+    setFinish(null);
+    if (!ok) setOpen(false);
+  }
+
+  function startFinish(trigger: 'check' | 'swipe') {
+    if (finish || pending.current) return;
+    const reduced = typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const timeline = finishTimeline(trigger, reduced);
+    // Keyboard and screen-reader users keep their place: remember the neighbour before the row folds.
+    focusNext.current = null;
+    const shell = shellRef.current;
+    if (trigger === 'check' && shell && document.activeElement === checkRef.current) {
+      const sibling = (shell.nextElementSibling ?? shell.previousElementSibling) as HTMLElement | null;
+      focusNext.current = () => {
+        const target = sibling?.isConnected ? sibling.querySelector<HTMLElement>('.task-check') : null;
+        (target ?? document.getElementById('main'))?.focus();
+      };
+    }
+    // A swipe stays open, showing the green Done while the row folds; the check closes any open swipe.
+    setOpen(trigger === 'swipe');
+    setFinish({ trigger, collapseDelayMs: timeline.collapseDelayMs });
+    pending.current = true;
+    timer.current = window.setTimeout(() => void commit(), timeline.commitMs);
+  }
+
+  function down(event: PointerEvent<HTMLDivElement>) {
+    if (finish || (event.pointerType === 'mouse' && event.button !== 0)) return;
     start.current = { x: event.clientX, y: event.clientY, base: open ? -ACTION_WIDTH : 0, horizontal: null };
     tracker.current.reset();
-    event.currentTarget.setPointerCapture(event.pointerId);
   }
-  function move(event: PointerEvent<HTMLButtonElement>) {
+  function move(event: PointerEvent<HTMLDivElement>) {
     if (!start.current) return;
     const dx = event.clientX - start.current.x;
     const dy = event.clientY - start.current.y;
     if (start.current.horizontal === null) {
       if (Math.abs(dx) < 8 && Math.abs(dy) < 8) return;
       start.current.horizontal = Math.abs(dx) > Math.abs(dy);
+      // Capture only once it is clearly a swipe, so a plain tap keeps its own target.
+      if (start.current.horizontal) event.currentTarget.setPointerCapture(event.pointerId);
     }
     if (!start.current.horizontal) return;
     if (Math.abs(dx) > 8) moved.current = true;
@@ -105,8 +181,7 @@ export function TaskRow({ task, info, now, featured = false, onDone }: TaskRowPr
     window.setTimeout(() => (moved.current = false), 0);
     if (wasHorizontal && projected < -ACTION_WIDTH * 2.6) {
       // A long, fast swipe marks it done straight away, like Mail; the toast offers Undo.
-      setOpen(false);
-      onDone();
+      startFinish('swipe');
       return;
     }
     setOpen(projected < -ACTION_WIDTH / 2);
@@ -124,46 +199,75 @@ export function TaskRow({ task, info, now, featured = false, onDone }: TaskRowPr
   const priority = taskPriority(task);
 
   return (
-    <div className={`swipe-shell row-wrap ${open || dragX !== null ? 'is-revealed' : ''}`}>
+    <div
+      ref={shellRef}
+      className={`swipe-shell row-wrap ${open || dragX !== null ? 'is-revealed' : ''} ${finish ? 'is-leaving' : ''}`}
+      style={finish ? ({ '--collapse-delay': `${finish.collapseDelayMs}ms` } as CSSProperties) : undefined}
+    >
       {canSwipe && (
         <button
           type="button"
           className="swipe-action"
           tabIndex={open ? 0 : -1}
           aria-hidden={!open}
-          onClick={() => {
-            setOpen(false);
-            onDone();
-          }}
+          onClick={() => startFinish('swipe')}
         >
           <Check size={21} />
           <span>Done</span>
         </button>
       )}
-      <button
-        type="button"
-        className="task-row"
+      <div
+        className="task-track"
         style={{ transform: `translateX(${offset}px)`, transition: dragX === null ? undefined : 'none' }}
-        aria-label={`${task.name}${priority !== 'normal' ? `, ${PRIORITY_LABEL[priority]}` : ''}${where ? `, ${where}` : ''}, ${countdownParts(info).label}`}
-        onClick={() => (open ? setOpen(false) : navigate(`/tasks/${task.id}`))}
         onClickCapture={clickCapture}
         onPointerDown={canSwipe ? down : undefined}
         onPointerMove={canSwipe ? move : undefined}
         onPointerUp={canSwipe ? up : undefined}
         onPointerCancel={canSwipe ? up : undefined}
       >
-        <span className="row-line">
-          <span className="row-main">
-            <span className="row-title">
-              {priority === 'high' && <span className="priority-mark" title={PRIORITY_LABEL.high} aria-hidden="true" />}
-              {task.name}
+        {canSwipe ? (
+          <button
+            ref={checkRef}
+            type="button"
+            className="task-check"
+            aria-label={`Mark ${task.name} done`}
+            aria-disabled={finish ? true : undefined}
+            onClick={() => startFinish('check')}
+          >
+            <span className={`task-check-mark ${finish?.trigger === 'check' ? 'is-checked' : ''}`}>
+              <Check size={14} strokeWidth={2.4} />
             </span>
-            {where && <span className="row-sub is-wrap">{where}</span>}
+          </button>
+        ) : (
+          <span className="task-check is-static" aria-hidden="true">
+            <span className="task-check-mark is-checked">
+              <Check size={14} strokeWidth={2.4} />
+            </span>
           </span>
-          <Countdown info={info} />
-        </span>
-        {featured && task.recurring && lastDoneKnown(task) && <DayStrip task={task} now={now} />}
-      </button>
+        )}
+        <button
+          type="button"
+          className="task-row"
+          aria-label={`${task.name}${priority !== 'normal' ? `, ${PRIORITY_LABEL[priority]}` : ''}${where ? `, ${where}` : ''}, ${countdownParts(info).label}`}
+          onClick={() => {
+            if (finish) return;
+            if (open) setOpen(false);
+            else navigate(`/tasks/${task.id}`);
+          }}
+        >
+          <span className="row-line">
+            <span className="row-main">
+              <span className="row-title">
+                {priority === 'high' && <span className="priority-mark" title={PRIORITY_LABEL.high} aria-hidden="true" />}
+                {task.name}
+              </span>
+              {where && <span className="row-sub is-wrap">{where}</span>}
+            </span>
+            <Countdown info={info} />
+          </span>
+          {featured && task.recurring && lastDoneKnown(task) && <DayStrip task={task} now={now} />}
+        </button>
+      </div>
     </div>
   );
 }

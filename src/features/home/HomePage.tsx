@@ -92,7 +92,7 @@ export function HomePage() {
               ))}
             </Group>
             <p className="section-foot">
-              Swipe a job left to mark it done. <Link to="/tasks">All tasks</Link>
+              Tap the circle or swipe left to mark a job done. <Link to="/tasks">All tasks</Link>
             </p>
           </>
         )}

@@ -11,6 +11,7 @@ import {
 } from 'react';
 import { createPortal } from 'react-dom';
 import { project, rubberband, velocityTracker } from './physics';
+import { pushToast, removeToast } from './toastQueue';
 
 /** Close on Escape, trap Tab inside, and give focus back to whatever opened the overlay. */
 export function useDialogFocus(onClose: () => void, lockScroll = true) {
@@ -193,37 +194,76 @@ type ShowToast = (text: string, options?: { tone?: 'info' | 'error'; action?: { 
 const ToastContext = createContext<ShowToast>(() => {});
 
 export function ToastProvider({ children }: { children: ReactNode }) {
-  const [toast, setToast] = useState<ToastMessage | null>(null);
+  const [toasts, setToasts] = useState<ToastMessage[]>([]);
+  const [paused, setPaused] = useState(false);
+  const counter = useRef(0);
+  const stackRef = useRef<HTMLDivElement>(null);
+
   const show = useCallback<ShowToast>((text, options = {}) => {
-    setToast({ id: Date.now(), text, tone: options.tone ?? 'info', action: options.action });
+    counter.current += 1;
+    const toast: ToastMessage = { id: counter.current, text, tone: options.tone ?? 'info', action: options.action };
+    setToasts((list) => pushToast(list, toast));
   }, []);
 
+  const dismiss = useCallback((id: number) => {
+    // A toast that had focus is leaving: hand focus to the page rather than dropping it on <body>.
+    const stack = stackRef.current;
+    if (stack?.contains(document.activeElement)) document.getElementById('main')?.focus();
+    setToasts((list) => removeToast(list, id));
+    setPaused(false);
+  }, []);
+
+  // Nothing left to hover or focus, so nothing is paused.
   useEffect(() => {
-    if (!toast) return;
-    const timer = window.setTimeout(() => setToast(null), toast.action ? 6000 : 3200);
-    return () => window.clearTimeout(timer);
-  }, [toast]);
+    if (toasts.length === 0) setPaused(false);
+  }, [toasts.length]);
 
   return (
     <ToastContext.Provider value={show}>
       {children}
-      {toast && (
-        <div key={toast.id} className={`toast ${toast.action ? 'has-action' : ''}`} role={toast.tone === 'error' ? 'alert' : 'status'}>
-          <span>{toast.text}</span>
-          {toast.action && (
-            <button
-              type="button"
-              onClick={() => {
-                toast.action?.run();
-                setToast(null);
-              }}
-            >
-              {toast.action.label}
-            </button>
-          )}
+      {toasts.length > 0 && (
+        <div
+          ref={stackRef}
+          className="toast-stack"
+          onPointerEnter={(event) => event.pointerType === 'mouse' && setPaused(true)}
+          onPointerLeave={(event) => event.pointerType === 'mouse' && setPaused(false)}
+          onFocus={() => setPaused(true)}
+          onBlur={(event) => {
+            if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setPaused(false);
+          }}
+        >
+          {toasts.map((toast) => (
+            <ToastView key={toast.id} toast={toast} paused={paused} onDismiss={dismiss} />
+          ))}
         </div>
       )}
     </ToastContext.Provider>
+  );
+}
+
+/** One toast with its own timer: it pauses while the stack is hovered or focused, then restarts in full. */
+function ToastView({ toast, paused, onDismiss }: { toast: ToastMessage; paused: boolean; onDismiss: (id: number) => void }) {
+  useEffect(() => {
+    if (paused) return;
+    const timer = window.setTimeout(() => onDismiss(toast.id), toast.action ? 6000 : 3200);
+    return () => window.clearTimeout(timer);
+  }, [paused, toast.id, toast.action, onDismiss]);
+
+  return (
+    <div className={`toast ${toast.action ? 'has-action' : ''}`} role={toast.tone === 'error' ? 'alert' : 'status'}>
+      <span>{toast.text}</span>
+      {toast.action && (
+        <button
+          type="button"
+          onClick={() => {
+            toast.action?.run();
+            onDismiss(toast.id);
+          }}
+        >
+          {toast.action.label}
+        </button>
+      )}
+    </div>
   );
 }
 

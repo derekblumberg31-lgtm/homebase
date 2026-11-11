@@ -2,6 +2,7 @@ import type { HomeStore } from '../../data/store';
 import type { ServiceEvent, Task, TipState } from '../../data/types';
 import { uid } from '../../data/ids';
 import { addDays, toDateInput } from '../../lib/dates';
+import { recordServiceEvent } from '../records/serviceLog';
 import type { TaskDraft } from '../tasks/TaskForm';
 import { SNOOZE_DAYS, type SeasonalTip } from './insights';
 
@@ -52,11 +53,10 @@ export async function hideTip(store: HomeStore, tip: SeasonalTip) {
 export async function completeTip(store: HomeStore, tip: SeasonalTip) {
   const undoState = undoTo(store, tip.id);
   const event: ServiceEvent = { id: uid(), date: toDateInput(), title: tip.taskName, notes: 'Seasonal recommendation', createdAt: new Date().toISOString() };
-  await store.put('serviceEvents', event);
-  await store.log('task-done', `Done: ${tip.taskName}`, '/records/service-history');
+  const recorded = await recordServiceEvent(store, event, '/records/service-history');
   await setTipState(store, tip.id, { state: 'done', at: new Date().toISOString() });
   return async () => {
-    await store.remove('serviceEvents', event.id);
+    await recorded.undo();
     await undoState();
   };
 }

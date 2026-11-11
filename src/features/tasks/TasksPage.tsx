@@ -137,7 +137,7 @@ export function TasksPage() {
               <EmptyState inline title={`Nothing matches “${query.trim()}”`} body="Try a room or part of the task name." />
             </div>
           )}
-          <p className="local-note">Swipe a task left to mark it done.</p>
+          <p className="local-note">Tap the circle or swipe left to mark a task done.</p>
         </>
       )}
 
@@ -165,7 +165,7 @@ export function TasksPage() {
   );
 }
 
-function TaskList({ title, items, now, aside, onDone, featureFirst = false }: { title: string; items: TaskItem[]; now: number; aside: string; onDone: (task: Task) => void; featureFirst?: boolean }) {
+function TaskList({ title, items, now, aside, onDone, featureFirst = false }: { title: string; items: TaskItem[]; now: number; aside: string; onDone: (task: Task) => Promise<boolean>; featureFirst?: boolean }) {
   if (items.length === 0) return null;
   return (
     <Section title={title} aside={aside}>
@@ -178,7 +178,7 @@ function TaskList({ title, items, now, aside, onDone, featureFirst = false }: { 
   );
 }
 
-function ScheduleView({ items, now, onDone }: { items: TaskItem[]; now: number; onDone: (task: Task) => void }) {
+function ScheduleView({ items, now, onDone }: { items: TaskItem[]; now: number; onDone: (task: Task) => Promise<boolean> }) {
   const groups = [
     { title: 'Overdue', items: items.filter((i) => i.info.status === 'overdue') },
     { title: 'This week', items: items.filter((i) => i.info.status !== 'overdue' && i.info.daysLeft <= 7) },
