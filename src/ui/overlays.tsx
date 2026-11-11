@@ -254,7 +254,6 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     const stack = stackRef.current;
     if (stack?.contains(document.activeElement)) document.getElementById('main')?.focus();
     setToasts((list) => removeToast(list, id));
-    setPaused(false);
   }, []);
 
   // Nothing left to hover or focus, so nothing is paused.

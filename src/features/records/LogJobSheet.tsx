@@ -44,7 +44,7 @@ export function LogJobSheet({ itemId = '', onClose, onLogged }: { itemId?: strin
         </button>
       }
       trailing={
-        <button type="button" className="sheet-action is-strong" onClick={() => void submit()} disabled={save.saving}>
+        <button type="button" className="sheet-action is-strong" onClick={() => void submit()} disabled={save.saving} aria-busy={save.saving || undefined}>
           Save
         </button>
       }
@@ -53,7 +53,7 @@ export function LogJobSheet({ itemId = '', onClose, onLogged }: { itemId?: strin
       <p className="muted">For a job that had no task. It’s kept in Service History.</p>
       <div className="section">
         <FormGroup>
-          <TextField label="What was done" data-autofocus value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Fixed the kitchen tap" error={errors.title} />
+          <TextField label="What was done" data-autofocus value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Fixed the kitchen tap…" error={errors.title} />
           <TextField label="Done on" type="date" value={date} max={toDateInput()} onChange={(e) => setDate(e.target.value)} error={errors.date} />
           {items.length > 0 && (
             <SelectField label="Item" optional value={item} onChange={(e) => setItem(e.target.value)}>
@@ -67,9 +67,9 @@ export function LogJobSheet({ itemId = '', onClose, onLogged }: { itemId?: strin
                 ))}
             </SelectField>
           )}
-          <TextField label="Done by" optional value={provider} onChange={(e) => setProvider(e.target.value)} placeholder="Me, or a company" />
+          <TextField label="Done by" optional value={provider} onChange={(e) => setProvider(e.target.value)} placeholder="Me, or a company…" autoComplete="off" />
           <TextField label="Cost" optional inputMode="decimal" prefix="$" value={cost} onChange={(e) => setCost(e.target.value)} error={errors.cost} />
-          <TextArea label="Note" optional value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Part used, anything to remember" />
+          <TextArea label="Note" optional value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Part used, anything to remember…" />
         </FormGroup>
       </div>
     </Sheet>

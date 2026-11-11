@@ -55,16 +55,19 @@ export function StarterList({ jobs, picks, now, busy, onToggle, onChoose, onAdd,
         {jobs.map((job, i) => {
           const choice = picks[job.key];
           const ticked = choice !== undefined;
+          const titleId = `${uidBase}-title-${i}`;
           const subId = `${uidBase}-sub-${i}`;
           const questionId = `${uidBase}-q-${i}`;
           return (
             <li key={job.key} className="starter-item">
-              <button type="button" role="checkbox" aria-checked={ticked} aria-describedby={subId} className="starter-row" onClick={() => onToggle(job.key)}>
+              <button type="button" role="checkbox" aria-checked={ticked} aria-labelledby={titleId} aria-describedby={subId} className="starter-row" onClick={() => onToggle(job.key)}>
                 <span className="starter-tick" aria-hidden="true">
                   {ticked && <Check size={14} strokeWidth={2.4} />}
                 </span>
                 <span className="row-main">
-                  <span className="row-title is-wrap">{job.name}</span>
+                  <span className="row-title is-wrap" id={titleId}>
+                    {job.name}
+                  </span>
                   <span className="row-sub is-wrap" id={subId}>
                     {starterSubLine(job, choice, now)}
                   </span>
@@ -129,7 +132,7 @@ export function StarterJobs({ onAdded }: { onAdded: () => void }) {
     if (chosen.length === 0 || busy) return;
     setBusy(true);
     try {
-      const { count, undo } = await addStarterJobs(store, chosen, now);
+      const { count, undo } = await addStarterJobs(store, chosen, Date.now());
       onAdded();
       toast(`${count} ${count === 1 ? 'job' : 'jobs'} added`, {
         action: {
@@ -173,7 +176,7 @@ export function StarterJobs({ onAdded }: { onAdded: () => void }) {
         <EmptyState
           title="Start with the jobs you always forget"
           body="The furnace filter, smoke alarm batteries, the gutters. Add one and Homebase counts down to it."
-          action={{ label: 'Add a maintenance reminder', to: '/tasks?new=1&kind=maintenance' }}
+          action={{ label: 'Add a maintenance job', to: '/tasks?new=1&kind=maintenance' }}
         />
       </div>
     );

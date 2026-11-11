@@ -3002,26 +3002,10 @@ select.input {
   background: transparent;
 }
 
-.module > .group .task-track {
-  background: transparent;
-}
-
-.module > .group .task-check {
-  padding-left: 14px;
-}
-
-.module > .group .task-row {
-  padding-right: 18px;
-}
-
 .module > .group .row-wrap + .row-wrap::before {
   left: 18px;
   height: 1px;
   background: var(--line);
-}
-
-.module > .group .swipe-shell + .swipe-shell::before {
-  left: 58px;
 }
 
 .module .empty.is-inline {
