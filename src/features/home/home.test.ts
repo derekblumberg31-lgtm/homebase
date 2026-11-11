@@ -6,7 +6,7 @@ import { firstNameOf } from '../../session/session';
 import { LocalGuideProvider } from '../assistant/provider';
 import { taskCategory, taskMetaParts } from '../tasks/meta';
 import { getTaskInfo } from '../tasks/taskMath';
-import { alertsFor, arrangeAttention, attentionFor, endingSoon, healthCheckFor, homeStatusFor, seasonalTipsFor, snapshotFor, timelineFor } from './insights';
+import { alertsFor, comingUpSub, arrangeAttention, attentionFor, endingSoon, healthCheckFor, homeStatusFor, seasonalTipsFor, snapshotFor, timelineFor } from './insights';
 import { completeTip, hideTip, planDraftFor, planTip, snoozeTip } from './tipActions';
 import { buildStarterTask, chooseStarter, starterJobsFor, starterSubLine, toggleStarter } from './starter';
 import { addStarterJobs } from './starterActions';
@@ -80,6 +80,15 @@ describe('greeting name', () => {
     expect(firstNameOf(undefined)).toBeUndefined();
     expect(firstNameOf('<b>')).toBe('B');
     expect(firstNameOf('a'.repeat(40))).toHaveLength(25);
+  });
+});
+
+describe('comingUpSub', () => {
+  it('counts warranties with the right noun', () => {
+    expect(comingUpSub(5, 0)).toBe('5 in the next three months');
+    expect(comingUpSub(5, 1)).toBe('5 in the next three months · 1 warranty ending');
+    expect(comingUpSub(5, 3)).toBe('5 in the next three months · 3 warranties ending');
+    expect(comingUpSub(0, 0)).toBe('Nothing in the next three months');
   });
 });
 

@@ -124,7 +124,7 @@ export function HomeAlertRows({
       </ul>
       {more.length > 0 && (
         <p className="section-foot">
-          <Link to={more[0].href}>{more.length === 1 ? '1 more needs a look' : `${more.length} more need a look`}</Link>
+          <Link to={more.length === 1 ? more[0].href : '/home/health'}>{more.length === 1 ? '1 more needs a look' : `${more.length} more need a look`}</Link>
         </p>
       )}
     </section>

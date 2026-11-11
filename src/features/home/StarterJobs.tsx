@@ -6,7 +6,6 @@ import { Check } from '../../ui/Icons';
 import { EmptyState } from '../../ui/layout';
 import { useToast } from '../../ui/overlays';
 import { LAST_DONE_OPTIONS, type LastDoneChoice } from '../tasks/lastDone';
-import { currentSeason } from './insights';
 import { chooseStarter, starterJobsFor, starterSubLine, toggleStarter, type StarterJob, type StarterPicks } from './starter';
 import { addStarterJobs } from './starterActions';
 
@@ -14,7 +13,6 @@ interface StarterListProps {
   jobs: StarterJob[];
   picks: StarterPicks;
   now: number;
-  season: string;
   busy?: boolean;
   onToggle: (key: string) => void;
   onChoose: (key: string, choice: LastDoneChoice) => void;
@@ -46,14 +44,13 @@ function Choices({ jobKey, value, labelId, onChoose }: { jobKey: string; value: 
 }
 
 /** The block itself, with no data access, so it can be rendered and tested on its own. */
-export function StarterList({ jobs, picks, now, season, busy, onToggle, onChoose, onAdd, onDismiss }: StarterListProps) {
+export function StarterList({ jobs, picks, now, busy, onToggle, onChoose, onAdd, onDismiss }: StarterListProps) {
   const uidBase = useId();
   const count = Object.keys(picks).length;
   return (
     <section className="starter" aria-labelledby={`${uidBase}-h`}>
       <h2 id={`${uidBase}-h`}>Start with a few common jobs</h2>
-      <p>Tick the ones that apply. Nothing is saved until you add them.</p>
-      <h3 className="section-title starter-label">Suggested for {season}</h3>
+      <p>Choose the ones that apply. Nothing is saved until you add them.</p>
       <ul className="group starter-list">
         {jobs.map((job, i) => {
           const choice = picks[job.key];
@@ -67,8 +64,8 @@ export function StarterList({ jobs, picks, now, season, busy, onToggle, onChoose
                   {ticked && <Check size={14} strokeWidth={2.4} />}
                 </span>
                 <span className="row-main">
-                  <span className="row-title">{job.name}</span>
-                  <span className="row-sub" id={subId}>
+                  <span className="row-title is-wrap">{job.name}</span>
+                  <span className="row-sub is-wrap" id={subId}>
                     {starterSubLine(job, choice, now)}
                   </span>
                 </span>
@@ -188,7 +185,6 @@ export function StarterJobs({ onAdded }: { onAdded: () => void }) {
         jobs={jobs}
         picks={live}
         now={now}
-        season={currentSeason(now)}
         busy={busy}
         onToggle={(key) => setPicks((p) => toggleStarter(p, key))}
         onChoose={(key, choice) => setPicks((p) => chooseStarter(p, key, choice))}

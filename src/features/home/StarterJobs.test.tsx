@@ -11,7 +11,7 @@ const noop = () => {};
 const render = (picks: Record<string, 'not-sure' | 'this-month' | 'few-months' | 'over-a-year'>) =>
   renderToStaticMarkup(
     <MemoryRouter>
-      <StarterList jobs={jobs} picks={picks} now={NOW} season="fall" onToggle={noop} onChoose={noop} onAdd={noop} onDismiss={noop} />
+      <StarterList jobs={jobs} picks={picks} now={NOW} onToggle={noop} onChoose={noop} onAdd={noop} onDismiss={noop} />
     </MemoryRouter>,
   );
 
@@ -23,7 +23,7 @@ describe('StarterList', () => {
     expect(html).not.toContain('radiogroup');
     expect(html).not.toContain('When did you last do this?');
     expect(html).toMatch(/<button[^>]*disabled=""[^>]*>Add jobs<\/button>/);
-    expect(html).toContain('Suggested for fall');
+    expect(html).not.toContain('Suggested for');
     expect(html).toContain('Add your own');
     expect(html).toContain('Not now');
   });

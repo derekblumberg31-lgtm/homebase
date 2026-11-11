@@ -174,6 +174,12 @@ export interface HomeStatus {
 }
 
 const plural = (n: number, one: string, many: string) => (n === 1 ? one : many);
+
+/** The sub-line of Home's "Coming up" row. */
+export function comingUpSub(comingUp: number, ending: number): string {
+  if (!comingUp) return 'Nothing in the next three months';
+  return `${comingUp} in the next three months${ending ? ` · ${ending} ${plural(ending, 'warranty', 'warranties')} ending` : ''}`;
+}
 const NAME_LIMIT = 40;
 
 function statusOf(tone: HomeStatus['tone'], clauses: HomeStatus['clauses']): HomeStatus {

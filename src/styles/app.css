@@ -898,13 +898,8 @@ button.row:focus-visible {
   font-size: 15px;
 }
 
-.starter-label {
-  margin: 12px 0 8px;
-  padding: 0 4px;
-}
-
 .starter-list {
-  margin: 0;
+  margin: 12px 0 0;
   padding: 0;
   list-style: none;
 }
@@ -930,7 +925,7 @@ button.row:focus-visible {
   gap: 12px;
   width: 100%;
   min-height: 56px;
-  padding: 6px 16px;
+  padding: 8px 16px;
   color: inherit;
   text-align: left;
   background: var(--surface);
@@ -939,6 +934,12 @@ button.row:focus-visible {
 
 .starter-row:active {
   background: var(--surface-2);
+}
+
+@media (hover: hover) {
+  .starter-row:hover {
+    background: var(--surface-2);
+  }
 }
 
 .starter-row:focus-visible {
@@ -3638,6 +3639,10 @@ a.feed-row:focus-visible {
 }
 
 .home-alert-row .row-title.is-wrap {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
   line-height: 1.3;
 }
 

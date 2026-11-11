@@ -13,7 +13,7 @@ import { TaskRow } from '../tasks/components';
 import { compareUrgency, withInfo } from '../tasks/taskMath';
 import { useTaskActions } from '../tasks/useTaskActions';
 import { HomeAlertRow, HomeAlertRows, HomeStatusLine } from './HomeSections';
-import { arrangeAttention, attentionFor, healthCheckFor, homeStatusFor, seasonalTipsFor, timelineFor, type AttentionItem } from './insights';
+import { arrangeAttention, attentionFor, comingUpSub, healthCheckFor, homeStatusFor, seasonalTipsFor, timelineFor, type AttentionItem } from './insights';
 import { StarterJobs } from './StarterJobs';
 import { useAlertDismissals } from './useAlertDismissals';
 import { useInstallRow } from './useInstallRow';
@@ -150,7 +150,7 @@ export function HomePage() {
         <Group>
           <Row title="Home Health Check" sub={health.done === health.total ? 'Your home’s record is complete' : `${health.score}% set up · ${health.total - health.done} steps left`} to="/home/health" />
           <Row title="This season" sub={season ? `${season} seasonal ${season === 1 ? 'job' : 'jobs'} to plan` : 'All planned or done'} to="/home/season" />
-          <Row title="Coming up" sub={comingUp ? `${comingUp} in the next three months${ending ? ` · ${ending} warranty ending` : ''}` : 'Nothing in the next three months'} to="/home/coming-up" />
+          <Row title="Coming up" sub={comingUpSub(comingUp, ending)} to="/home/coming-up" />
           <Row title="Activity" sub={data.activity.length ? 'What’s been done and added' : 'Fills in as you mark jobs done'} to="/home/activity" />
         </Group>
       </div>
