@@ -1657,10 +1657,9 @@ select.input {
     linear-gradient(-45deg, transparent 42%, var(--ink-x) 42%, var(--ink-x) 58%, transparent 58%);
 }
 
-/* Overdue days are filled in ink: brick is for overdue text, never a fill. */
 .day-strip i.is-late {
   box-shadow: none;
-  background: var(--text-2);
+  background: var(--red);
 }
 
 .day-strip i.is-today {
