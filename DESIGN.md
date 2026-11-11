@@ -99,14 +99,14 @@ spacing:
   half: "26px"
 components:
   button-primary:
-    backgroundColor: "{colors.brick}"
-    textColor: "{colors.page-white}"
+    backgroundColor: "{colors.ink}"
+    textColor: "{colors.warm-ground}"
     typography: "{typography.button}"
     rounded: "{rounded.button}"
     padding: "0 18px"
     height: "48px"
   button-primary-pressed:
-    backgroundColor: "{colors.brick-pressed}"
+    backgroundColor: "{colors.ink}"
   button-secondary:
     backgroundColor: "{colors.fill}"
     textColor: "{colors.ink}"
@@ -152,8 +152,8 @@ components:
     padding: "0 11px"
     height: "36px"
   form-chip-active:
-    backgroundColor: "{colors.brick}"
-    textColor: "{colors.page-white}"
+    backgroundColor: "{colors.ink}"
+    textColor: "{colors.warm-ground}"
   segmented:
     backgroundColor: "{colors.fill}"
     textColor: "{colors.ink-secondary}"
@@ -200,7 +200,7 @@ Two signatures carry over from the apps it replaces:
 - From Replacely: the largest-unit countdown ("3 months", "Today", "4 days over") and the day strip, shown on the single most urgent task.
 - From KeyFinder: the rimmed code tag that names a key's blank, and the cut-profile chart.
 
-Density is low and the voice is soft. Everything is the system font, sentence case, with hierarchy from size and a narrow range of weights. There is one accent, a muted brick (#9e4f34 light, #d6957c dark), spent on the next thing to tap and on anything overdue. Neutrals are warm. Dark mode is warm charcoal (#171716), never black.
+Density is low and the voice is soft. Everything is the system font, sentence case, with hierarchy from size and a narrow range of weights. There is one accent, a muted brick (#9e4f34 light, #d6957c dark), spent on small marks and on anything overdue. Buttons are ink, not brick. Neutrals are warm. Dark mode is warm charcoal (#171716), never black.
 
 **Key characteristics:**
 - Grouped-list structure everywhere: 12px corners, 0.5px separators inset 16px.
@@ -215,12 +215,13 @@ The palette is calm and Claude-like, defined in `src/styles/app.css` (`:root` an
 - **Light:** ivory ground #faf9f5, white surfaces, soft ink #29271f.
 - **Dark:** charcoal #262624, surfaces #2f2e2b, warm off-white ink #f3f1ea.
 - **Primary buttons are ink** (`--button-bg`), not colour.
-- **Terracotta** (#9e4f34 / #d6957c) is muted and kept for things that need you: overdue text, the high-priority dot, the small Add circle.
+- **Terracotta** is the accent (`--accent`): #9e4f34 in light, #d6957c in dark. Pressed and hover (`--accent-deep`) is #86402a in light. It is muted and kept for things that need you: overdue text, the overdue squares of the day strip, small markers (the high-priority dot, the launcher dot), the small Add circle and the focus outline.
+- **Brick is never a button fill.** (The Assistant's own message bubble is the one other large brick fill.) Primary buttons, the selected chip and the ticked starter circle are filled with ink (`--button-bg`, #29271f light, #f3f1ea dark) with `--button-text` on top.
 - **Badges are neutral grey.**
 
 The rules:
 
-- **The One Brick Rule.** Brick marks either the next action or something overdue. If a screen shows brick on more than a handful of elements, something is decorating.
+- **The One Brick Rule.** Brick marks something overdue, a small marker or a link-style action. It is never a large fill. If a screen shows brick on more than a handful of elements, something is decorating.
 - **The Status Hue Rule.** Green means done, amber means due soon or "check this" (for example a restricted key), and brick means overdue. None is used for category colour.
 - **The No Pure Extremes Rule.** Text is #2b2926, never #000. The page is #f4f3f0, never #fff.
 - **Code tags** have a neutral `--line` rim, and an accent rim when a match is confirmed. They never get a coloured fill.
@@ -266,10 +267,16 @@ One family: `-apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Robot
 - **Home** is for a few seconds in front of the thing that needs doing:
   - one status line saying whether anything is overdue
   - the next three jobs, swipe to mark done
+  - alert rows for what needs a look: a warranty ending, a system to check, a backup that is due, and the install row. Each is one row with an amber icon, a title of up to two lines, a detail line and a chevron, with its own 44px hide button at the right. Hiding one offers Undo and leaves the item in its own list.
+  - on a new home with no jobs, the starter block (below) in place of the list
   - an Ask Homebase row
   - a short list linking to Home Health Check (with the snapshot), This season, Coming up and Activity, each on its own page one tap away
 - **Launcher lane:** the launcher sits 72px above the bottom edge, clear of Netlify's own corner badge on the hosted site.
 - **Launcher lane:** from 768px the main column keeps a 72px lane on the right for the Ask Homebase launcher, so it never covers content.
+- **Starter block** (`features/home/StarterJobs.tsx`): the first thing on an empty Home.
+  - A heading, one sentence saying nothing is saved until the jobs are added, and five tick rows at least 56px tall.
+  - Ticking a row opens its "last done" choices under it: radios you move through with the arrow keys, with "Not sure" chosen by default. The tick fills with ink, not brick.
+  - One Add button, and quiet links to add your own or leave it. Nothing is saved before Add.
 - **Sheets:**
   - Bottom-anchored on phones, with drag to dismiss.
   - Centred panels from 768px.
@@ -299,12 +306,13 @@ All of these live in `src/ui/` and `src/features/*/components`.
 - **Notice:** an amber or neutral inline note, used for cautions such as "Do not duplicate".
 - **Sheet / Confirm / Toast** (`overlays.tsx`):
   - Sheets trap focus, close on Escape and give focus back on close.
-  - Confirm is the native-style alert, with Cancel focused by default and destructive actions in brick.
-  - Toasts can carry an Undo action; deletes offer Undo where they can.
+  - Confirm is the native-style alert, with Cancel focused by default and destructive actions in brick text, never a brick fill.
+  - Toasts stack, at most a few at once, from a region named "Messages" that is always in the page. Two hidden live regions (polite and assertive) carry the announcement, so a toast is not read twice. A toast with Undo, and an error, lives six seconds; a plain one about three. Hovering or focusing the stack pauses the timers. Errors are announced assertively. Each toast leaves in 150ms, or at once under reduced motion.
 - **Controls** (`controls.tsx`): TextField, TextArea, SelectField, FormGroup, SearchField, Segmented, Switch, Chips.
 - **TaskRow, Countdown, DayStrip** (`features/tasks/components.tsx`):
-  - Task rows swipe left for Done.
-  - The day strip appears only on the most urgent task and on task detail: up to 25 squares of 9px.
+  - Task rows swipe left for Done. The round check at the left does the same with a tap, in a 50px-wide target.
+  - A task title wraps to two lines, then ends in an ellipsis. The check stays at the first line and the row grows by one line.
+  - The day strip appears only on the most urgent task and on task detail: up to 25 squares of 9px. Squares for days past due are brick.
 - **CodeTag, ReplacementCard, ProfileChart** (`features/property/keys`): KeyFinder's key visuals, drawn with Homebase tokens.
 - **HomeOverview, HealthModule, MaintenanceTimeline, SeasonalSection, ActivityFeed** (`features/home/HomeSections.tsx`): each Home section has its own form, not the same card:
   - overview: a snapshot strip with hairline dividers
@@ -325,7 +333,7 @@ All of these live in `src/ui/` and `src/features/*/components`.
   - Your messages sit in a quiet grey bubble; answers are unboxed serif text with pill-shaped actions.
   - The composer is a large rounded field with the send button inside it.
 - **Chat details:**
-  - User bubbles are brick with white text.
+  - User bubbles are brick with white text. This is the one large brick fill left; it is a message, not a button.
   - Answers are white groups with the guide name, numbered steps, an amber safety note and up to two text actions.
 
 ## Motion and touch
@@ -358,8 +366,9 @@ Every list has four states:
 
 - 4.5:1 text contrast in both themes.
 - 12px minimum text, except tab labels.
-- 44px minimum targets.
-- A visible 2px brick focus outline.
+- 44px minimum hit areas for buttons, rows, the check, hide buttons and links, even where the drawn shape is smaller.
+- Radio groups (the "last done" choices) work like native ones: arrows move and select, wrapping at the ends, and Tab enters on the selected choice or the first.
+- A visible 2px accent focus outline.
 - A skip link to main content.
 - Reduced motion turns off page fades, sheet slides and press-scales.
 
@@ -367,7 +376,7 @@ Every list has four states:
 
 **Do:**
 - Build screens from Page → Section → Group → Row.
-- Keep brick for the next action and for overdue.
+- Keep brick for overdue and small markers. Buttons are ink.
 - Show countdowns in the largest whole unit.
 - Give every new list an empty, loading and error state.
 

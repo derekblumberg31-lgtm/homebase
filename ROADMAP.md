@@ -16,6 +16,31 @@ Homebase ships local-first with offline guided help. Each future feature below n
 | Emergency guidance | Guides in `src/features/assistant/guides.ts`; each guide can carry `safety` and actions. |
 | Property value, moving, rentals | `Property.ownership` (`own` / `rent`) and room-level records. |
 
+## Shipped in this round
+
+- First win in two taps: a starter block on an empty Home.
+- Only say what you were told: no invented last-done dates; "Not sure" says so and stores a first-due date.
+- A Done you can see: completing a job shows a message with the next date and an Undo.
+- Log something done: Quick Add can record a job that was never on the list.
+- Home tells the whole picture: one status line, the next jobs, and alert rows that can be hidden.
+- Data safety at first value: Storage and install guidance, a save-a-backup option before Erase, and a plain message when a save fails.
+- Accessibility floor: 44px hit areas, a "Messages" region for toasts, native-style radio keys and focus that is never lost.
+
+## Next
+
+- Onboarding that asks for nothing: get to a useful Home without a form.
+- Typography and spacing tokens, so sizes and gaps stop being set one by one.
+- Coming back after a long gap: what Home says when nothing was opened for months.
+- The user's own shut-off in emergency guides: let people record where their water, gas and power shut-offs are and show it in the guide.
+- Real-iPhone verification: installed-app storage, share-sheet backup, 44px targets against swipe, VoiceOver and Reduce Motion.
+- A DOM test environment for component tests, so components can be tested without rendering to strings.
+- Seasonal tasks saved before this release that still carry an estimated last-done date.
+
+## Upgrade notes
+
+- Jobs added as "Not sure" now store a first-due date. A version of the app from before this release ignores that date. If you roll back, or restore a new backup on an old version, those jobs move from about a week away to a full interval away.
+- There is no data format change. Old backups restore normally.
+
 ## Data migrations
 
 `src/data/db.ts` keeps `DB_VERSION` and a `MIGRATIONS` map. Add a new store or index by bumping the version and adding a step, never by editing an existing step. Backups carry `version` so `parseHomebaseBackup` can upgrade older files. Only Homebase backups are accepted.
