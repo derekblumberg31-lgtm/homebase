@@ -6,6 +6,7 @@ import { FormGroup, TextField } from '../../ui/controls';
 import { Camera, Key } from '../../ui/Icons';
 import { EmptyState, Group, Page, Row, Section } from '../../ui/layout';
 import { Sheet, useToast } from '../../ui/overlays';
+import { SaveFailed, useSave } from '../../ui/save';
 import { PROPERTY_TYPE_LABEL } from './labels';
 
 /** Property: the home itself, its rooms and systems, what's in it, and its keys. */
@@ -83,8 +84,9 @@ export function PropertyPage() {
 
 const ROOM_IDEAS = ['Kitchen', 'Living room', 'Bedroom', 'Bathroom', 'Laundry', 'Garage', 'Basement', 'Attic', 'Yard', 'Office'];
 
-export function RoomSheet({ room, onClose, onSave }: { room?: Room; onClose: () => void; onSave: (room: Room) => void }) {
+export function RoomSheet({ room, onClose, onSave }: { room?: Room; onClose: () => void; onSave: (room: Room) => void | Promise<void> }) {
   const { rooms } = useData();
+  const saver = useSave();
   const [name, setName] = useState(room?.name ?? '');
   const [floor, setFloor] = useState(room?.floor ?? '');
   const [notes, setNotes] = useState(room?.notes ?? '');
@@ -93,7 +95,8 @@ export function RoomSheet({ room, onClose, onSave }: { room?: Room; onClose: () 
 
   function save() {
     if (!name.trim()) return setError('Give the room a name.');
-    onSave({ id: room?.id ?? uid(), name: name.trim(), floor: floor.trim() || undefined, notes: notes.trim() || undefined, createdAt: room?.createdAt ?? new Date().toISOString() });
+    const next: Room = { id: room?.id ?? uid(), name: name.trim(), floor: floor.trim() || undefined, notes: notes.trim() || undefined, createdAt: room?.createdAt ?? new Date().toISOString() };
+    void saver.run(() => Promise.resolve(onSave(next)));
   }
 
   return (
@@ -101,8 +104,9 @@ export function RoomSheet({ room, onClose, onSave }: { room?: Room; onClose: () 
       title={room ? 'Edit room' : 'Add a room'}
       onClose={onClose}
       leading={<button type="button" className="sheet-action" onClick={onClose}>Cancel</button>}
-      trailing={<button type="button" className="sheet-action is-strong" onClick={save}>Save</button>}
+      trailing={<button type="button" className="sheet-action is-strong" onClick={save} disabled={saver.saving} aria-busy={saver.saving || undefined}>Save</button>}
     >
+      <SaveFailed show={saver.failed} />
       <FormGroup>
         <TextField label="Name" value={name} onChange={(e) => setName(e.target.value)} error={error} autoFocus />
         <TextField label="Floor" optional value={floor} onChange={(e) => setFloor(e.target.value)} placeholder="Upstairs" />

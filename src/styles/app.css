@@ -19,9 +19,9 @@
   --line-strong: rgba(41, 39, 31, 0.15);
   --grid: #dcd9cf;
   --ink-x: #9a978e;
-  --accent: #b5603f;
-  --accent-deep: #9c4f32;
-  --accent-soft: rgba(181, 96, 63, 0.1);
+  --accent: #9e4f34;
+  --accent-deep: #86402a;
+  --accent-soft: rgba(158, 79, 52, 0.1);
   --on-accent: #ffffff;
   --button-bg: #29271f;
   --button-text: #faf9f5;
@@ -29,8 +29,8 @@
   --green-soft: rgba(79, 115, 83, 0.1);
   --amber: #8a6420;
   --amber-soft: rgba(138, 100, 32, 0.1);
-  --red: #b5603f;
-  --red-soft: rgba(181, 96, 63, 0.1);
+  --red: #9e4f34;
+  --red-soft: rgba(158, 79, 52, 0.1);
   --cool: #5d7480;
   --cool-soft: rgba(93, 116, 128, 0.1);
   --scrim: rgba(41, 39, 31, 0.28);
@@ -67,9 +67,9 @@
   --line-strong: rgba(236, 232, 220, 0.16);
   --grid: #4a4843;
   --ink-x: #8f8c84;
-  --accent: #d08a6e;
-  --accent-deep: #dc9f87;
-  --accent-soft: rgba(208, 138, 110, 0.13);
+  --accent: #d6957c;
+  --accent-deep: #e2ab95;
+  --accent-soft: rgba(214, 149, 124, 0.13);
   --on-accent: #1f1e1c;
   --button-bg: #f3f1ea;
   --button-text: #262624;
@@ -77,8 +77,8 @@
   --green-soft: rgba(162, 191, 160, 0.12);
   --amber: #d6ac6a;
   --amber-soft: rgba(214, 172, 106, 0.12);
-  --red: #d08a6e;
-  --red-soft: rgba(208, 138, 110, 0.13);
+  --red: #d6957c;
+  --red-soft: rgba(214, 149, 124, 0.13);
   --cool: #a3b5be;
   --cool-soft: rgba(163, 181, 190, 0.12);
   --scrim: rgba(0, 0, 0, 0.45);

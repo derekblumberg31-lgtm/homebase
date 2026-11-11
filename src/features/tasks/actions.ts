@@ -68,3 +68,17 @@ export async function removeTask(store: HomeStore, task: Task) {
     },
   };
 }
+
+/**
+ * Save a new task and note it in Activity. The task is what matters: if only the activity entry
+ * fails the save still counts, because reporting "not saved" would make the user retry and
+ * duplicate it. If the task itself fails the error propagates and no entry is written.
+ */
+export async function addTask(store: HomeStore, task: Task) {
+  await store.put('tasks', task);
+  try {
+    await store.log('task-added', `Added: ${task.name}`, `/tasks/${task.id}`);
+  } catch {
+    // The activity entry is optional.
+  }
+}

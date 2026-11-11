@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { addToStringList, clearFlag, readFlag, readStringList, writeFlag, writeStringList } from './deviceFlags';
+import { addToStringList, clearFlag, clearHomeFlags, readFlag, readStringList, writeFlag, writeStringList } from './deviceFlags';
 
 function memoryStorage(): Storage {
   const map = new Map<string, string>();
@@ -77,5 +77,27 @@ describe('deviceFlags when localStorage is missing', () => {
     expect(readFlag('homebase:backup-row-dismissed')).toBeNull();
     expect(writeFlag('homebase:backup-row-dismissed', 'x')).toBe(false);
     expect(readStringList('homebase:alert-rows-dismissed')).toEqual([]);
+  });
+});
+
+describe('clearHomeFlags', () => {
+  it('removes every Home flag and leaves other keys alone', () => {
+    vi.stubGlobal('localStorage', memoryStorage());
+    writeFlag('homebase:starter-dismissed', '1');
+    writeFlag('homebase:install-row-dismissed', '2026-01-01T00:00:00Z');
+    writeFlag('homebase:backup-row-dismissed', '2026-01-01T00:00:00Z');
+    writeStringList('homebase:alert-rows-dismissed', ['a']);
+    localStorage.setItem('homebase:theme', 'dark');
+    clearHomeFlags();
+    expect(readFlag('homebase:starter-dismissed')).toBeNull();
+    expect(readFlag('homebase:install-row-dismissed')).toBeNull();
+    expect(readFlag('homebase:backup-row-dismissed')).toBeNull();
+    expect(readStringList('homebase:alert-rows-dismissed')).toEqual([]);
+    expect(localStorage.getItem('homebase:theme')).toBe('dark');
+  });
+
+  it('does not throw when storage is unavailable', () => {
+    vi.stubGlobal('localStorage', throwing());
+    expect(() => clearHomeFlags()).not.toThrow();
   });
 });

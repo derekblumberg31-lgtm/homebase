@@ -10,6 +10,7 @@ import { taskCategory } from './meta';
 import { CATEGORY_META, CATEGORY_ORDER, TASK_PRESETS, findType, presetCostHint } from './presets';
 import { firstDueFor, LAST_DONE_OPTIONS, resolveLastDone, type LastDoneChoice } from './lastDone';
 import { dueDateOf } from './taskMath';
+import { SaveFailed, useSave } from '../../ui/save';
 
 const INTERVALS = [
   { value: 7, label: '1 wk' },
@@ -40,7 +41,7 @@ interface TaskFormProps {
   initial?: Task | null;
   draft?: TaskDraft;
   onClose: () => void;
-  onSave: (task: Task) => void;
+  onSave: (task: Task) => void | Promise<void>;
 }
 
 /** Add or edit a task: recurring maintenance, a one-off repair, or a project. */
@@ -65,6 +66,7 @@ export function TaskForm({ initial, draft, onClose, onSave }: TaskFormProps) {
   const [category, setCategory] = useState<TaskCategory>(initial ? taskCategory(initial) : draft?.category ?? 'other');
   const [seasonal, setSeasonal] = useState(initial?.seasonal ?? draft?.seasonal ?? false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const saver = useSave();
 
   const recurring = kind === 'maintenance';
   const belongings = useMemo(() => items.filter((item) => item.kind !== 'key'), [items]);
@@ -111,7 +113,7 @@ export function TaskForm({ initial, draft, onClose, onSave }: TaskFormProps) {
 
     const room = rooms.find((r) => r.id === roomId);
     const now = new Date().toISOString();
-    onSave({
+    const task: Task = {
       id: initial?.id ?? uid(),
       kind,
       name: name.trim(),
@@ -131,7 +133,8 @@ export function TaskForm({ initial, draft, onClose, onSave }: TaskFormProps) {
       notes: notes.trim() || undefined,
       createdAt: initial?.createdAt ?? now,
       updatedAt: now,
-    });
+    };
+    void saver.run(() => Promise.resolve(onSave(task)));
   }
 
   return (
@@ -144,11 +147,12 @@ export function TaskForm({ initial, draft, onClose, onSave }: TaskFormProps) {
         </button>
       }
       trailing={
-        <button type="button" className="sheet-action is-strong" onClick={save}>
+        <button type="button" className="sheet-action is-strong" onClick={save} disabled={saver.saving} aria-busy={saver.saving || undefined}>
           {initial ? 'Save' : 'Add'}
         </button>
       }
     >
+      <SaveFailed show={saver.failed} />
       <Segmented<TaskKind>
         label="Kind of task"
         value={kind}

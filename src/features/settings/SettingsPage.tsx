@@ -3,13 +3,15 @@ import { useNavigate } from 'react-router-dom';
 import { PRODUCT } from '../../app/areas';
 import { useData, useStore } from '../../data/DataProvider';
 import { uid } from '../../data/ids';
-import type { Member, ThemePreference } from '../../data/types';
+import type { Member, Settings, ThemePreference } from '../../data/types';
 import { formatRelativeTime } from '../../lib/dates';
 import { installMatters, isStandalone, readDeviceEnv, STORAGE_COPY, storageStatus } from '../../lib/dataSafety';
+import { clearHomeFlags } from '../../lib/deviceFlags';
 import { storagePersisted } from '../../lib/storage';
 import { FormGroup, Segmented, Switch, TextField } from '../../ui/controls';
 import { Group, Page, Row, Section } from '../../ui/layout';
 import { Sheet, useToast } from '../../ui/overlays';
+import { SaveFailed, useSave } from '../../ui/save';
 import { ConfirmWithBackup } from './ConfirmWithBackup';
 import { ImportButton } from './ImportButton';
 import { InstallSheet } from './InstallSheet';
@@ -36,9 +38,20 @@ export function SettingsPage() {
   const notificationsSupported = typeof Notification !== 'undefined';
   const household = data.household;
 
+  // Instant settings have no sheet to hold a notice, so a failed write is a toast. The control reads the stored value, so it stays put.
+  async function saveSetting(patch: Partial<Settings>): Promise<boolean> {
+    try {
+      await store.updateSettings(patch);
+      return true;
+    } catch {
+      toast('That setting wasn’t saved. Try again.', { tone: 'error' });
+      return false;
+    }
+  }
+
   async function toggleReminders(next: boolean) {
     if (!next) {
-      await store.updateSettings({ reminders: false });
+      await saveSetting({ reminders: false });
       return;
     }
     if (!notificationsSupported) {
@@ -47,8 +60,7 @@ export function SettingsPage() {
     }
     const permission = Notification.permission === 'default' ? await Notification.requestPermission() : Notification.permission;
     if (permission === 'granted') {
-      await store.updateSettings({ reminders: true });
-      toast('Reminders on');
+      if (await saveSetting({ reminders: true })) toast('Reminders on');
     } else {
       toast('Notifications are blocked for this site. Allow them in your browser settings.', { tone: 'error' });
     }
@@ -92,7 +104,7 @@ export function SettingsPage() {
             <Segmented<ThemePreference>
               label="Theme"
               value={data.settings.theme}
-              onChange={(theme) => store.updateSettings({ theme })}
+              onChange={(theme) => void saveSetting({ theme })}
               options={[
                 { value: 'system', label: 'Match device' },
                 { value: 'light', label: 'Light' },
@@ -146,7 +158,7 @@ export function SettingsPage() {
               <span className="row-title">Key photo debug view</span>
               <span className="row-sub">Shows each step of key detection</span>
             </span>
-            <Switch checked={data.settings.keyDebug} onChange={(keyDebug) => store.updateSettings({ keyDebug })} label="Key photo debug view" />
+            <Switch checked={data.settings.keyDebug} onChange={(keyDebug) => void saveSetting({ keyDebug })} label="Key photo debug view" />
           </div>
         </Group>
       </Section>
@@ -183,6 +195,7 @@ export function SettingsPage() {
           onCancel={() => setEraseOpen(false)}
           onConfirm={async () => {
             await store.eraseAll();
+            clearHomeFlags();
             setEraseOpen(false);
             navigate('/welcome', { replace: true });
           }}
@@ -195,9 +208,11 @@ export function SettingsPage() {
   );
 }
 
-function MemberSheet({ member, onClose, onSave, onRemove }: { member: Member | null; onClose: () => void; onSave: (m: Member) => void; onRemove: (m: Member) => void }) {
+function MemberSheet({ member, onClose, onSave, onRemove }: { member: Member | null; onClose: () => void; onSave: (m: Member) => void | Promise<void>; onRemove: (m: Member) => void | Promise<void> }) {
   const [name, setName] = useState(member?.name ?? '');
   const [error, setError] = useState('');
+  const saver = useSave();
+  const [action, setAction] = useState<'save' | 'remove'>('save');
   const isOwner = member?.role === 'owner';
   return (
     <Sheet
@@ -207,21 +222,27 @@ function MemberSheet({ member, onClose, onSave, onRemove }: { member: Member | n
         <button
           type="button"
           className="sheet-action is-strong"
+          disabled={saver.saving}
+          aria-busy={saver.saving || undefined}
           onClick={() => {
             if (!name.trim()) return setError('Add a name.');
-            onSave({ id: member?.id ?? uid(), name: name.trim(), role: member?.role ?? 'member' });
+            setAction('save');
+            const next: Member = { id: member?.id ?? uid(), name: name.trim(), role: member?.role ?? 'member' };
+            void saver.run(() => Promise.resolve(onSave(next)));
           }}
         >
           Save
         </button>
       }
     >
+      <SaveFailed show={saver.failed && action === 'save'} />
+      <SaveFailed show={saver.failed && action === 'remove'}>That person wasn’t removed. Try again.</SaveFailed>
       <FormGroup>
         <TextField label="Name" value={name} onChange={(e) => setName(e.target.value)} error={error} autoFocus />
       </FormGroup>
       {member && !isOwner && (
         <div className="button-stack">
-          <button type="button" className="button is-danger-quiet" onClick={() => onRemove(member)}>
+          <button type="button" className="button is-danger-quiet" disabled={saver.saving} aria-busy={(saver.saving && action === 'remove') || undefined} onClick={() => { setAction('remove'); void saver.run(() => Promise.resolve(onRemove(member))); }}>
             Remove from household
           </button>
         </div>

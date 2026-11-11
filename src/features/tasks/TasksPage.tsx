@@ -9,6 +9,7 @@ import { EmptyState, Group, Page, Section } from '../../ui/layout';
 import { useToast } from '../../ui/overlays';
 import { TaskRow } from './components';
 import { CostsView } from './CostsView';
+import { addTask } from './actions';
 import { TaskForm, type TaskDraft } from './TaskForm';
 import { annualCost, compareUrgency, withInfo, type TaskItem } from './taskMath';
 import { useTaskActions } from './useTaskActions';
@@ -70,8 +71,7 @@ export function TasksPage() {
   }
 
   async function save(task: Task) {
-    await store.put('tasks', task);
-    await store.log('task-added', `Added: ${task.name}`, `/tasks/${task.id}`);
+    await addTask(store, task);
     setForm(null);
     if (params.get('new')) setParams({}, { replace: true });
     toast(`${task.name} added`);

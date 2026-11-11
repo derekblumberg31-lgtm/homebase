@@ -59,3 +59,15 @@ export function addToStringList(key: DeviceFlagKey, id: string): string[] {
   writeStringList(key, next);
   return next;
 }
+
+const HOME_FLAGS: DeviceFlagKey[] = [
+  'homebase:starter-dismissed',
+  'homebase:install-row-dismissed',
+  'homebase:backup-row-dismissed',
+  'homebase:alert-rows-dismissed',
+];
+
+/** After "Erase everything": the Home dismissals described a home that no longer exists, so a fresh start shows its rows again. */
+export function clearHomeFlags(): void {
+  for (const key of HOME_FLAGS) clearFlag(key);
+}

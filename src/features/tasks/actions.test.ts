@@ -1,7 +1,7 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import type { Task } from '../../data/types';
 import { freshStore } from '../../test/freshStore';
-import { completeTask } from './actions';
+import { addTask, completeTask } from './actions';
 
 const task = (over: Partial<Task>): Task => ({
   id: 't1',
@@ -77,5 +77,22 @@ describe('completeTask', () => {
     await undo();
     expect(store.getSnapshot().tasks.find((t) => t.id === 't1')!.dueDate).toBe('2026-11-10');
     expect(store.getSnapshot().activity.some((a) => a.text === 'Done: Clean the gutters')).toBe(false);
+  });
+});
+
+describe('addTask', () => {
+  it('resolves when the task is saved but the activity entry fails', async () => {
+    const store = await freshStore();
+    vi.spyOn(store, 'log').mockRejectedValue(new Error('log failed'));
+    await expect(addTask(store, task({ id: 'new1' }))).resolves.toBeUndefined();
+    expect(store.getSnapshot().tasks.some((t) => t.id === 'new1')).toBe(true);
+  });
+
+  it('rejects and writes no activity entry when the task cannot be saved', async () => {
+    const store = await freshStore();
+    vi.spyOn(store, 'put').mockRejectedValue(new Error('put failed'));
+    const log = vi.spyOn(store, 'log');
+    await expect(addTask(store, task({ id: 'new2' }))).rejects.toThrow('put failed');
+    expect(log).not.toHaveBeenCalled();
   });
 });

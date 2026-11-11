@@ -8,6 +8,9 @@ import { FormGroup, SelectField, TextField, Segmented } from '../../ui/controls'
 import { deviceLabel, installMatters, mayOpenEmptyWhenInstalled, readDeviceEnv } from '../../lib/dataSafety';
 import { ImportButton } from '../settings/ImportButton';
 import { InstallSheet } from '../settings/InstallSheet';
+import { SaveFailed, useSave } from '../../ui/save';
+
+const ONBOARDING_FAILED = 'That wasn’t saved. Your answers are still here, so you can try again. If it keeps failing, the device may be out of space.';
 
 type Step = 'welcome' | 'household' | 'property';
 const STEPS: Step[] = ['welcome', 'household', 'property'];
@@ -26,6 +29,7 @@ export function Onboarding() {
   const [yearBuilt, setYearBuilt] = useState('');
   const [error, setError] = useState('');
   const [installOpen, setInstallOpen] = useState(false);
+  const saver = useSave();
   const env = useMemo(readDeviceEnv, []);
   const tabMatters = installMatters(env);
   const fromSafari = mayOpenEmptyWhenInstalled(env);
@@ -38,13 +42,15 @@ export function Onboarding() {
       return;
     }
     setError('');
-    await store.saveHousehold({
-      id: 'household',
-      name: householdName.trim() || `${name.trim()}’s home`,
-      members: [{ id: uid(), name: name.trim(), role: 'owner' }],
-      createdAt: new Date().toISOString(),
-    });
-    setStep('property');
+    const ok = await saver.run(() =>
+      store.saveHousehold({
+        id: 'household',
+        name: householdName.trim() || `${name.trim()}’s home`,
+        members: [{ id: uid(), name: name.trim(), role: 'owner' }],
+        createdAt: new Date().toISOString(),
+      }),
+    );
+    if (ok) setStep('property');
   }
 
   async function saveProperty(event: FormEvent) {
@@ -55,16 +61,18 @@ export function Onboarding() {
       return;
     }
     setError('');
-    await store.saveProperty({
-      nickname: nickname.trim() || 'My home',
-      address: address.trim() || undefined,
-      type,
-      ownership,
-      yearBuilt: yearBuilt ? year : undefined,
+    const ok = await saver.run(async () => {
+      await store.saveProperty({
+        nickname: nickname.trim() || 'My home',
+        address: address.trim() || undefined,
+        type,
+        ownership,
+        yearBuilt: yearBuilt ? year : undefined,
+      });
+      const household = store.getSnapshot().household;
+      if (household) await store.saveHousehold({ ...household, onboardedAt: new Date().toISOString() });
     });
-    const household = store.getSnapshot().household;
-    if (household) await store.saveHousehold({ ...household, onboardedAt: new Date().toISOString() });
-    navigate('/home', { replace: true });
+    if (ok) navigate('/home', { replace: true });
   }
 
   const index = STEPS.indexOf(step);
@@ -105,6 +113,7 @@ export function Onboarding() {
           <form onSubmit={saveHousehold} noValidate>
             <h1>Who’s using Homebase?</h1>
             <p className="lead">You can add other people in your household later.</p>
+            <SaveFailed show={saver.failed}>{ONBOARDING_FAILED}</SaveFailed>
             <div className="section">
               <FormGroup>
                 <TextField label="Your first name" value={name} onChange={(e) => setName(e.target.value)} autoComplete="given-name" error={error} autoFocus />
@@ -112,7 +121,7 @@ export function Onboarding() {
               </FormGroup>
             </div>
             <div className="button-stack">
-              <button type="submit" className="button is-primary is-block">
+              <button type="submit" className="button is-primary is-block" disabled={saver.saving} aria-busy={saver.saving || undefined}>
                 Continue
               </button>
             </div>
@@ -123,6 +132,7 @@ export function Onboarding() {
           <form onSubmit={saveProperty} noValidate>
             <h1>Tell us about your home</h1>
             <p className="lead">The basics help Homebase suggest the right upkeep. Skip anything you don’t know.</p>
+            <SaveFailed show={saver.failed}>{ONBOARDING_FAILED}</SaveFailed>
             <div className="section">
               <FormGroup>
                 <TextField label="What you call it" value={nickname} onChange={(e) => setNickname(e.target.value)} placeholder="Maple Street" autoFocus />
@@ -149,7 +159,7 @@ export function Onboarding() {
               />
             </div>
             <div className="button-stack">
-              <button type="submit" className="button is-primary is-block">
+              <button type="submit" className="button is-primary is-block" disabled={saver.saving} aria-busy={saver.saving || undefined}>
                 Go to Home
               </button>
             </div>

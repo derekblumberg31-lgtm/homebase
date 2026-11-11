@@ -24,7 +24,7 @@ function drawPhoto(canvas: HTMLCanvasElement, photo: HTMLCanvasElement, o: DrawO
   const ctx = canvas.getContext('2d')!;
   ctx.drawImage(photo, 0, 0, canvas.width, canvas.height);
   const lw = Math.max(2, canvas.width / 300);
-  const accent = css('--accent') || '#a8503c';
+  const accent = css('--accent') || '#9e4f34';
   const poly = (pts: [number, number][], stroke: string, dash?: number[], fill?: string) => {
     ctx.beginPath();
     pts.forEach(([x, y], i) => (i ? ctx.lineTo(x * k, y * k) : ctx.moveTo(x * k, y * k)));

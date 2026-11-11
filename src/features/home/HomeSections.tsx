@@ -427,13 +427,11 @@ export function SeasonalSection({ season, tips, snoozed }: { season: string; tip
         <TaskForm
           draft={planDraftFor(planning, Date.now())}
           onClose={() => setPlanning(null)}
-          onSave={(task: Task) =>
-            void act(async () => {
-              await planTip(store, planning, task);
-              setPlanning(null);
-              toast(`${task.name} added to Tasks`, { action: { label: 'Open', run: () => navigate(`/tasks/${task.id}`) } });
-            })
-          }
+          onSave={async (task: Task) => {
+            await planTip(store, planning, task);
+            setPlanning(null);
+            toast(`${task.name} added to Tasks`, { action: { label: 'Open', run: () => navigate(`/tasks/${task.id}`) } });
+          }}
         />
       )}
     </section>
