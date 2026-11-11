@@ -1,5 +1,6 @@
 import { useId, useRef, type KeyboardEvent, type InputHTMLAttributes, type ReactNode, type SelectHTMLAttributes, type TextareaHTMLAttributes } from 'react';
 import { Search, X } from './Icons';
+import { nextRadioIndex, radioTabIndex } from './radioKeys';
 
 interface FieldShellProps {
   label: string;
@@ -137,18 +138,18 @@ export function Chips<T extends string | number>({
   const selected = options.findIndex((o) => o.value === value);
   function onKeyDown(event: KeyboardEvent) {
     if (!single) return;
-    const step = event.key === 'ArrowRight' || event.key === 'ArrowDown' ? 1 : event.key === 'ArrowLeft' || event.key === 'ArrowUp' ? -1 : 0;
-    if (!step) return;
+    const radios = Array.from(group.current?.querySelectorAll<HTMLElement>('[role="radio"]') ?? []);
+    const index = nextRadioIndex(event.key, radios.indexOf(document.activeElement as HTMLElement), options.length);
+    if (index === null) return;
     event.preventDefault();
-    const index = (Math.max(selected, 0) + (selected < 0 && step > 0 ? 0 : step) + options.length) % options.length;
     onChange(options[index].value);
-    group.current?.querySelectorAll<HTMLElement>('[role="radio"]')[index]?.focus();
+    radios[index]?.focus();
   }
   return (
     <div ref={group} className="chips" role={single ? 'radiogroup' : 'group'} aria-label={label} aria-describedby={describedBy} data-invalid={invalid || undefined} onKeyDown={onKeyDown}>
       {options.map((option, i) =>
         single ? (
-          <button key={String(option.value)} type="button" role="radio" className="chip" aria-checked={value === option.value} tabIndex={i === Math.max(selected, 0) ? 0 : -1} onClick={() => onChange(option.value)}>
+          <button key={String(option.value)} type="button" role="radio" className="chip" aria-checked={value === option.value} tabIndex={i === radioTabIndex(selected) ? 0 : -1} onClick={() => onChange(option.value)}>
             {option.label}
           </button>
         ) : (

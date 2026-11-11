@@ -251,7 +251,7 @@ interface Announcement {
 }
 
 /**
- * The stack is a "Notifications" landmark that is always in the page, with two live regions that are
+ * The stack is a "Messages" landmark that is always in the page, with two live regions that are
  * always present too. Text added to a region that already exists is announced reliably; a live region
  * that arrives together with its text often is not. The toasts themselves stay plain, so nothing is read twice.
  */
@@ -277,7 +277,7 @@ export function ToastStack({
       ref={stackRef}
       className="toast-stack"
       role="region"
-      aria-label="Notifications"
+      aria-label="Messages"
       onPointerEnter={(event) => event.pointerType === 'mouse' && setPaused(true)}
       onPointerLeave={(event) => event.pointerType === 'mouse' && setPaused(false)}
       onFocus={() => setPaused(true)}

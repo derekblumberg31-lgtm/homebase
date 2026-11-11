@@ -7,10 +7,10 @@ const render = (props: Partial<Parameters<typeof ToastStack>[0]> = {}) =>
   renderToStaticMarkup(<ToastStack toasts={[]} polite={null} assertive={null} paused={false} setPaused={noop} onDismiss={noop} {...props} />);
 
 describe('ToastStack', () => {
-  it('is a Notifications landmark with both live regions present before any toast', () => {
+  it('is a Messages landmark with both live regions present before any toast', () => {
     const html = render();
     expect(html).toContain('role="region"');
-    expect(html).toContain('aria-label="Notifications"');
+    expect(html).toContain('aria-label="Messages"');
     expect(html).toContain('aria-live="polite"');
     expect(html).toContain('aria-live="assertive"');
   });

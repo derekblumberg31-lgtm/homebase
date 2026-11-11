@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useData, useNow, useStore } from '../../data/DataProvider';
 import { clearFlag, readFlag, writeFlag } from '../../lib/deviceFlags';
 import { Check } from '../../ui/Icons';
+import { nextRadioIndex } from '../../ui/radioKeys';
 import { EmptyState } from '../../ui/layout';
 import { useToast } from '../../ui/overlays';
 import { LAST_DONE_OPTIONS, type LastDoneChoice } from '../tasks/lastDone';
@@ -24,13 +25,12 @@ function Choices({ jobKey, value, labelId, onChoose }: { jobKey: string; value: 
   const group = useRef<HTMLDivElement>(null);
   // Arrow keys move and select, as native radios do; Tab leaves the group.
   function onKeyDown(event: KeyboardEvent) {
-    const step = event.key === 'ArrowRight' || event.key === 'ArrowDown' ? 1 : event.key === 'ArrowLeft' || event.key === 'ArrowUp' ? -1 : 0;
-    if (!step) return;
+    const radios = Array.from(group.current?.querySelectorAll<HTMLElement>('[role="radio"]') ?? []);
+    const index = nextRadioIndex(event.key, radios.indexOf(document.activeElement as HTMLElement), LAST_DONE_OPTIONS.length);
+    if (index === null) return;
     event.preventDefault();
-    const index = LAST_DONE_OPTIONS.findIndex((o) => o.value === value);
-    const next = LAST_DONE_OPTIONS[(index + step + LAST_DONE_OPTIONS.length) % LAST_DONE_OPTIONS.length];
-    onChoose(jobKey, next.value);
-    group.current?.querySelectorAll<HTMLElement>('[role="radio"]')[LAST_DONE_OPTIONS.indexOf(next)]?.focus();
+    onChoose(jobKey, LAST_DONE_OPTIONS[index].value);
+    radios[index]?.focus();
   }
   return (
     <div className="starter-choices" role="radiogroup" aria-labelledby={labelId} ref={group} onKeyDown={onKeyDown}>
