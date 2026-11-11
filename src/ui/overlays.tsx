@@ -13,15 +13,21 @@ import { createPortal } from 'react-dom';
 import { project, rubberband, velocityTracker } from './physics';
 import { pushToast, removeToast } from './toastQueue';
 
+// Open dialogs, oldest first. Only the newest answers Escape and Tab, so a dialog over a sheet closes alone.
+const openDialogs: symbol[] = [];
+
 /** Close on Escape, trap Tab inside, and give focus back to whatever opened the overlay. */
 export function useDialogFocus(onClose: () => void, lockScroll = true) {
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
+    const self = Symbol('dialog');
+    openDialogs.push(self);
     const opener = document.activeElement as HTMLElement | null;
     const node = ref.current;
     const first = node?.querySelector<HTMLElement>('[data-autofocus], [autofocus]') ?? node?.querySelector<HTMLElement>('input, select, textarea, button, a[href]');
     first?.focus();
     function onKey(event: KeyboardEvent) {
+      if (openDialogs[openDialogs.length - 1] !== self) return;
       if (event.key === 'Escape') {
         event.stopPropagation();
         onClose();
@@ -34,7 +40,11 @@ export function useDialogFocus(onClose: () => void, lockScroll = true) {
       if (focusable.length === 0) return;
       const firstEl = focusable[0];
       const lastEl = focusable[focusable.length - 1];
-      if (event.shiftKey && document.activeElement === firstEl) {
+      // Focus that has left the dialog (onto the page behind it) comes back in.
+      if (!node.contains(document.activeElement)) {
+        event.preventDefault();
+        (event.shiftKey ? lastEl : firstEl).focus();
+      } else if (event.shiftKey && document.activeElement === firstEl) {
         event.preventDefault();
         lastEl.focus();
       } else if (!event.shiftKey && document.activeElement === lastEl) {
@@ -47,6 +57,7 @@ export function useDialogFocus(onClose: () => void, lockScroll = true) {
     if (lockScroll) document.body.style.overflow = 'hidden';
     return () => {
       document.removeEventListener('keydown', onKey);
+      openDialogs.splice(openDialogs.indexOf(self), 1);
       document.body.style.overflow = overflow;
       opener?.focus?.();
     };
@@ -155,6 +166,8 @@ interface ConfirmProps {
   destructive?: boolean;
   /** An optional third action, stacked above the confirm (for example "Save a backup first"). */
   extra?: { label: string; onClick: () => void; disabled?: boolean };
+  /** When this becomes truthy, focus moves to the confirm button (after "Save a backup first" finishes). */
+  focusConfirmWhen?: unknown;
   /** A status line under the message, announced politely. Only shown with `extra`. */
   status?: ReactNode;
   /** Disables the confirm while something else is in progress. */
@@ -162,11 +175,15 @@ interface ConfirmProps {
 }
 
 /** A native-style alert for anything that can't easily be undone. Cancel has focus by default. */
-export function Confirm({ title, message, confirmLabel, onConfirm, onCancel, destructive = false, extra, status, confirmDisabled = false }: ConfirmProps) {
+export function Confirm({ title, message, confirmLabel, onConfirm, onCancel, destructive = false, extra, status, confirmDisabled = false, focusConfirmWhen }: ConfirmProps) {
   const titleId = useId();
   const ref = useDialogFocus(onCancel);
+  const confirmRef = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    if (focusConfirmWhen && !confirmDisabled) confirmRef.current?.focus();
+  }, [focusConfirmWhen, confirmDisabled]);
   const confirm = (
-    <button type="button" className={`${destructive ? 'is-destructive ' : ''}is-confirm`} onClick={onConfirm} disabled={confirmDisabled}>
+    <button ref={confirmRef} type="button" className={`${destructive ? 'is-destructive ' : ''}is-confirm`} onClick={onConfirm} disabled={confirmDisabled}>
       {confirmLabel}
     </button>
   );
@@ -189,7 +206,7 @@ export function Confirm({ title, message, confirmLabel, onConfirm, onCancel, des
         </div>
         {extra ? (
           <div className="alert-actions is-stacked">
-            <button type="button" onClick={extra.onClick} disabled={extra.disabled}>
+            <button type="button" onClick={() => !extra.disabled && extra.onClick()} aria-disabled={extra.disabled || undefined}>
               {extra.label}
             </button>
             {confirm}

@@ -37,8 +37,8 @@ function CrashScreen() {
 
   const saveBackup = () =>
     run(async () => {
-      await downloadBackup(await openStore());
-      setMessage('Backup downloaded.');
+      const recorded = await downloadBackup(await openStore());
+      setMessage(recorded ? 'Backup downloaded.' : 'Check that the backup reached Files before you rely on it.');
     }, 'The backup couldn’t be saved.');
 
   const pick = (file: File) =>

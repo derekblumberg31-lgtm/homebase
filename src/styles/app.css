@@ -1450,7 +1450,8 @@ select.input {
   color: var(--red);
 }
 
-.alert-actions button:disabled {
+.alert-actions button:disabled,
+.alert-actions button[aria-disabled='true'] {
   opacity: 0.5;
 }
 
