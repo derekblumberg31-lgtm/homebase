@@ -8,6 +8,8 @@ import { taskCategory, taskMetaParts } from '../tasks/meta';
 import { getTaskInfo } from '../tasks/taskMath';
 import { alertsFor, arrangeAttention, attentionFor, endingSoon, healthCheckFor, homeStatusFor, seasonalTipsFor, snapshotFor, timelineFor } from './insights';
 import { completeTip, hideTip, planDraftFor, snoozeTip } from './tipActions';
+import { buildStarterTask, chooseStarter, starterJobsFor, starterSubLine, toggleStarter } from './starter';
+import { addStarterJobs } from './starterActions';
 
 // A fixed autumn evening, so the seasonal list and dates are predictable.
 const NOW = new Date('2026-10-27T19:00:00').getTime();
@@ -111,7 +113,7 @@ describe('seasonal recommendations', () => {
 
   it('leaves out suggestions already planned as tasks', () => {
     const data = home({ tasks: [task({ id: 'f', name: 'Service the furnace before winter' })] });
-    expect(seasonalTipsFor(data, NOW).tips.map((t) => t.title)).not.toContain('Service the furnace');
+    expect(seasonalTipsFor(data, NOW).tips.filter((t) => !t.status).map((t) => t.title)).not.toContain('Service the furnace');
   });
 });
 
@@ -290,5 +292,100 @@ describe('Assistant answers from home data', () => {
 
   it('still lists warranties that are ending', async () => {
     expect((await ask('Which warranties are ending soon?')).title).toBe('1 ending in the next 90 days');
+  });
+});
+
+describe('starter jobs', () => {
+  const names = (now: number, data = home()) => starterJobsFor(data, now).map((j) => j.name);
+
+  it('offers three fall tips, then basics, up to five', () => {
+    const jobs = starterJobsFor(home(), NOW);
+    expect(jobs.map((j) => j.name)).toEqual(['Service the furnace', 'Drain and store garden hoses', 'Seal drafts around doors and windows', 'Change the HVAC filter', 'Smoke alarm batteries']);
+    expect(jobs.map((j) => j.intervalDays)).toEqual([365, 365, 365, 90, 180]);
+    expect(jobs.map((j) => j.seasonal)).toEqual([true, true, true, undefined, undefined]);
+  });
+
+  it('is empty once there is any task', () => {
+    expect(starterJobsFor(home({ tasks: [task({})] }), NOW)).toEqual([]);
+  });
+
+  it('skips a basic that a tip already covers', () => {
+    expect(names(new Date('2027-01-15T10:00:00').getTime())).toEqual(['Find and label the main water shut-off', 'Test the sump pump', 'Swap the HVAC filter', 'Smoke alarm batteries', 'Flush the water heater']);
+    expect(names(new Date('2027-04-10T10:00:00').getTime())).toEqual(['Service the air conditioning', 'Clean the gutters', 'Test smoke and CO alarms', 'Change the HVAC filter', 'Flush the water heater']);
+  });
+
+  it('falls back to the basics when every tip is hidden', () => {
+    const tipStates = Object.fromEntries(seasonalTipsFor(home(), NOW).tips.map((t) => [t.id, { state: 'hidden' as const, at: '2026-10-01T00:00:00.000Z' }]));
+    const data = home({ settings: { ...emptyData().settings, tipStates } });
+    expect(names(NOW, data)).toEqual(['Change the HVAC filter', 'Smoke alarm batteries', 'Flush the water heater', 'Check CO alarms', 'Clean the gutters']);
+  });
+
+  it('builds a recurring task first due on the chosen date, with no cost and no estimated last-done', () => {
+    const [furnace, , , hvac] = starterJobsFor(home(), NOW);
+    const built = buildStarterTask(furnace, 'not-sure', NOW);
+    expect(built).toMatchObject({ kind: 'maintenance', recurring: true, status: 'open', intervalDays: 365, seasonal: true, location: '', lastDoneAt: '2026-10-27', dueDate: '2026-11-03' });
+    expect(built.cost).toBeUndefined();
+    expect(buildStarterTask(hvac, 'this-month', NOW)).toMatchObject({ typeId: 'custom', dueDate: '2027-01-10' });
+  });
+
+  it('ticks, unticks and answers rows as pure steps', () => {
+    expect(toggleStarter({}, 'a')).toEqual({ a: 'not-sure' });
+    expect(toggleStarter({ a: 'this-month' }, 'a')).toEqual({});
+    expect(toggleStarter(toggleStarter({ a: 'this-month' }, 'a'), 'a')).toEqual({ a: 'not-sure' });
+    expect(chooseStarter({ a: 'not-sure' }, 'a', 'few-months')).toEqual({ a: 'few-months' });
+    expect(chooseStarter({}, 'a', 'few-months')).toEqual({});
+  });
+
+  it('describes each row before and after it is ticked', () => {
+    const [furnace, , , hvac] = starterJobsFor(home(), NOW);
+    expect(starterSubLine(furnace, undefined, NOW)).toBe('Every year · Seasonal');
+    expect(starterSubLine(hvac, undefined, NOW)).toBe('Every 3 months');
+    expect(starterSubLine(hvac, 'this-month', NOW)).toBe('Every 3 months · Next due Jan 10, 2027');
+    expect(starterSubLine(furnace, 'not-sure', NOW)).toBe('Every year · Due within a week');
+  });
+
+  it('adds one ticked job and Home reads "1 job is due this week", not "All clear"', async () => {
+    const store = await freshStore();
+    const [furnace] = starterJobsFor(store.getSnapshot(), NOW);
+    await addStarterJobs(store, [{ job: furnace, choice: 'not-sure' }], NOW);
+    const data = store.getSnapshot();
+    expect(data.tasks).toHaveLength(1);
+    expect(data.tasks[0].dueDate).toBe('2026-11-03');
+    expect(homeStatusFor(data, NOW, []).text).toBe('1 job is due this week');
+  });
+
+  it('adds two jobs, marks the tip planned, logs both, and Undo puts it all back', async () => {
+    const store = await freshStore();
+    const [furnace, , , hvac] = starterJobsFor(store.getSnapshot(), NOW);
+    const { count, undo } = await addStarterJobs(store, [{ job: furnace, choice: 'not-sure' }, { job: hvac, choice: 'this-month' }], NOW);
+    const data = store.getSnapshot();
+    expect(count).toBe(2);
+    expect(data.tasks).toHaveLength(2);
+    expect(data.settings.tipStates?.['fall-2026:Service the furnace']).toMatchObject({ state: 'planned', taskId: data.tasks.find((t) => t.name === 'Service the furnace')?.id });
+    expect(data.activity.filter((a) => a.kind === 'task-added').map((a) => a.text).sort()).toEqual(['Added: Change the HVAC filter', 'Planned: Service the furnace']);
+    expect(seasonalTipsFor(data, NOW).tips.filter((t) => !t.status).map((t) => t.title)).not.toContain('Service the furnace');
+
+    await undo();
+    const after = store.getSnapshot();
+    expect(after.tasks).toHaveLength(0);
+    expect(after.activity.filter((a) => a.kind === 'task-added')).toHaveLength(0);
+    expect(after.settings.tipStates ?? {}).toEqual({});
+  });
+
+  it('keeps the tasks when only the extras fail', async () => {
+    const store = await freshStore();
+    const [furnace] = starterJobsFor(store.getSnapshot(), NOW);
+    store.updateSettings = () => Promise.reject(new Error('no'));
+    store.log = () => Promise.reject(new Error('no'));
+    await expect(addStarterJobs(store, [{ job: furnace, choice: 'not-sure' }], NOW)).resolves.toMatchObject({ count: 1 });
+    expect(store.getSnapshot().tasks).toHaveLength(1);
+  });
+
+  it('adds nothing and throws when the write fails', async () => {
+    const store = await freshStore();
+    const [furnace] = starterJobsFor(store.getSnapshot(), NOW);
+    store.putMany = () => Promise.reject(new Error('no'));
+    await expect(addStarterJobs(store, [{ job: furnace, choice: 'not-sure' }], NOW)).rejects.toThrow();
+    expect(store.getSnapshot().tasks).toHaveLength(0);
   });
 });

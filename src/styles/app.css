@@ -884,6 +884,130 @@ button.row:focus-visible {
   margin: 20px auto 0;
 }
 
+/* Home's starter block: five tick rows; the "when" choices open under a ticked row only. */
+.starter h2 {
+  font-size: 19px;
+  font-weight: 650;
+  color: var(--text);
+}
+
+.starter > p {
+  max-width: 40ch;
+  margin: 4px 0 0;
+  color: var(--text-2);
+  font-size: 15px;
+}
+
+.starter-label {
+  margin: 16px 0 8px;
+  padding: 0 4px;
+}
+
+.starter-item {
+  position: relative;
+}
+
+.starter-item + .starter-item::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 16px;
+  height: 0.5px;
+  background: var(--line-strong);
+  z-index: 2;
+}
+
+.starter-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 56px;
+  padding: 8px 16px;
+  color: inherit;
+  text-align: left;
+  background: var(--surface);
+  transition: background 0.15s var(--ease);
+}
+
+.starter-row:active {
+  background: var(--surface-2);
+}
+
+.starter-row:focus-visible {
+  outline-offset: -2px;
+}
+
+.starter-tick {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border: 1.5px solid var(--text-3);
+  border-radius: 50%;
+  color: var(--button-text);
+  transition: background 0.15s var(--ease), border-color 0.15s var(--ease);
+}
+
+.starter-row[aria-checked='true'] .starter-tick {
+  border-color: var(--button-bg);
+  background: var(--button-bg);
+}
+
+.starter-when {
+  padding: 0 16px 12px 50px;
+  background: var(--surface);
+}
+
+.starter-when p {
+  margin-bottom: 8px;
+  color: var(--text-2);
+  font-size: 13px;
+}
+
+.starter-choices {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px 8px;
+}
+
+.starter-choices .chip {
+  transition: background 0.15s var(--ease), color 0.15s var(--ease);
+}
+
+.starter-footer {
+  margin-top: 16px;
+}
+
+.starter-footer .button {
+  max-width: 320px;
+  margin: 0 auto;
+}
+
+.starter-links {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.starter-links .text-button {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 12px;
+  font-size: 15px;
+}
+
+@media (min-width: 560px) {
+  .starter-choices {
+    grid-template-columns: repeat(4, auto);
+    justify-content: start;
+  }
+}
+
 .empty.is-inline {
   padding: 20px 16px;
   text-align: left;
@@ -3694,7 +3818,8 @@ a.feed-row:focus-visible {
   color: var(--text);
 }
 
-.chip[aria-pressed='true'] {
+.chip[aria-pressed='true'],
+.chip[aria-checked='true'] {
   background: var(--button-bg);
   color: var(--button-text);
 }

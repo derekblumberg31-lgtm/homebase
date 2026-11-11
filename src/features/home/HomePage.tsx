@@ -5,12 +5,13 @@ import { useData, useNow } from '../../data/DataProvider';
 import { useSession } from '../../session/session';
 import { useToast } from '../../ui/overlays';
 import { MessageCircle } from '../../ui/Icons';
-import { EmptyState, Group, Page, Row } from '../../ui/layout';
+import { Group, Page, Row } from '../../ui/layout';
 import { TaskRow } from '../tasks/components';
 import { compareUrgency, withInfo } from '../tasks/taskMath';
 import { useTaskActions } from '../tasks/useTaskActions';
 import { HomeAlertRows, HomeStatusLine } from './HomeSections';
 import { arrangeAttention, attentionFor, healthCheckFor, homeStatusFor, seasonalTipsFor, timelineFor, type AttentionItem } from './insights';
+import { StarterJobs } from './StarterJobs';
 import { useAlertDismissals } from './useAlertDismissals';
 
 const UP_NEXT = 3;
@@ -35,6 +36,9 @@ export function HomePage() {
   // After a row is hidden, focus moves to the row now in its place, else the one before it, else Ask Homebase.
   const focusRow = useRef<number | null>(null);
   const alertsRef = useRef<HTMLDivElement>(null);
+  // After starter jobs are added, focus moves to the jobs list that replaces the block.
+  const nextRef = useRef<HTMLElement>(null);
+  const focusNext = useRef(false);
 
   const next = useMemo(() => withInfo(data.tasks.filter((t) => t.status === 'open'), now).sort(compareUrgency).slice(0, UP_NEXT), [data.tasks, now]);
   const attention = useMemo(() => attentionFor(data, now, backupDismissedAt), [data, now, backupDismissedAt]);
@@ -53,6 +57,12 @@ export function HomePage() {
     const target = index >= 0 ? alertsRef.current?.querySelectorAll<HTMLElement>('.home-alert-row > .row')[index] : document.querySelector<HTMLElement>('#home-ask a');
     target?.focus();
   }, [rows]);
+
+  useEffect(() => {
+    if (!focusNext.current || next.length === 0) return;
+    focusNext.current = false;
+    nextRef.current?.focus();
+  }, [next.length]);
 
   function hide(item: AttentionItem) {
     focusRow.current = rows.indexOf(item);
@@ -77,13 +87,9 @@ export function HomePage() {
         </span>
       }
     >
-      <section className="home-next" aria-label="Next jobs">
+      <section className="home-next" aria-label="Next jobs" ref={nextRef} tabIndex={-1}>
         {next.length === 0 ? (
-          <EmptyState
-            title="Start with the jobs you always forget"
-            body="The furnace filter, smoke alarm batteries, the gutters. Add one and Homebase counts down to it."
-            action={{ label: 'Add a maintenance reminder', to: '/tasks?new=1&kind=maintenance' }}
-          />
+          <StarterJobs onAdded={() => (focusNext.current = true)} />
         ) : (
           <>
             <Group>

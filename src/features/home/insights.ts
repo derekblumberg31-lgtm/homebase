@@ -261,7 +261,7 @@ const SEASONAL: Record<Season, Omit<Recommendation, 'id'>[]> = {
   ],
 };
 
-const similar = (a: string, b: string) => {
+export const similar = (a: string, b: string) => {
   const words = (s: string) => new Set(s.toLowerCase().split(/[^a-z]+/).filter((w) => w.length > 3));
   const wa = words(a);
   let shared = 0;
