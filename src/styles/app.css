@@ -903,6 +903,12 @@ button.row:focus-visible {
   padding: 0 4px;
 }
 
+.starter-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
 .starter-item {
   position: relative;
 }

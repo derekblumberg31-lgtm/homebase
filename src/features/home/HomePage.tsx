@@ -38,7 +38,6 @@ export function HomePage() {
   const alertsRef = useRef<HTMLDivElement>(null);
   // After starter jobs are added, focus moves to the jobs list that replaces the block.
   const nextRef = useRef<HTMLElement>(null);
-  const focusNext = useRef(false);
 
   const next = useMemo(() => withInfo(data.tasks.filter((t) => t.status === 'open'), now).sort(compareUrgency).slice(0, UP_NEXT), [data.tasks, now]);
   const attention = useMemo(() => attentionFor(data, now, backupDismissedAt), [data, now, backupDismissedAt]);
@@ -57,12 +56,6 @@ export function HomePage() {
     const target = index >= 0 ? alertsRef.current?.querySelectorAll<HTMLElement>('.home-alert-row > .row')[index] : document.querySelector<HTMLElement>('#home-ask a');
     target?.focus();
   }, [rows]);
-
-  useEffect(() => {
-    if (!focusNext.current || next.length === 0) return;
-    focusNext.current = false;
-    nextRef.current?.focus();
-  }, [next.length]);
 
   function hide(item: AttentionItem) {
     focusRow.current = rows.indexOf(item);
@@ -89,7 +82,7 @@ export function HomePage() {
     >
       <section className="home-next" aria-label="Next jobs" ref={nextRef} tabIndex={-1}>
         {next.length === 0 ? (
-          <StarterJobs onAdded={() => (focusNext.current = true)} />
+          <StarterJobs onAdded={() => setTimeout(() => nextRef.current?.focus(), 0)} />
         ) : (
           <>
             <Group>

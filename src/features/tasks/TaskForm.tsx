@@ -91,6 +91,11 @@ export function TaskForm({ initial, draft, onClose, onSave }: TaskFormProps) {
     return 'A rough guess is fine.';
   })();
 
+  function pickLastDone(choice: LastDoneChoice | 'date') {
+    setLastDone(choice);
+    setErrors((e) => ({ ...e, lastDoneAt: '' }));
+  }
+
   function save() {
     const next: Record<string, string> = {};
     const days = Math.round(Number(interval));
@@ -208,7 +213,7 @@ export function TaskForm({ initial, draft, onClose, onSave }: TaskFormProps) {
             <>
               <div className="field">
                 <span className="field-label">Last done</span>
-                <Chips<LastDoneChoice | 'date'> label="Last done" value={lastDone} onChange={setLastDone} options={[...LAST_DONE_OPTIONS, { value: 'date', label: 'Pick a date' }]} />
+                <Chips<LastDoneChoice | 'date'> label="Last done" value={lastDone} onChange={pickLastDone} options={[...LAST_DONE_OPTIONS, { value: 'date', label: 'Pick a date' }]} />
                 {lastDone === 'date' ? (
                   <TextField label="Date" type="date" value={lastDoneDate} max={toDateInput()} onChange={(e) => setLastDoneDate(e.target.value)} error={errors.lastDoneAt} />
                 ) : errors.lastDoneAt ? (

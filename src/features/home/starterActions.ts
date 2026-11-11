@@ -49,10 +49,11 @@ export async function addStarterJobs(store: HomeStore, picks: StarterPick[], now
   return {
     count: tasks.length,
     undo: async () => {
+      // First, so the starter block that returns when the last task goes reads the flag as cleared.
+      clearFlag('homebase:starter-dismissed');
       for (const task of tasks) await store.remove('tasks', task.id);
       if (Object.keys(planned).length > 0) await store.updateSettings({ tipStates: previousTipStates });
       for (const id of activityIds) await store.remove('activity', id);
-      clearFlag('homebase:starter-dismissed');
     },
   };
 }
