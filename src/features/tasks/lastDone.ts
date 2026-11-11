@@ -14,11 +14,7 @@ export const LAST_DONE_OPTIONS: { value: LastDoneChoice; label: string }[] = [
 // "Last done about k days ago", as a number of days.
 const AGO: Record<Exclude<LastDoneChoice, 'not-sure'>, number> = { 'this-month': 15, 'few-months': 90, 'over-a-year': 365 };
 
-/**
- * The first due date a rough answer gives: today + max(D − k, min(7, D)). A coarse guess never
- * makes a job overdue the day it is added, and never pushes a short job past its own interval.
- * "Not sure" is the floor itself.
- */
+/** The first due date a rough answer gives: today + max(D − k, min(7, D)), so a guess is never overdue on day one. */
 export function firstDueFor(choice: LastDoneChoice, intervalDays: number, now: number): DateString {
   const floor = Math.min(7, intervalDays);
   const offset = choice === 'not-sure' ? floor : Math.max(intervalDays - AGO[choice], floor);
@@ -35,9 +31,8 @@ interface ResolveInput {
 }
 
 /**
- * What a recurring task stores from the "Last done" field. A real date is the last-done date with
- * no `dueDate`. A rough answer stores a first due date; `lastDoneAt` is then only the day the task
- * was added and is never shown. Nothing chosen keeps an edited task as it was, or a draft's due date.
+ * What a recurring task stores from "Last done". A real date has no `dueDate`. A rough answer
+ * stores a first due date, and `lastDoneAt` is then only the day the task was added.
  */
 export function resolveLastDone(input: ResolveInput): { lastDoneAt: DateString; dueDate?: DateString } | { error: string } {
   const { choice, date, intervalDays, now, initial, draftDueDate } = input;

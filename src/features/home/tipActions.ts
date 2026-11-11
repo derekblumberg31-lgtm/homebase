@@ -22,10 +22,7 @@ function undoTo(store: HomeStore, id: string) {
   return () => setTipState(store, id, previous);
 }
 
-/**
- * The form draft for planning a seasonal job. It comes round once a year; start it two weeks out
- * so it is on the list now. No last-done date is invented: it is first due on `dueDate`.
- */
+/** The draft for planning a seasonal job: yearly, first due in two weeks, with no invented last-done date. */
 export function planDraftFor(tip: Pick<SeasonalTip, 'taskName' | 'category'>, now: number): TaskDraft {
   return { name: tip.taskName, kind: 'maintenance', category: tip.category, seasonal: true, intervalDays: 365, dueDate: toDateInput(addDays(new Date(now), 14)) };
 }

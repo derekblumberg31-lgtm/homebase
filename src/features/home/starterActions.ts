@@ -10,10 +10,8 @@ export interface StarterPick {
 }
 
 /**
- * Saves the ticked jobs as ordinary recurring tasks in one write. If that write throws nothing is
- * kept and the starter flag is untouched. Once it succeeds, a failure in the extras (marking seasonal
- * tips as planned, the activity entries) is swallowed: the tasks are saved, and a tip with a similar
- * open task is hidden anyway. Returns an undo that puts everything back, including the flag.
+ * Saves the ticked jobs as recurring tasks in one write. Once it succeeds, a failure in the extras
+ * (tip state, activity entries) is swallowed, because reporting "not saved" would invite a duplicate.
  */
 export async function addStarterJobs(store: HomeStore, picks: StarterPick[], now = Date.now()) {
   const tasks = picks.map(({ job, choice }) => buildStarterTask(job, choice, now));
@@ -40,7 +38,7 @@ export async function addStarterJobs(store: HomeStore, picks: StarterPick[], now
       const id = newEntryId(activityBefore, store.getSnapshot().activity, { kind: 'task-added', text, href });
       if (id) entries.push({ id, taskId: task.id });
     } catch {
-      /* the task is saved; the activity line is a nicety */
+      /* the activity line is optional */
     }
   }
 

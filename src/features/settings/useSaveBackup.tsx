@@ -27,11 +27,7 @@ export function toastFor(result: BackupResult): { text: string; tone?: 'error' }
   }
 }
 
-/**
- * Saves a backup through the share sheet where there is one, else a download. Call `save` straight
- * from a tap so the share sheet keeps its user activation. Render `dialog` somewhere in the tree:
- * it is the "Backup ready" prompt that asks for one more tap when a large backup took too long.
- */
+/** Saves a backup by share sheet or download. Call `save` straight from a tap, and render `dialog` for the "Backup ready" retry. */
 export function useSaveBackup() {
   const store = useStore();
   const toast = useToast();

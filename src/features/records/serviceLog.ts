@@ -5,18 +5,12 @@ import { isRealDate } from '../../lib/dates';
 
 type EntryMatch = Pick<Activity, 'kind' | 'text' | 'href'>;
 
-/**
- * The id of the activity entry a store.log() call just wrote. `after` is newest first, so the first
- * entry that was not in `before` and matches kind, text and href is ours. Undefined when none matches.
- */
+/** The activity entry a store.log() call just wrote: the first in `after` (newest first) that is not in `before` and matches. */
 export function newEntryId(before: ReadonlySet<string>, after: readonly Activity[], match: EntryMatch): string | undefined {
   return after.find((a) => !before.has(a.id) && a.kind === match.kind && a.text === match.text && a.href === match.href)?.id;
 }
 
-/**
- * The one way a "done" gets written: a service event plus its "Done: X" activity entry. The returned
- * undo removes both. Nothing in src/data changed for this, so the entry is found by diffing snapshots.
- */
+/** The one way a "done" is written: a service event plus its "Done: X" entry. The undo removes both. */
 export async function recordServiceEvent(store: HomeStore, event: ServiceEvent, href: string) {
   const before = new Set(store.getSnapshot().activity.map((a) => a.id));
   await store.put('serviceEvents', event);
@@ -77,7 +71,7 @@ export function buildLoggedEvent(input: LogJobInput, today: string, now: string)
   };
 }
 
-/** Item 4: record a job that had no task. */
+/** Record a job that had no task. */
 export async function logJob(store: HomeStore, event: ServiceEvent) {
   const { undo } = await recordServiceEvent(store, event, '/records/service-history');
   return { undo };

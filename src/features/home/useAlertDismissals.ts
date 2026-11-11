@@ -4,10 +4,7 @@ import { clearFlag, readFlag, readStringList, writeFlag, writeStringList } from 
 const ROWS_KEY = 'homebase:alert-rows-dismissed';
 const BACKUP_KEY = 'homebase:backup-row-dismissed';
 
-/**
- * Which Home alert rows this device has hidden. State is held in React, so a row hides at once
- * even when the browser will not store the choice (it then simply comes back on the next visit).
- */
+/** Which Home alert rows this device has hidden. Kept in React too, so a row hides even when storage is blocked. */
 export function useAlertDismissals() {
   const [dismissed, setDismissed] = useState<ReadonlySet<string>>(() => new Set(readStringList(ROWS_KEY)));
   const [backupDismissedAt, setBackupDismissedAt] = useState<string | undefined>(() => readFlag(BACKUP_KEY) ?? undefined);

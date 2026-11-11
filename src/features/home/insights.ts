@@ -136,11 +136,7 @@ export function attentionFor(data: HomeData, now: number, backupDismissedAt?: st
   return items;
 }
 
-/**
- * Hides what was dismissed, then fills the alert slot. A backup row, when there is one, always
- * takes the last slot: home facts read first, but losing the only copy of the data costs everything.
- * `counted` is what the status sentence talks about (never the backup).
- */
+/** Hides what was dismissed, then fills the alert slot. A backup row always takes a slot. `counted` is what the status sentence covers (never the backup). */
 export function arrangeAttention(
   items: AttentionItem[],
   dismissed: ReadonlySet<string>,

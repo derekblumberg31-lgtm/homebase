@@ -7,7 +7,6 @@ import { Sheet } from '../../ui/overlays';
 import { SaveFailed, useSave } from '../../ui/save';
 import { buildLoggedEvent, logJob, type LogJobErrors } from './serviceLog';
 
-/** Log something done: a job that had no task, kept in Service History. */
 export function LogJobSheet({ itemId = '', onClose, onLogged }: { itemId?: string; onClose: () => void; onLogged: (event: ServiceEvent, undo: () => Promise<void>) => void }) {
   const store = useStore();
   const { items } = useData();

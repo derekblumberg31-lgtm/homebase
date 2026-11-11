@@ -9,12 +9,7 @@ export interface SaveState {
   failed: boolean;
 }
 
-/**
- * The state machine behind useSave, kept pure so it can be tested without a renderer.
- * `run` clears `failed`, sets `saving`, awaits the work and resolves true; a throw sets `failed`
- * and resolves false. `saving` is always cleared. A call while saving is ignored (false, work
- * not called).
- */
+/** The pure state machine behind useSave. `run` resolves true, or false after a throw; a call while saving is ignored. */
 export function createSaveRunner(setState: (state: SaveState) => void) {
   let saving = false;
   return async function run(work: () => Promise<unknown>): Promise<boolean> {

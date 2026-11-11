@@ -5,10 +5,7 @@ export interface FinishTimeline {
   commitMs: number;
 }
 
-/**
- * How long each part of the finish takes. The check fills, then the row folds away, then the write
- * happens (writing first would re-render the list mid-collapse). Reduced motion fades only.
- */
+/** How long each part of the finish takes: fill, fold, then write. Reduced motion fades only. */
 export function finishTimeline(trigger: 'check' | 'swipe', reduced: boolean): FinishTimeline {
   const fillMs = trigger === 'check' && !reduced ? 160 : 0;
   const collapseDelayMs = trigger === 'check' ? (reduced ? 150 : 180) : 0;

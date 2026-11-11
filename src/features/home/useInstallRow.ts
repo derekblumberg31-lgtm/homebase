@@ -4,11 +4,7 @@ import { clearFlag, readFlag, writeFlag } from '../../lib/deviceFlags';
 
 const KEY = 'homebase:install-row-dismissed';
 
-/**
- * The "add to Home Screen" row's state: whether this is a place where it matters (a Safari tab),
- * and whether this device has dismissed it for good. State lives in React too, so the row goes at
- * once even when the browser will not store the choice.
- */
+/** The install row's state: whether it matters here (a Safari tab) and whether it was dismissed. Kept in React too. */
 export function useInstallRow() {
   const matters = useMemo(() => installMatters(readDeviceEnv()), []);
   const [dismissed, setDismissed] = useState(() => readFlag(KEY) !== null);

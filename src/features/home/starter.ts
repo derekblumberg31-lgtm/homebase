@@ -65,7 +65,6 @@ export function buildStarterTask(job: StarterJob, choice: LastDoneChoice, now: n
   };
 }
 
-/** Ticked jobs and the answer chosen for each. An unticked job has no entry. */
 export type StarterPicks = Record<string, LastDoneChoice>;
 
 export function toggleStarter(picks: StarterPicks, key: string): StarterPicks {

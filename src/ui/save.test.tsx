@@ -66,7 +66,7 @@ describe('TasksPage-style handler (put then optional log)', () => {
     try {
       await log();
     } catch {
-      /* activity entry is optional */
+      /* activity is optional */
     }
   };
 

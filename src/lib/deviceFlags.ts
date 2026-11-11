@@ -1,7 +1,5 @@
-// Per-device flags kept in localStorage. This is the only module that touches these keys.
-// Every call is safe when localStorage is missing or throws (private mode, blocked storage,
-// quota): reads return null and writes quietly do nothing, so a flag is a convenience, never a
-// dependency.
+// Per-device flags in localStorage, and the only module that touches these keys. Every call is
+// safe when storage is missing or throws: reads return null, writes do nothing.
 
 export type DeviceFlagKey =
   | 'homebase:starter-dismissed'

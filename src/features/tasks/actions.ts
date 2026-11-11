@@ -80,6 +80,6 @@ export async function addTask(store: HomeStore, task: Task) {
   try {
     await store.log('task-added', `Added: ${task.name}`, `/tasks/${task.id}`);
   } catch {
-    // The activity entry is optional.
+    // Activity is optional.
   }
 }

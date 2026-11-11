@@ -46,7 +46,6 @@ export function HomeStatusLine({ status }: { status: HomeStatus }) {
   );
 }
 
-/** One Home attention row: a link or a button, then the 44px hide button. */
 export function HomeAlertRow({
   title,
   detail,
@@ -90,7 +89,6 @@ export function HomeAlertRow({
   );
 }
 
-/** The alert slot: at most ALERT_ROW_CAP rows, then a count of what did not fit. */
 export function HomeAlertRows({
   rows,
   more,

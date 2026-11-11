@@ -1,11 +1,7 @@
 import type { HomeData } from '../data/store';
 import { DAY_MS } from './dates';
 
-/**
- * The rules behind data safety: where the browser may clear Homebase's data, when a backup is
- * worth asking for, and what counts as a saved backup. Everything here is pure; the browser's
- * capabilities are passed in so each rule can be tested without a browser.
- */
+/** Pure rules for data safety: where the browser may clear data, when a backup is worth asking for, what counts as saved. */
 
 export interface DeviceEnv {
   ua: string;
@@ -51,7 +47,7 @@ export function installMatters(env: DeviceEnv): boolean {
   return !env.standalone && hasSevenDayRule(env);
 }
 
-/** The installed app can open with its own empty storage on these (iPhone test 1 is unverified). */
+/** The installed app can open with its own empty storage on these (not yet checked on a real iPhone). */
 export function mayOpenEmptyWhenInstalled(env: DeviceEnv): boolean {
   return env.standalone && hasSevenDayRule(env);
 }
@@ -163,10 +159,7 @@ export interface DeliverCaps {
 
 export type Delivery = 'shared' | 'downloaded' | 'cancelled' | 'needs-tap';
 
-/**
- * Hands a backup file to the share sheet where it can, else downloads it. A cancelled share is
- * 'cancelled' and nothing is downloaded behind the user's back.
- */
+/** Hands a backup to the share sheet where it can, else downloads it. A cancelled share downloads nothing. */
 export async function deliverBackup(file: File, caps: DeliverCaps): Promise<Delivery> {
   if (caps.canShareFile(file)) {
     try {

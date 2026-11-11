@@ -106,11 +106,7 @@ export function withInfo(tasks: Task[], now: number): TaskItem[] {
   return tasks.map((task) => ({ task, info: getTaskInfo(task, now) }));
 }
 
-/**
- * What a recurring task stores from the form's "last done" field. A real date is stored as the
- * last-done date with no `dueDate`. An empty field with a first-due date stores that date as
- * `dueDate` and keeps `addedOn` as the placeholder `lastDoneAt` (never shown as last done).
- */
+/** Superseded by `resolveLastDone` in lastDone.ts. */
 export function recurringSchedule(
   lastDoneAt: string,
   firstDue: string | undefined,

@@ -5,7 +5,6 @@ import { Group, Row, Section } from '../../ui/layout';
 import { Sheet } from '../../ui/overlays';
 import { useSaveBackup } from './useSaveBackup';
 
-/** How to add Homebase to the Home Screen, and how a backup carries data across. */
 export function InstallSheet({ onClose }: { onClose: () => void }) {
   const data = useData();
   const { save, busy, dialog } = useSaveBackup();

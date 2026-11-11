@@ -71,11 +71,7 @@ interface Finish {
   collapseDelayMs: number;
 }
 
-/**
- * A task line: a check circle completes it, tap the row to open it, swipe left for Done. The most
- * urgent one shows its day strip. The write happens after the short finish so the list does not
- * jump mid-collapse; leaving the page inside that window still saves it.
- */
+/** A task line: the check circle completes it, a tap opens it, a left swipe reveals Done. The write waits for the finish so the list does not jump. */
 export function TaskRow({ task, info, now, featured = false, onDone }: TaskRowProps) {
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
@@ -118,11 +114,10 @@ export function TaskRow({ task, info, now, featured = false, onDone }: TaskRowPr
     }
     const refocus = ok ? focusNext.current : null;
     focusNext.current = null;
-    // The row may leave the list once saved (it is not one of the next three any more), so this runs
-    // after the re-render and whether or not this row is still mounted.
+    // Runs after the re-render, even if this row has left the list.
     if (refocus) window.requestAnimationFrame(refocus);
     if (!mounted.current) return;
-    // Saved or not, the row is back at rest: a recurring task re-expands with its new countdown.
+    // Saved or not, the row returns to rest.
     setFinish(null);
     if (!ok) setOpen(false);
   }
