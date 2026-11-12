@@ -234,7 +234,7 @@ export function healthRowText(check: StarterCheck): string {
 export function healthPageSummary(check: StarterCheck): string {
   if (check.complete) return `${healthDoneText(check)}. Your starter checklist is done.`;
   const left = check.steps.filter((s) => s.status === 'todo').length;
-  return `${healthDoneText(check)}. ${left} ${left === 1 ? 'step' : 'steps'} left, about ${check.minutesLeft} minutes. High-priority safety steps come first.`;
+  return `${healthDoneText(check)}. ${left} ${left === 1 ? 'step' : 'steps'} left, about ${check.minutesLeft} minutes. Safety steps come first.`;
 }
 
 /** Where the homeowner said a shutoff or panel is, for the Assistant. */
