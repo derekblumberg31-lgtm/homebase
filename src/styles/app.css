@@ -779,7 +779,13 @@ img {
   align-items: baseline;
   justify-content: space-between;
   gap: var(--space-3);
-  padding: 0 0 var(--space-2);
+  padding: 0;
+}
+
+/* The first row's own padding already gives air, so a label reads as belonging to the rows below it. */
+.section-head + .group,
+.section-head + ul {
+  margin-top: calc(-1 * var(--space-2));
 }
 
 .section-title {
@@ -2117,6 +2123,11 @@ select.input {
   width: calc(var(--gutter) + 44px);
   margin-left: auto;
   padding: 18px var(--gutter) 0 22px;
+}
+
+/* The priority dot hangs in the row margin, which on the hero is the page gutter. The aria-label still says it. */
+.home-next .is-featured .priority-mark {
+  display: none;
 }
 
 .home-next .is-featured + .swipe-shell.row-wrap::before {
@@ -3863,7 +3874,7 @@ a.feed-row:focus-visible {
 }
 
 .home-next .section-foot {
-  padding-top: var(--space-1);
+  padding-top: 0;
 }
 
 .home-next .section-foot a {
@@ -3875,6 +3886,7 @@ a.feed-row:focus-visible {
 
 .home-next .section-hint {
   display: block;
+  margin-top: calc(-1 * var(--space-2));
   color: var(--text-3);
   font-size: var(--text-footnote);
 }
