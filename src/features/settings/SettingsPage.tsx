@@ -167,8 +167,8 @@ export function SettingsPage() {
           <Group>
             <div className="row">
               <span className="row-main">
-                <span className="row-title">Notify me while Homebase is open</span>
-                <span className="row-sub">{notificationsSupported ? 'Once a day: what’s due, overdue or ending soon' : 'Not available in this browser'}</span>
+                <span className="row-title is-wrap">Notify me while Homebase is open</span>
+                <span className="row-sub is-wrap">{notificationsSupported ? 'Once a day: what’s due, overdue or ending soon' : 'Not available in this browser'}</span>
               </span>
               <Switch checked={data.settings.reminders} onChange={toggleReminders} label="Notify me while Homebase is open" />
             </div>
