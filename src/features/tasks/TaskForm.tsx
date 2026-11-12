@@ -4,7 +4,7 @@ import { uid } from '../../data/ids';
 import type { Task, TaskCategory, TaskKind, TaskPriority } from '../../data/types';
 import { addDays, daysBetween, formatCurrency, formatDate, formatInterval, isRealDate, startOfDay, toDateInput } from '../../lib/dates';
 import { Chips, FormGroup, Segmented, SelectField, Switch, TextArea, TextField } from '../../ui/controls';
-import { ChevronDown, Sparkles } from '../../ui/Icons';
+import { ChevronDown } from '../../ui/Icons';
 import { Section } from '../../ui/layout';
 import { Sheet } from '../../ui/overlays';
 import { SaveFailed, useSave } from '../../ui/save';
@@ -315,11 +315,10 @@ export function TaskForm({ initial, draft, onClose, onSave }: TaskFormProps) {
       )}
 
       {name.trim() && (
-        <div className="suggest-box" aria-live="polite">
-          <Sparkles size={18} />
+        <div className="notice is-plain suggest-box" aria-live="polite">
           <div>
-            <p className="suggest-title">{guess?.matched ? `Set up as “${guess.matched}”` : 'Homebase will save it as'}</p>
-            <p className="suggest-body">{summary.join(' · ')}</p>
+            <p className="suggest-title">Filled in for you</p>
+            <p className="suggest-body">{[guess?.matched ? `Set up as “${guess.matched}”` : null, ...summary].filter(Boolean).join(' · ')}</p>
             {notes && !touched.has('notes') && <p className="suggest-note">Note added: {notes}</p>}
           </div>
         </div>
@@ -327,7 +326,7 @@ export function TaskForm({ initial, draft, onClose, onSave }: TaskFormProps) {
 
       <button type="button" className="disclosure" aria-expanded={advanced} aria-controls="task-more" onClick={() => setAdvanced((v) => !v)}>
         <ChevronDown size={18} />
-        {advanced ? 'Fewer options' : 'More options: repeat, priority, cost, notes'}
+        {advanced ? 'Fewer options' : 'More options'}
       </button>
 
       {advanced && (

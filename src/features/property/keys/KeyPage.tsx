@@ -32,7 +32,7 @@ export function KeyPage() {
     return (
       <Page title="Key" back={{ to: '/property/keys', label: 'Keys and Locks' }}>
         <div className="section">
-          <EmptyState title="This key isn’t here" body="It may have been removed." action={{ label: 'Back to keys', to: '/property/keys' }} />
+          <EmptyState primary title="This key isn’t here" body="It may have been removed." action={{ label: 'Back to keys', to: '/property/keys' }} />
         </div>
       </Page>
     );

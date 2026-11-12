@@ -24,7 +24,7 @@ export function RoomPage() {
     return (
       <Page title="Room" back={{ to: '/property', label: 'Property' }}>
         <div className="section">
-          <EmptyState title="This room isn’t here" body="It may have been removed." action={{ label: 'Back to Property', to: '/property' }} />
+          <EmptyState primary title="This room isn’t here" body="It may have been removed." action={{ label: 'Back to Property', to: '/property' }} />
         </div>
       </Page>
     );

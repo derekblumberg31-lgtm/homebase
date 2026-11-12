@@ -37,7 +37,7 @@ export function TaskDetailPage() {
     return (
       <Page title="Task" back={{ to: '/tasks', label: 'Tasks' }}>
         <div className="section">
-          <EmptyState title="This task isn’t here" body="It may have been deleted, or it lives on another device." action={{ label: 'Back to Tasks', to: '/tasks' }} />
+          <EmptyState primary title="This task isn’t here" body="It may have been deleted, or it lives on another device." action={{ label: 'Back to Tasks', to: '/tasks' }} />
         </div>
       </Page>
     );

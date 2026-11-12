@@ -27,7 +27,7 @@ export function ItemPage() {
     return (
       <Page title="Item" back={{ to: '/property/inventory', label: 'Home Inventory' }}>
         <div className="section">
-          <EmptyState title="This item isn’t here" body="It may have been removed." action={{ label: 'Back to Home Inventory', to: '/property/inventory' }} />
+          <EmptyState primary title="This item isn’t here" body="It may have been removed." action={{ label: 'Back to Home Inventory', to: '/property/inventory' }} />
         </div>
       </Page>
     );

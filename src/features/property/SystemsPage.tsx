@@ -101,7 +101,7 @@ export function SystemPage() {
     return (
       <Page title="System" back={back}>
         <div className="section">
-          <EmptyState title="This system isn’t here" body="It may have been removed." action={{ label: 'Back to Home Systems', to: '/property/systems' }} />
+          <EmptyState primary title="This system isn’t here" body="It may have been removed." action={{ label: 'Back to Home Systems', to: '/property/systems' }} />
         </div>
       </Page>
     );

@@ -135,6 +135,7 @@ export function RecordsPage() {
       {data.records.length === 0 ? (
         <div className="section">
           <EmptyState
+            primary
             title="Keep your home’s paperwork in one place"
             body="Start with the documents you’d hunt for in an emergency: the water heater warranty, the furnace manual, the plumber’s number."
             action={{ label: 'Add a warranty', onClick: () => setAdding('warranty') }}

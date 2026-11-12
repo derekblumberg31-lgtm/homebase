@@ -129,21 +129,23 @@ interface EmptyStateProps {
   action?: { label: string; onClick?: () => void; to?: string };
   secondary?: { label: string; onClick?: () => void; to?: string };
   inline?: boolean;
+  /** The screen's only purpose (a not-found page, a first run): larger title and a filled action. */
+  primary?: boolean;
 }
 
-export function EmptyState({ title, body, action, secondary, inline = false }: EmptyStateProps) {
+export function EmptyState({ title, body, action, secondary, inline = false, primary: pagePrimary = false }: EmptyStateProps) {
   const renderAction = (item: NonNullable<EmptyStateProps['action']>, primary: boolean) =>
     item.to ? (
-      <Link className={`button is-block ${primary ? 'is-primary' : 'is-quiet'}`} to={item.to}>
+      <Link className={`button is-block ${primary ? (pagePrimary ? 'is-primary' : 'is-secondary') : 'is-quiet'}`} to={item.to}>
         {item.label}
       </Link>
     ) : (
-      <button type="button" className={`button is-block ${primary ? 'is-primary' : 'is-quiet'}`} onClick={item.onClick}>
+      <button type="button" className={`button is-block ${primary ? (pagePrimary ? 'is-primary' : 'is-secondary') : 'is-quiet'}`} onClick={item.onClick}>
         {item.label}
       </button>
     );
   return (
-    <div className={`empty ${inline ? 'is-inline' : ''}`}>
+    <div className={`empty ${inline ? 'is-inline' : ''} ${pagePrimary ? 'is-page' : ''}`}>
       <h2>{title}</h2>
       <p>{body}</p>
       {(action || secondary) && (

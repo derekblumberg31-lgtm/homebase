@@ -40,7 +40,7 @@ export function RecordPage() {
     return (
       <Page title="Record" back={{ to: '/records', label: 'Records' }}>
         <div className="section">
-          <EmptyState title="This record isn’t here" body="It may have been deleted." action={{ label: 'Back to Records', to: '/records' }} />
+          <EmptyState primary title="This record isn’t here" body="It may have been deleted." action={{ label: 'Back to Records', to: '/records' }} />
         </div>
       </Page>
     );
