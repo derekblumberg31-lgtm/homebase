@@ -1700,6 +1700,12 @@ select.input {
   }
 }
 
+/* While a sheet is open the stack moves to the top edge, so a message never covers the sheet's fields. */
+:root:has(.overlay .sheet) .toast-stack {
+  top: calc(8px + env(safe-area-inset-top));
+  bottom: auto;
+}
+
 /* Where transitions can start from a style, the toast is a transition, so one that arrives
    mid-exit retargets instead of restarting. The keyframes above stay as the fallback. */
 @supports (transition-behavior: allow-discrete) {
@@ -1729,6 +1735,11 @@ select.input {
     bottom: 28px;
     left: calc(50% + var(--sidebar) / 2);
     transform: translateX(-50%);
+  }
+
+  :root:has(.overlay .sheet) .toast-stack {
+    top: 16px;
+    bottom: auto;
   }
 }
 
