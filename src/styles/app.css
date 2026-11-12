@@ -4342,6 +4342,28 @@ a.feed-row:focus-visible {
   min-height: 44px;
 }
 
+/* ---------- dark mode: nothing brighter than the text ---------- */
+
+/* A selected chip is a stepped-up surface with an ink ring, not the brightest fill on screen. */
+:root[data-theme='dark'] .chip[aria-pressed='true'],
+:root[data-theme='dark'] .chip[aria-checked='true'] {
+  background: var(--fill-strong);
+  color: var(--text);
+  box-shadow: inset 0 0 0 1.5px var(--text);
+}
+
+:root[data-theme='dark'] .segmented button[aria-pressed='true'] {
+  background: var(--surface-2);
+  box-shadow: 0 0 0 0.5px rgba(255, 255, 255, 0.06);
+}
+
+/* Photos get a faint edge so they do not melt into the dark ground. */
+:root[data-theme='dark'] .photo-grid img,
+:root[data-theme='dark'] .photo-thumb {
+  outline: 1px solid rgba(255, 255, 255, 0.08);
+  outline-offset: -1px;
+}
+
 /* ---------- reduced motion: fades stay, movement goes ---------- */
 
 @media (prefers-reduced-motion: reduce) {
