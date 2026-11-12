@@ -18,6 +18,32 @@ const task = (over: Partial<Task>): Task => ({
   ...over,
 });
 
+describe('completeTask cost', () => {
+  it('F6-T3: records no cost when none is entered, even if the task has an estimate', async () => {
+    const store = await freshStore();
+    const planned = task({ cost: 150 });
+    await store.put('tasks', planned);
+    await completeTask(store, planned, { date: '2026-11-10' });
+    expect(store.getSnapshot().serviceEvents[0].cost).toBeUndefined();
+  });
+
+  it('F6-T4: records the cost that was typed', async () => {
+    const store = await freshStore();
+    const planned = task({ cost: 150 });
+    await store.put('tasks', planned);
+    await completeTask(store, planned, { date: '2026-11-10', cost: 90 });
+    expect(store.getSnapshot().serviceEvents[0].cost).toBe(90);
+  });
+
+  it('keeps a zero cost (a free warranty repair)', async () => {
+    const store = await freshStore();
+    const planned = task({ cost: 150 });
+    await store.put('tasks', planned);
+    await completeTask(store, planned, { date: '2026-11-10', cost: 0 });
+    expect(store.getSnapshot().serviceEvents[0].cost).toBe(0);
+  });
+});
+
 describe('completeTask', () => {
   it('clears the first-due date and records no previous date when last done was unknown', async () => {
     const store = await freshStore();

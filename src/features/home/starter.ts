@@ -1,5 +1,6 @@
 import type { HomeData } from '../../data/store';
 import type { HealthStepState, SystemKind } from '../../data/types';
+import { shutoffLocation } from '../safety/safety';
 
 /**
  * The starter Home Health Check: eight concrete jobs every home should have done once. It's
@@ -237,12 +238,7 @@ export function healthPageSummary(check: StarterCheck): string {
   return `${healthDoneText(check)}. ${left} ${left === 1 ? 'step' : 'steps'} left, about ${check.minutesLeft} minutes. Safety steps come first.`;
 }
 
-/** Where the homeowner said a shutoff or panel is, for the Assistant. */
+/** Where the homeowner said a shutoff or panel is, for the Assistant. The note in Records wins over the step's copy. */
 export function savedLocation(data: HomeData, id: StarterStepId): string | undefined {
-  const note = data.settings.healthSteps?.[id]?.note;
-  if (note) return note;
-  const def = STARTER_STEPS.find((s) => s.id === id);
-  if (def?.action.type !== 'locate') return undefined;
-  const title = def.action.noteTitle.toLowerCase();
-  return data.records.find((r) => r.kind === 'note' && r.title.toLowerCase().startsWith(title))?.notes;
+  return shutoffLocation(data, id);
 }

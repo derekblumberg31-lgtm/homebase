@@ -27,7 +27,7 @@ export async function completeTask(store: HomeStore, task: Task, input: Completi
     itemId: task.itemId,
     systemId: task.systemId,
     previousDoneAt: task.recurring && lastDoneKnown(task) ? task.lastDoneAt : undefined,
-    cost: input.cost ?? task.cost,
+    cost: input.cost,
     provider: input.provider,
     notes: input.notes?.trim() || undefined,
     createdAt: new Date().toISOString(),

@@ -21,7 +21,7 @@ function previous(store: HomeStore, id: StarterStepId) {
 }
 
 /** "The main water shutoff is in the basement": saved as a household note and on the step. */
-export async function saveLocation(store: HomeStore, id: StarterStepId, where: string) {
+export async function saveLocation(store: HomeStore, id: StarterStepId, where: string, options: { fileIds?: string[] } = {}) {
   const def = STARTER_STEPS.find((s) => s.id === id);
   if (def?.action.type !== 'locate') throw new Error('Not a location step');
   const before = previous(store, id);
@@ -29,14 +29,17 @@ export async function saveLocation(store: HomeStore, id: StarterStepId, where: s
   const title = def.action.noteTitle.toLowerCase();
   const existing = store.getSnapshot().records.find((r) => r.kind === 'note' && r.title.toLowerCase().startsWith(title));
   const note: HomeRecord = existing
-    ? { ...existing, notes: where, updatedAt: now }
-    : { id: uid(), kind: 'note', title: def.action.noteTitle, notes: where, fileIds: [], createdAt: now, updatedAt: now };
+    ? { ...existing, notes: where, fileIds: options.fileIds ?? existing.fileIds, updatedAt: now }
+    : { id: uid(), kind: 'note', title: def.action.noteTitle, notes: where, fileIds: options.fileIds ?? [], createdAt: now, updatedAt: now };
   await store.put('records', note);
   await setStep(store, id, { state: 'done', at: now, note: where });
   await store.log('record-added', `Health Check: ${def.action.noteTitle.toLowerCase()} saved`, `/records/${note.id}`);
   return async () => {
     if (existing) await store.put('records', existing);
     else await store.remove('records', note.id);
+    // Photos added by this save go too; ones the note already had stay.
+    const kept = new Set(existing?.fileIds ?? []);
+    for (const fileId of note.fileIds) if (!kept.has(fileId)) await store.removeFile(fileId);
     await setStep(store, id, before);
   };
 }

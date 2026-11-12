@@ -9,7 +9,7 @@ import type { CompletionInput } from './actions';
 export function CompleteSheet({ task, onClose, onConfirm }: { task: Task; onClose: () => void; onConfirm: (input: CompletionInput) => void }) {
   const [date, setDate] = useState(toDateInput());
   const [provider, setProvider] = useState('');
-  const [cost, setCost] = useState(task.cost != null ? String(task.cost) : '');
+  const [cost, setCost] = useState('');
   const [notes, setNotes] = useState('');
   const [error, setError] = useState('');
 
@@ -42,7 +42,16 @@ export function CompleteSheet({ task, onClose, onConfirm }: { task: Task; onClos
         <FormGroup>
           <TextField label="Done on" type="date" value={date} max={toDateInput()} onChange={(e) => setDate(e.target.value)} error={error} />
           <TextField label="Done by" optional value={provider} onChange={(e) => setProvider(e.target.value)} placeholder="Me, or a company" />
-          <TextField label="Cost" optional inputMode="decimal" prefix="$" value={cost} onChange={(e) => setCost(e.target.value)} />
+          <TextField
+            label="Cost"
+            optional
+            inputMode="decimal"
+            prefix="$"
+            value={cost}
+            onChange={(e) => setCost(e.target.value)}
+            placeholder={task.cost != null ? String(task.cost) : undefined}
+            hint={task.cost != null ? `Planned: $${task.cost}. Leave empty if you don’t know what it cost.` : undefined}
+          />
           <TextArea label="Note" optional value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Part used, anything to remember" />
         </FormGroup>
       </div>
