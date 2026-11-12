@@ -3,185 +3,123 @@ name: Homebase
 description: A calm homeowner assistant set in the grouped lists of an iPhone, with one muted brick accent.
 colors:
   brick: "#9e4f34"
-  brick-pressed: "#86402a"
-  brick-wash: "#f5e8e3"
-  done-green: "#3d7a55"
-  due-amber: "#8a5200"
-  due-amber-wash: "#f8eedd"
-  ink: "#2b2926"
-  ink-secondary: "#6b665f"
-  ink-tertiary: "#716c65"
-  crossed-ink: "#9a958d"
-  grid-rule: "#dedad3"
-  warm-ground: "#f4f3f0"
+  brick-dark: "#d6957c"
+  done-green: "#4f7353"
+  due-amber: "#8a6420"
+  ink: "#29271f"
+  ink-secondary: "#4c4a44"
+  ink-tertiary: "#5a5750"
+  warm-ground: "#faf9f5"
   page-white: "#ffffff"
-  pressed-paper: "#f8f7f4"
-  fill: "#ecebe7"
-  fill-strong: "#e0ded8"
-  separator: "rgba(22, 21, 20, 0.08)"
-  separator-strong: "rgba(22, 21, 20, 0.13)"
-  scrim: "rgba(18, 17, 16, 0.4)"
-  toast-ink: "#2f2d2a"
+  pressed-paper: "#f5f4ee"
+  fill: "#efede5"
+  fill-strong: "#e6e3d9"
+  dark-ground: "#262624"
+  dark-surface: "#2f2e2b"
 typography:
-  headline:
-    fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif"
-    fontSize: "28px"
-    fontWeight: 700
-    lineHeight: 1.15
-    letterSpacing: "-0.02em"
-  countdown-large:
-    fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif"
-    fontSize: "40px"
+  display:
+    fontSize: "3rem"
     fontWeight: 600
     lineHeight: 1
-    letterSpacing: "-0.01em"
+    letterSpacing: "-0.025em"
     fontFeature: "'tnum' 1"
+  large:
+    fontSize: "2.125rem"
+    fontWeight: 700
+    lineHeight: 1.12
+    letterSpacing: "-0.022em"
   title:
-    fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif"
-    fontSize: "21px"
-    fontWeight: 700
-    lineHeight: 1.18
-    letterSpacing: "-0.028em"
-  countdown:
-    fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif"
-    fontSize: "20px"
+    fontSize: "1.375rem"
     fontWeight: 600
-    lineHeight: 1
+    lineHeight: 1.22
+    letterSpacing: "-0.016em"
+  headline:
+    fontSize: "1.0625rem"
+    fontWeight: 600
+    lineHeight: 1.3
     letterSpacing: "-0.01em"
-    fontFeature: "'tnum' 1"
   body:
-    fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif"
-    fontSize: "17px"
-    fontWeight: 400
-    letterSpacing: "-0.01em"
-  section-head:
-    fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif"
-    fontSize: "15px"
-    fontWeight: 600
-    letterSpacing: "-0.01em"
-  button:
-    fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif"
-    fontSize: "15px"
-    fontWeight: 600
-    letterSpacing: "-0.01em"
-  subhead:
-    fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif"
-    fontSize: "13px"
-    fontWeight: 400
-    lineHeight: 1.4
-  footnote:
-    fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif"
-    fontSize: "12px"
+    fontSize: "1.0625rem"
     fontWeight: 400
     lineHeight: 1.45
-  tab-label:
-    fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif"
-    fontSize: "10px"
+    letterSpacing: "-0.01em"
+  subhead:
+    fontSize: "0.9375rem"
+    fontWeight: 400
+    lineHeight: 1.4
+    letterSpacing: "-0.005em"
+  footnote:
+    fontSize: "0.8125rem"
+    fontWeight: 400
+    lineHeight: 1.4
+    letterSpacing: "0"
+  caption:
+    fontSize: "0.6875rem"
     fontWeight: 600
-    lineHeight: 1.1
-    letterSpacing: "0.005em"
+    lineHeight: 1.2
+    letterSpacing: "0.01em"
 rounded:
-  day-square: "1.5px"
-  chip: "10px"
-  group: "12px"
-  search: "13px"
-  button: "14px"
-  alert: "16px"
-  sheet: "28px"
+  xs: "6px"
+  sm: "10px"
+  sm-inner: "8px"
+  md: "12px"
+  lg: "14px"
+  xl: "20px"
+  sheet: "24px"
   round: "50%"
 spacing:
-  xs: "4px"
-  sm: "8px"
-  md: "12px"
-  gutter: "16px"
-  header: "20px"
-  section: "22px"
-  half: "26px"
+  1: "4px"
+  2: "8px"
+  3: "12px"
+  4: "16px"
+  5: "20px"
+  6: "24px"
+  8: "32px"
+  10: "40px"
 components:
   button-primary:
     backgroundColor: "{colors.ink}"
     textColor: "{colors.warm-ground}"
-    typography: "{typography.button}"
-    rounded: "{rounded.button}"
-    padding: "0 18px"
+    rounded: "{rounded.lg}"
     height: "48px"
-  button-primary-pressed:
-    backgroundColor: "{colors.ink}"
   button-secondary:
     backgroundColor: "{colors.fill}"
     textColor: "{colors.ink}"
-    typography: "{typography.button}"
-    rounded: "{rounded.button}"
-    padding: "0 18px"
+    rounded: "{rounded.lg}"
     height: "48px"
-  button-done:
-    backgroundColor: "{colors.done-green}"
-    textColor: "{colors.page-white}"
-    typography: "{typography.button}"
-    rounded: "{rounded.button}"
-    height: "48px"
-  add-button:
+  round-button:
     backgroundColor: "{colors.fill}"
-    textColor: "{colors.brick}"
+    textColor: "{colors.ink-secondary}"
     rounded: "{rounded.round}"
     size: "44px"
-  add-button-pressed:
-    backgroundColor: "{colors.fill-strong}"
   task-group:
     backgroundColor: "{colors.page-white}"
-    rounded: "{rounded.group}"
-  task-row:
-    backgroundColor: "{colors.page-white}"
-    textColor: "{colors.ink}"
-    typography: "{typography.body}"
-    padding: "11px 16px"
-  task-row-pressed:
-    backgroundColor: "{colors.pressed-paper}"
-  search-field:
-    backgroundColor: "{colors.fill}"
-    textColor: "{colors.ink}"
-    rounded: "{rounded.search}"
-    padding: "0 12px"
-    height: "44px"
-  search-field-focus:
-    backgroundColor: "{colors.page-white}"
+    rounded: "{rounded.md}"
   form-chip:
     backgroundColor: "{colors.fill}"
     textColor: "{colors.ink-secondary}"
-    rounded: "{rounded.chip}"
-    padding: "0 11px"
-    height: "36px"
+    rounded: "{rounded.sm}"
+    height: "44px"
   form-chip-active:
     backgroundColor: "{colors.ink}"
     textColor: "{colors.warm-ground}"
   segmented:
     backgroundColor: "{colors.fill}"
-    textColor: "{colors.ink-secondary}"
-    rounded: "{rounded.group}"
-    padding: "2px"
+    rounded: "{rounded.sm}"
     height: "48px"
-  segmented-active:
-    backgroundColor: "{colors.page-white}"
-    textColor: "{colors.ink}"
-  tab-bar:
-    backgroundColor: "{colors.page-white}"
-    textColor: "{colors.ink-tertiary}"
-    typography: "{typography.tab-label}"
-    padding: "5px 8px"
   tab-item-active:
     textColor: "{colors.brick}"
   sheet:
-    backgroundColor: "{colors.page-white}"
+    backgroundColor: "{colors.warm-ground}"
     rounded: "{rounded.sheet}"
   alert:
     backgroundColor: "{colors.page-white}"
-    rounded: "{rounded.alert}"
-    width: "298px"
+    rounded: "{rounded.xl}"
+    width: "300px"
   toast:
-    backgroundColor: "{colors.toast-ink}"
-    textColor: "{colors.page-white}"
-    rounded: "{rounded.button}"
-    padding: "11px 15px"
+    backgroundColor: "{colors.ink}"
+    textColor: "{colors.warm-ground}"
+    rounded: "{rounded.lg}"
 ---
 
 # Design System: Homebase
@@ -200,69 +138,71 @@ Two signatures carry over from the apps it replaces:
 - From Replacely: the largest-unit countdown ("3 months", "Today", "4 days over") and the day strip, shown on the single most urgent task.
 - From KeyFinder: the rimmed code tag that names a key's blank, and the cut-profile chart.
 
-Density is low and the voice is soft. Everything is the system font, sentence case, with hierarchy from size and a narrow range of weights. There is one accent, a muted brick (#9e4f34 light, #d6957c dark), spent on small marks and on anything overdue. Buttons are ink, not brick. Neutrals are warm. Dark mode is warm charcoal (#171716), never black.
+Density is low and the voice is soft. Everything is the system font, sentence case, with hierarchy from size and a narrow range of weights. There is one accent, a muted brick (#9e4f34 light, #d6957c dark), spent on small marks and on anything overdue. Buttons are ink, not brick. Neutrals are warm. Dark mode is one warm charcoal ground with a stepped surface, never black.
 
 **Key characteristics:**
-- Grouped-list structure everywhere: 12px corners, 0.5px separators inset 16px.
+- Grouped-list structure everywhere: 12px corners, no outline, 0.5px separators inset 16px.
 - System font only, with tabular figures for every number.
 - One brick accent. Green only for done, amber only for due soon or caution.
-- Flat at rest. Real depth only for sheets, alerts and toasts.
-- Quiet motion: short eased fades and scale-on-press, switched off under reduced motion.
+- Flat at rest. Three named shadows, only for what floats: menus, toasts and the launcher; sheets; alerts.
+- Quiet motion: ease-out entries under 250ms, scale on press, a drawer curve for sheets. Reduced motion swaps movement for short fades.
 
 ## Colors
 
-The palette is calm and Claude-like, defined in `src/styles/app.css` (`:root` and `[data-theme='dark']`). The front matter above keeps the original token names for reference.
+The palette is warm and quiet, defined in `src/styles/app.css` (`:root` and `[data-theme='dark']`). The front matter above lists the values in use.
 - **Light:** ivory ground #faf9f5, white surfaces, soft ink #29271f.
 - **Dark:** charcoal #262624, surfaces #2f2e2b, warm off-white ink #f3f1ea.
 - **Primary buttons are ink** (`--button-bg`), not colour.
-- **Terracotta** is the accent (`--accent`): #9e4f34 in light, #d6957c in dark. Pressed and hover (`--accent-deep`) is #86402a in light. It is muted and kept for things that need you: overdue text, the overdue squares of the day strip, small markers (the high-priority dot, the launcher dot), the small Add circle and the focus outline.
-- **Brick is never a button fill.** (The Assistant's own message bubble is the one other large brick fill.) Primary buttons, the selected chip and the ticked starter circle are filled with ink (`--button-bg`, #29271f light, #f3f1ea dark) with `--button-text` on top.
+- **Terracotta** is the accent (`--accent`): #9e4f34 in light, #d6957c in dark. Pressed and hover (`--accent-deep`) is #86402a in light. It is muted and kept for things that need you: overdue text, the overdue squares of the day strip, small markers (the high-priority dot, the launcher dot), the active tab and the focus outline.
+- **Brick is never a fill.** Primary buttons, the selected chip and the ticked starter circle are filled with ink (`--button-bg`, #29271f light, #f3f1ea dark) with `--button-text` on top.
 - **Badges are neutral grey.**
 
 The rules:
 
 - **The One Brick Rule.** Brick marks something overdue, a small marker or a link-style action. It is never a large fill. If a screen shows brick on more than a handful of elements, something is decorating.
 - **The Status Hue Rule.** Green means done, amber means due soon or "check this" (for example a restricted key), and brick means overdue. None is used for category colour.
-- **The No Pure Extremes Rule.** Text is #2b2926, never #000. The page is #f4f3f0, never #fff.
+- **The No Pure Extremes Rule.** Text is warm ink, never #000. The page is warm paper, never #fff.
 - **Code tags** have a neutral `--line` rim, and an accent rim when a match is confirmed. They never get a coloured fill.
 - **The Cool Information Rule.** Dusty blue (`--cool`: #3b687a light, #8fb6c5 dark) is the one cool accent. It's for information, never for actions:
   - snapshot icons
   - the health progress bar and completed steps
   - timeline markers
   - activity and menu icons
-- **Dark ground.** Warm charcoal #141312, surfaces #1c1a18, raised panels #201d1a, warm off-white ink #f1ece4.
+- **One dark ground.** Charcoal #262624 with surfaces #2f2e2b and warm off-white ink #f3f1ea. A toast in dark is a stepped fill, not a bright pill.
 
 ## Typography
 
-One family: `-apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif`.
+One family, the system font: `system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif`. Sizes are rem, so they follow the reader's own text size. Weights are 400, 500, 600 and 700.
+
+Page titles go through one token, `--font-title` (see Pending owner decisions).
 
 | Role | Spec | Used for |
 |---|---|---|
-| Large title | Serif (`--font-display`: New York, Iowan, Georgia), 500, 30px | Page titles: "Good evening, Derek", "Tasks", "Records" |
-| Countdown large | 600, 40px, tabular | Countdown in task detail |
-| Title | 700, 21px | Onboarding and empty-state headings |
-| Countdown | 600, 20px, tabular; unit 15px/500 | Right side of every task row |
-| Body | 400, 17px | Row titles, inputs, chat |
-| Section head | 600, 15px, secondary ink | Group headings ("Up next", "Warranty Vault") |
-| Subhead | 400, 13px | Row subtitles, field labels |
-| Footnote | 400, 12px | Hints and captions; nothing smaller except tab labels |
-| Tab label | 600, 10px | Mobile tab bar only |
+| Display | 600, 3rem, tabular | Countdown on task detail only |
+| Large | 700, 2.125rem | Page titles, onboarding titles |
+| Title | 600, 1.375rem | Empty-state titles, Assistant answer title, starter heading, detail page title |
+| Headline | 600, 1.0625rem | Sheet title, answer section heads, emphasised rows |
+| Body | 400, 1.0625rem | Row titles, inputs, chat |
+| Subhead | 400, 0.9375rem; 600 for section heads and buttons | Row subtitles, page subtitle |
+| Footnote | 400, 0.8125rem | Hints, captions, footers |
+| Caption | 600, 0.6875rem | Tab labels only |
+| Countdown | 600, 1.25rem, tabular; 1.75rem on the most urgent row | Right side of a task row |
 
 - **The Sentence Case Rule.** Nothing is uppercased or letter-spaced into a label.
-- **Serif for voice.** Page titles, the onboarding and Assistant greetings, and Assistant answers use the serif; everything functional stays in the system sans.
-- **The One Big Line Rule.** Each screen has one large line: the page title, or the countdown on task detail.
+- **The One Big Line Rule.** Each screen has one large line: the page title, or the countdown on task detail, where the title steps down to the title size.
 
 ## Layout
 
 - **Phone (below 768px):**
   - The page column has a 16px gutter.
-  - A bottom tab bar shows five areas (Home, Property, Tasks, Assistant, Records). The active tab gets a short accent bar above its icon, not a pill.
+  - A bottom tab bar shows five areas (Home, Property, Tasks, Assistant, Records). The active tab's icon and label are brick.
   - Count badges: overdue tasks on Tasks, warranties ending soon on Records.
   - Settings opens from the round profile button beside the title. Home's header also has a round + for quick add.
-- **Tablet (768–1099px):** an 88px icon rail with small labels, a + button, and Settings below a rule. Badges become dots.
+- **Header:** the back link and the actions share a 44px row above the title, which gets the full width. From 768px the actions sit beside the title.
+- **Tablet (768–1099px):** an 88px icon rail with small labels, a round fill + button, and Settings below a rule. Badges become dots. Every page title starts at the same left edge.
 - **Desktop (1100px and up):**
-  - A 244px sidebar: brand, a coral Add button (the one persistent primary), the five areas, and Settings set apart at the bottom.
-  - The active item has a 3px accent bar at the edge.
+  - A 244px sidebar: brand (the name only), an Add row, the five areas, and Settings set apart at the bottom.
+  - The active item has a stepped fill, and its icon is brick.
   - Pages are max 760px, or 1120px for `Page wide`.
 - **Home** is for a few seconds in front of the thing that needs doing:
   - one status line saying whether anything is overdue
@@ -286,12 +226,10 @@ One family: `-apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Robot
 
 | Surface | Shadow |
 |---|---|
-| Groups and modules | 1px `--line` border plus `0 1px 2px` shadow |
-| Overview panel, launcher | `--shadow-raised`: a faint inner top highlight and a long soft drop |
-| Menus | the alert shadow |
-| Sheets | `0 -18px 60px rgba(22,21,20,0.22)` |
-| Alerts | `0 24px 70px rgba(0,0,0,0.32)` |
-| Toast | `0 12px 30px rgba(0,0,0,0.24)` |
+| Groups and modules | a 0.5px hairline and `0 1px 2px` (none in dark; the surface step carries it) |
+| Menus, toasts, launcher | `--shadow-float`: `0 1px 2px` and `0 12px 32px` (in dark, plus a 0.5px white hairline) |
+| Sheets | `--shadow-sheet`: `0 -8px 40px` |
+| Alerts | `--shadow-alert`: `0 24px 64px` |
 
 Only surfaces that float over the page and can be dismissed get more than the group shadow.
 
@@ -307,16 +245,16 @@ All of these live in `src/ui/` and `src/features/*/components`.
 - **Sheet / Confirm / Toast** (`overlays.tsx`):
   - Sheets trap focus, close on Escape and give focus back on close.
   - Confirm is the native-style alert, with Cancel focused by default and destructive actions in brick text, never a brick fill.
-  - Toasts stack, at most a few at once, from a region named "Messages" that is always in the page. Two hidden live regions (polite and assertive) carry the announcement, so a toast is not read twice. A toast with Undo, and an error, lives six seconds; a plain one about three. Hovering or focusing the stack pauses the timers. Errors are announced assertively. Each toast leaves in 150ms, or at once under reduced motion.
+  - Toasts stack, at most a few at once, from a region named "Messages" that is always in the page. Two hidden live regions (polite and assertive) carry the announcement, so a toast is not read twice. A toast with Undo, and an error, lives six seconds; a plain one about three. Hovering or focusing the stack pauses the timers. Errors are announced assertively. Each toast leaves in 150ms; under reduced motion it fades.
 - **Controls** (`controls.tsx`): TextField, TextArea, SelectField, FormGroup, SearchField, Segmented, Switch, Chips.
 - **TaskRow, Countdown, DayStrip** (`features/tasks/components.tsx`):
   - Task rows swipe left for Done. The round check at the left does the same with a tap, in a 50px-wide target.
   - A task title wraps to two lines, then ends in an ellipsis. The check stays at the first line and the row grows by one line.
-  - The day strip appears only on the most urgent task and on task detail: up to 25 squares of 9px. Squares for days past due are brick.
+  - The day strip appears only on the most urgent task and on task detail: up to 14 squares of 7px. Squares for days past due are brick.
 - **CodeTag, ReplacementCard, ProfileChart** (`features/property/keys`): KeyFinder's key visuals, drawn with Homebase tokens.
-- **HomeOverview, HealthModule, MaintenanceTimeline, SeasonalSection, ActivityFeed** (`features/home/HomeSections.tsx`): each Home section has its own form, not the same card:
-  - overview: a snapshot strip with hairline dividers
-  - health: score, progress bar, steps that explain why, and Continue setup
+- **HomeOverview, StarterChecklist, MaintenanceTimeline, SeasonalSection, ActivityFeed** (`features/home/HomeSections.tsx`): each Home section has its own form, not the same card:
+  - overview: key and value rows, then what needs attention
+  - health: a progress line, then two lists (Safety first, Then) of steps that explain why, each with one text action
   - timeline: dated entries on a vertical rule, grouped by month
   - seasonal: Plan, plus a menu with Snooze, Already done and Hide
   - activity: a 30-day tally over a feed
@@ -326,15 +264,14 @@ All of these live in `src/ui/` and `src/features/*/components`.
 - **QuickAdd** (`app/QuickAdd.tsx`): task, maintenance reminder, record, receipt or household note. Each opens the area's own form through its `?new=` link.
 - **AssistantLauncher** (`app/AssistantLauncher.tsx`):
   - A 50px docked button with an "Ask Homebase" tooltip.
-  - A coral dot and two slow pulses only when there's a new suggestion; it never loops.
+  - A brick dot and two slow pulses only when there's a new suggestion; it never loops.
   - It opens a 400px panel with the shared `AssistantChat`.
-- **Chat** (`features/assistant`), styled like a Claude conversation:
-  - An empty chat opens on a centred serif greeting with suggestion pills.
-  - Your messages sit in a quiet grey bubble; answers are unboxed serif text with pill-shaped actions.
-  - The composer is a large rounded field with the send button inside it.
-- **Chat details:**
-  - User bubbles are brick with white text. This is the one large brick fill left; it is a message, not a button.
-  - Answers are white groups with the guide name, numbered steps, an amber safety note and up to two text actions.
+- **Chat** (`features/assistant`), a native tool rather than a chat clone:
+  - An empty chat is a left-aligned "What's going on?" over a group of four common problems, each a row with a chevron.
+  - Your messages sit in a quiet fill bubble. Answers are unboxed, in the app's own type, with sentence-case section heads.
+  - Callouts are tinted panels with a status icon and no side stripe. What Homebase knows is a group of key and value rows.
+  - Next steps are one group of rows, four at a time with a More row. Emergency answers put the Call button first.
+  - The composer is a bordered field with a 44px round send button inside it.
 
 ## Motion and touch
 
@@ -365,12 +302,12 @@ Every list has four states:
 ## Accessibility
 
 - 4.5:1 text contrast in both themes.
-- 12px minimum text, except tab labels.
+- 13px minimum text, except tab labels.
 - 44px minimum hit areas for buttons, rows, the check, hide buttons and links, even where the drawn shape is smaller.
 - Radio groups (the "last done" choices) work like native ones: arrows move and select, wrapping at the ends, and Tab enters on the selected choice or the first.
 - A visible 2px accent focus outline.
 - A skip link to main content.
-- Reduced motion turns off page fades, sheet slides and press-scales.
+- Reduced motion turns off sheet slides, scales and press-scales, and keeps short fades.
 
 ## Do's and Don'ts
 
@@ -382,6 +319,13 @@ Every list has four states:
 
 **Don't:**
 - Add dashboards of metric tiles, progress rings, ticking seconds or "coming soon" panels. The snapshot is one strip inside the overview, not a row of cards.
-- Add a second typeface, uppercase labels, gradients or saturated colour.
+- Add a second typeface, uppercase labels, coloured side stripes, gradients or saturated colour.
 - Add decorative icon tiles beside rows or extra badges. The only badges are the overdue count on Tasks and the ending-soon count on Records.
 - Use bounce or overshoot easing, or give in-page rows more than the group shadow.
+
+## Pending owner decisions
+
+Two choices reverse an earlier deliberate look and are shipped as separate, revertible commits at the end of the branch. Nothing else depends on them, and each changes token values only.
+
+- **Page titles.** Today they are set in the serif `--font-title` at weight 500. The proposed change sets `--font-title` to the system font at weight 700 with tighter tracking, which is the iPhone-native large title.
+- **Neutrals.** Today's neutrals (`#faf9f5` light ground, `#262624` dark ground) are close to another well-known product's. The proposed values: light `--bg #f4f3ef`, `--surface-2 #f8f7f4`, `--sidebar-bg #efeee9`, `--fill #ebe9e4`, `--fill-strong #e0ded8`, `--text #2b2926`, `--text-2 #57534d`, `--text-3 #6b665f`; dark `--bg #1b1a18`, `--surface #252321`, `--surface-2 #2c2a27`, `--sidebar-bg #161513`, `--fill #312f2c`, `--fill-strong #3b3935`, `--text #f1ece4`, `--text-2 #c9c3b9`, `--text-3 #a8a298`.

@@ -390,23 +390,24 @@ img {
     letter-spacing: -0.015em;
   }
 
-  .brand-tagline {
-    color: var(--text-3);
-    font-size: var(--text-footnote);
-    line-height: 1.3;
-  }
-
   .side-add {
     display: flex;
     justify-content: center;
     margin-bottom: 14px;
   }
 
+  /* The same 44px round fill button as the phone header. */
   .side-add .quick-add {
     width: 44px;
     min-height: 44px;
     padding: 0;
-    border-radius: var(--r-md);
+    border-radius: 50%;
+    background: var(--fill);
+    color: var(--text);
+  }
+
+  .side-add .quick-add:hover {
+    background: var(--fill-strong);
   }
 
   .side-add .quick-add span {
@@ -452,26 +453,9 @@ img {
     transition: color var(--dur-fast) var(--ease-out);
   }
 
-  /* Active: a slim accent bar at the edge and brighter ink, not a filled pill. */
-  .side-link::before {
-    content: '';
-    position: absolute;
-    top: 50%;
-    left: -10px;
-    width: 3px;
-    height: 22px;
-    border-radius: 0 var(--r-xs) var(--r-xs) 0;
-    background: var(--accent);
-    transform: translateY(-50%) scaleY(0);
-    transition: transform var(--dur-fast) var(--ease-out);
-  }
-
   .side-link.is-active {
+    background: var(--fill-strong);
     color: var(--text);
-  }
-
-  .side-link.is-active::before {
-    transform: translateY(-50%) scaleY(1);
   }
 
   .side-link.is-active svg {
@@ -485,12 +469,8 @@ img {
     width: 8px;
     height: 8px;
     border-radius: 50%;
-    background: var(--accent);
+    background: var(--text-2);
     box-shadow: 0 0 0 2px var(--sidebar-bg);
-  }
-
-  .side-dot.is-soon {
-    background: var(--amber);
   }
 
   .side-count {
@@ -544,9 +524,24 @@ img {
   .side-add .quick-add {
     justify-content: flex-start;
     width: 100%;
-    min-height: 40px;
-    padding: 0 14px;
+    min-height: 44px;
+    padding: 0 8px;
     border-radius: var(--r-sm);
+    background: transparent;
+    font-weight: 500;
+  }
+
+  .side-add .quick-add:hover {
+    background: var(--fill);
+  }
+
+  .side-add .quick-add svg {
+    box-sizing: content-box;
+    width: 14px;
+    height: 14px;
+    padding: 4px;
+    border-radius: 50%;
+    background: var(--fill);
   }
 
   .side-add .quick-add span {
@@ -561,11 +556,6 @@ img {
     font-size: var(--text-subhead);
     font-weight: 500;
     text-align: left;
-  }
-
-  .side-link::before {
-    left: -14px;
-    height: 20px;
   }
 
   .side-link.is-active {
@@ -583,18 +573,13 @@ img {
     margin-left: auto;
     padding: 0 6px;
     border-radius: var(--r-sm);
-    background: var(--accent-soft);
-    color: var(--accent);
+    background: transparent;
+    color: var(--text-3);
     font-size: var(--text-footnote);
-    font-weight: 700;
+    font-weight: 600;
     line-height: 1.4;
     text-align: center;
     font-variant-numeric: tabular-nums;
-  }
-
-  .side-count.is-soon {
-    background: var(--amber-soft);
-    color: var(--amber);
   }
 }
 
@@ -611,19 +596,17 @@ img {
   animation: page-in var(--dur-fast) var(--ease-out);
 }
 
-.page.is-wide {
-  max-width: 1080px;
-}
-
 @keyframes page-in {
   from {
     opacity: 0;
   }
 }
 
+/* One column edge from 768px up: every title starts at the same left, wide pages included. */
 @media (min-width: 768px) {
   .page {
-    padding: 36px 8px 0 32px;
+    margin: 0;
+    padding: var(--space-10) var(--space-8) 0;
   }
 }
 
@@ -656,6 +639,21 @@ img {
 .page-head > .page-sub {
   grid-area: sub;
   margin-top: 6px;
+}
+
+@media (min-width: 768px) {
+  .page-head {
+    grid-template:
+      'back back' auto
+      'title actions' auto
+      'sub sub' auto / minmax(0, 1fr) auto;
+  }
+
+  /* Centre the actions on the title's first line. */
+  .page-head > .page-actions {
+    align-self: start;
+    margin-top: calc((var(--text-large) * var(--lh-large) - 44px) / 2);
+  }
 }
 
 .page-title {
@@ -3815,12 +3813,7 @@ a.feed-row:focus-visible {
   }
 }
 
-/* =====================================================================
-   Ink buttons, neutral badges, hairlines instead of shadows. Terracotta is for the few
-   things that need you.
-   ===================================================================== */
-
-/* Primary actions are ink, not colour. */
+/* Text actions are ink, underlined from the line colour. */
 .text-button,
 .section-foot a,
 .module-note a,
@@ -3831,68 +3824,12 @@ a.feed-row:focus-visible {
   text-underline-offset: 3px;
 }
 
-/* Surfaces: hairlines, no lifted shadows. */
+/* Icons beside menu items and feed rows stay quiet. */
 .menu-icon,
 .feed-icon {
   color: var(--text-3);
 }
 
-
-@media (min-width: 768px) {
-  .side-link::before {
-    display: none;
-  }
-
-  .side-link.is-active {
-    background: var(--fill-strong);
-    color: var(--text);
-  }
-
-  .side-link.is-active svg {
-    color: var(--text);
-  }
-
-  .side-dot,
-  .side-dot.is-soon {
-    background: var(--text-2);
-  }
-
-  .side-add .quick-add {
-    background: transparent;
-    color: var(--text);
-    border: 1px solid var(--line-strong);
-  }
-
-  .side-add .quick-add:hover {
-    background: var(--fill);
-    opacity: 1;
-  }
-}
-
-@media (min-width: 1100px) {
-  .side-add .quick-add {
-    border: 0;
-    padding-left: 8px;
-    font-weight: 500;
-  }
-
-  .side-add .quick-add svg {
-    box-sizing: content-box;
-    width: 14px;
-    height: 14px;
-    padding: 4px;
-    border-radius: 50%;
-    background: var(--accent);
-    color: var(--on-accent);
-  }
-
-  .side-count,
-  .side-count.is-soon {
-    background: transparent;
-    color: var(--text-3);
-    font-weight: 600;
-  }
-}
 
 /* ---------- Assistant: a short list of problems, then answers ---------- */
 

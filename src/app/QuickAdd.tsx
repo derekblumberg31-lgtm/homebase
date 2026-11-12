@@ -12,7 +12,7 @@ export function QuickAdd({ variant = 'sidebar' }: { variant?: 'sidebar' | 'heade
     <Menu
       label="Add to Homebase"
       align={variant === 'sidebar' ? 'start' : 'end'}
-      triggerClassName={variant === 'sidebar' ? 'button is-primary quick-add' : 'round-button quick-add-round'}
+      triggerClassName={variant === 'sidebar' ? 'button quick-add' : 'round-button quick-add-round'}
       trigger={
         <>
           <Plus size={variant === 'sidebar' ? 18 : 20} />
