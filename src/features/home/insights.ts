@@ -348,7 +348,7 @@ export function snapshotFor(data: HomeData, now: number): SnapshotFact[] {
 
   return [
     built
-      ? { id: 'age', label: 'Home age', value: `${Math.max(0, year - built)} years`, detail: `Built in ${built}`, href: '/property/details' }
+      ? { id: 'age', label: 'Home age', value: `${Math.max(0, year - built)} ${Math.max(0, year - built) === 1 ? 'year' : 'years'}`, detail: `Built in ${built}`, href: '/property/details' }
       : { id: 'age', label: 'Home age', value: 'Unknown', detail: 'Add the year built', href: '/property/details', tone: 'muted' },
     { id: 'rooms', label: 'Rooms', value: String(data.rooms.length), detail: data.rooms.length ? data.rooms.slice(0, 2).map((r) => r.name).join(', ') + (data.rooms.length > 2 ? '…' : '') : 'None added yet', href: '/property', tone: data.rooms.length ? undefined : 'muted' },
     hvacFact,

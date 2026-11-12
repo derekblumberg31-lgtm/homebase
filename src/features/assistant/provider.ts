@@ -6,6 +6,7 @@ import { recommendationsFor } from '../home/insights';
 import { annualCost, compareUrgency, countdownText, withInfo } from '../tasks/taskMath';
 import { GUIDES, type Guide, type GuideAction } from './guides';
 import { findSubject, issueContextFor, type IssueContext } from './issueContext';
+import { plural } from '../../lib/plural';
 
 export interface Answer {
   title?: string;
@@ -153,13 +154,13 @@ function answerFromData(question: string, data: HomeData, now: number): Answer |
     if (system) {
       const life = SYSTEM_LIFESPAN[system.kind];
       return system.installYear
-        ? { text: `${system.name} was installed in ${system.installYear}, so it’s about ${year - system.installYear} years old${life ? `. These usually last around ${life} years` : ''}.`, source: 'Home Systems', actions: [{ label: 'Open Home Systems', href: '/property/systems' }] }
+        ? { text: `${system.name} was installed in ${system.installYear}, so it’s about ${plural(year - system.installYear, 'year')} old${life ? `. These usually last around ${life} years` : ''}.`, source: 'Home Systems', actions: [{ label: 'Open Home Systems', href: '/property/systems' }] }
         : { text: `I don’t know when ${system.name} was installed. Add the year and I’ll warn you as it ages.`, source: 'Home Systems', actions: [{ label: 'Add the install year', href: '/property/systems' }] };
     }
     if (/(house|home|place|building)/.test(q)) {
       const built = data.property?.yearBuilt;
       return built
-        ? { text: `Your home was built in ${built}, so it’s about ${year - built} years old.${year - built >= 40 ? ' Homes this age are worth a wiring, plumbing and roof check if you haven’t had one recently.' : ''}`, source: 'Home details', actions: [{ label: 'Open home details', href: '/property/details' }] }
+        ? { text: `Your home was built in ${built}, so it’s about ${plural(year - built, 'year')} old.${year - built >= 40 ? ' Homes this age are worth a wiring, plumbing and roof check if you haven’t had one recently.' : ''}`, source: 'Home details', actions: [{ label: 'Open home details', href: '/property/details' }] }
         : { text: 'I don’t know when your home was built yet.', source: 'Home details', actions: [{ label: 'Add the year built', href: '/property/details' }] };
     }
   }

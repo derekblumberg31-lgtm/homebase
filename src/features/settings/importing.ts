@@ -1,6 +1,7 @@
 import { buildBackup, parseHomebaseBackup, readBackup } from '../../data/backup';
 import type { HomeStore } from '../../data/store';
 import { toDateInput } from '../../lib/dates';
+import { plural } from '../../lib/plural';
 import { deliverBackup, readDeviceEnv, recordsBackup, recordsOnDownload, type DeliverCaps, type Delivery, type DeviceEnv } from '../../lib/dataSafety';
 
 export interface RestoreSummary {
@@ -19,9 +20,9 @@ export async function prepareRestore(store: HomeStore, file: File): Promise<Rest
   return {
     text: [
       `Saved ${when && !Number.isNaN(when.getTime()) ? when.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : 'on an unknown date'}${data.property?.nickname ? ` for ${data.property.nickname}` : ''}.`,
-      `It has ${data.tasks.length} tasks, ${data.systems.length} systems, ${data.items.length} items, ${data.records.length} records and ${files.length} attached files.`,
+      `It has ${plural(data.tasks.length, 'task')}, ${plural(data.systems.length, 'system')}, ${plural(data.items.length, 'item')}, ${plural(data.records.length, 'record')} and ${plural(files.length, 'attached file')}.`,
       hasData
-        ? `Restoring replaces everything on this device now (${current.tasks.length} tasks, ${current.systems.length} systems, ${current.items.length} items, ${current.records.length} records).`
+        ? `Restoring replaces everything on this device now (${plural(current.tasks.length, 'task')}, ${plural(current.systems.length, 'system')}, ${plural(current.items.length, 'item')}, ${plural(current.records.length, 'record')}).`
         : 'Restoring fills this device with it.',
     ].join(' '),
     apply: async () => {

@@ -4,6 +4,7 @@ import { formatDate, toDateInput } from '../../lib/dates';
 import { SYSTEM_LABEL, SYSTEM_LIFESPAN } from '../property/labels';
 import { savedLocation } from '../home/starter';
 import { TRADE_LABEL, TRADE_WORDS, type Guide } from './guides';
+import { plural } from '../../lib/plural';
 
 /** One thing Homebase already knows that matters for this problem. */
 export interface ContextFact {
@@ -80,7 +81,7 @@ export function issueContextFor(guide: Guide, question: string, data: HomeData, 
     const life = SYSTEM_LIFESPAN[system.kind];
     facts.push({
       label: system.name,
-      text: [[system.brand, system.model].filter(Boolean).join(' ') || 'Brand and model not added', system.serial ? `serial ${system.serial}` : null, age !== undefined ? `${age} years old${life ? ` (usual life about ${life})` : ''}` : 'age unknown']
+      text: [[system.brand, system.model].filter(Boolean).join(' ') || 'Brand and model not added', system.serial ? `serial ${system.serial}` : null, age !== undefined ? `${plural(age, 'year')} old${life ? ` (usual life about ${life})` : ''}` : 'age unknown']
         .filter(Boolean)
         .join(' · '),
       href: `/property/systems/${system.id}`,
