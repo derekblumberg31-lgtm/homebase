@@ -1,11 +1,17 @@
 // Per-device flags in localStorage, and the only module that touches these keys. Every call is
 // safe when storage is missing or throws: reads return null, writes do nothing.
+//
+// One exception, by design: when cloud sync is configured, the Supabase library keeps its own sign-in
+// session in localStorage under `sb-<project-ref>-auth-token` (and a short-lived `...-code-verifier`
+// during Google sign-in). The library manages those keys. src/cloud/client.ts only checks they exist.
 
 export type DeviceFlagKey =
   | 'homebase:starter-dismissed'
   | 'homebase:install-row-dismissed'
   | 'homebase:backup-row-dismissed'
-  | 'homebase:alert-rows-dismissed';
+  | 'homebase:alert-rows-dismissed'
+  | 'homebase:device-id'
+  | 'homebase:sync-state';
 
 export function readFlag(key: DeviceFlagKey): string | null {
   try {

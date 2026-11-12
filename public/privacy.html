@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Homebase privacy</title>
+<style>
+  :root { --bg: #f3f4ef; --text: #1f2421; --text-2: #565d58; --line: #d9dcd4; --accent: #2f5d50; }
+  @media (prefers-color-scheme: dark) { :root { --bg: #161917; --text: #ecefe9; --text-2: #a5ada6; --line: #2c312d; --accent: #8fc2b1; } }
+  html { background: var(--bg); color: var(--text); font: 17px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+  body { max-width: 40rem; margin: 0 auto; padding: 24px 16px 64px; }
+  h1 { font-size: 1.7rem; line-height: 1.2; margin: 0 0 4px; }
+  h2 { font-size: 1.15rem; margin: 32px 0 6px; }
+  p, li { margin: 0 0 12px; }
+  ul { padding-left: 1.2rem; }
+  .meta { color: var(--text-2); font-size: 0.9rem; }
+  a { color: var(--accent); }
+  .todo { border: 1px dashed var(--line); padding: 10px 12px; border-radius: 8px; }
+</style>
+</head>
+<body>
+<main>
+<h1>Homebase privacy</h1>
+<p class="meta">How Homebase handles your information, in plain words.</p>
+
+<h2>If you never sign in</h2>
+<p>Everything you add stays on your device, in your browser’s storage for this site. Homebase has no analytics. The Assistant runs on your device, and your questions aren’t sent anywhere. Nothing leaves your device unless you save a backup or calendar file yourself.</p>
+
+<h2>If you choose to sign in</h2>
+<p>Signing in is optional. When you do, Homebase keeps one copy of your home in your account, so you can use it on another device. That copy is made from the same backup file you can save from Settings.</p>
+<ul>
+  <li><strong>What is stored:</strong> your whole home, including tasks, systems, items, records, notes, photos and attached files. That can include things like shut-off locations and anything you type into a note.</li>
+  <li><strong>Where:</strong> with Supabase, our service provider, and the cloud host it uses, in the region chosen when the project was created.</li>
+  <li><strong>Who can read it:</strong> only your sign-in can read it through the app. The copy is not end-to-end encrypted, so it could be accessed by whoever runs the Homebase service, for example through the project’s dashboard.</li>
+  <li><strong>What we collect about you:</strong> your email address. If you sign in with Google, Google also shares your name and profile picture; Homebase doesn’t need them and doesn’t store or show them. Homebase asks Google for your email and basic profile only (the openid, email and profile scopes), and nothing from your Google Calendar or other Google services.</li>
+</ul>
+
+<h2>Calendar link</h2>
+<p>If you make a calendar link, Homebase stores a list of your open job names, their dates and repeat rules so calendar apps can read it. It leaves out addresses, costs, notes, locations, systems and contacts. Anyone who has the link can see those job names and dates, so don’t share it. You can get a new link at any time, and the old one stops working at once.</p>
+
+<h2>Deleting your information</h2>
+<p>You can delete your account and the copy of your home stored in it yourself: in Settings, choose “Delete my account and cloud copy”. Your home on your device isn’t touched. Signing out keeps your home on the device and stops syncing. “Erase everything on this device” signs you out first and doesn’t delete your account’s copy.</p>
+
+<h2>Contact</h2>
+<p class="todo">[Owner: add the contact address for privacy, deletion and support requests here before publishing this page.]</p>
+</main>
+</body>
+</html>

@@ -1,0 +1,136 @@
+import { renderToStaticMarkup } from 'react-dom/server';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { CloudContext, type CloudApi } from './cloudContext';
+import { CLOUD_COPY, pick, statusDetail, statusLabel, tooBigMessage, OFFLINE_MESSAGE } from './copy';
+
+vi.stubGlobal('window', {});
+const { AccountSection, DELETE_MESSAGE, SIGN_OUT_MESSAGE } = await import('./AccountSection');
+const { CODE_FAILED, SEND_FAILED } = await import('./SignInSheet');
+const { conflictLead } = await import('./ConflictSheet');
+const { GOOGLE_FALLBACK_LINE, googleAvailable } = await import('./platform');
+
+const api = (patch: Partial<CloudApi> = {}): CloudApi => ({
+  phase: 'signed-out',
+  user: null,
+  status: 'idle',
+  coversBackup: false,
+  syncNow: () => {},
+  resolve: async () => ({ ok: true }),
+  openConflict: () => {},
+  sendCode: async () => {},
+  verifyCode: async () => {},
+  signInWithGoogle: async () => {},
+  signOut: async () => {},
+  deleteAccount: async () => {},
+  beforeErase: async () => {},
+  ...patch,
+});
+
+const render = (value: CloudApi | null) =>
+  renderToStaticMarkup(
+    <CloudContext.Provider value={value}>
+      <AccountSection />
+    </CloudContext.Provider>,
+  );
+
+const decode = (html: string) => html.replace(/&#x27;/g, "'").replace(/&amp;/g, '&');
+const configure = () => {
+  vi.stubEnv('VITE_SUPABASE_URL', 'https://abc.supabase.co');
+  vi.stubEnv('VITE_SUPABASE_PUBLISHABLE_KEY', 'sb_publishable_test');
+};
+
+afterEach(() => vi.unstubAllEnvs());
+
+describe('Account and sync section', () => {
+  it('is absent with no project, even if a context were provided', () => {
+    expect(render(null)).toBe('');
+    expect(render(api())).toBe('');
+  });
+
+  it('signed out: the optional row and the reassurance', () => {
+    configure();
+    const html = decode(render(api()));
+    expect(html).toContain('Account and sync');
+    expect(html).toContain('Sign in to sync');
+    expect(html).toContain('Optional. Keeps a copy of your home in your account, so you can use it on another device.');
+    expect(html).toContain('Without signing in, everything stays on this device, as it does now.');
+    expect(html).not.toContain('Sign out');
+  });
+
+  it('signed in: email, status, sync now, sign out and delete', () => {
+    configure();
+    const html = decode(render(api({ phase: 'signed-in', user: { id: 'u', email: 'dana@example.com' }, status: 'in-sync', lastSyncedAt: new Date().toISOString() })));
+    expect(html).toContain('Signed in');
+    expect(html).toContain('dana@example.com');
+    expect(html).toContain('Up to date · Just now');
+    expect(html).toContain('Sync now');
+    expect(html).toContain('Sign out');
+    expect(html).toContain('Delete my account and cloud copy');
+  });
+
+  it('a paused sync says what to do', () => {
+    configure();
+    const html = decode(render(api({ phase: 'signed-in', user: { id: 'u', email: 'a@b.co' }, status: 'conflict' })));
+    expect(html).toContain('Paused: choose which copy to keep');
+  });
+});
+
+describe('copy that changes when sync exists (exact strings)', () => {
+  const today = 'TODAY';
+  it('keeps today’s text when there is no project', () => {
+    expect(pick('off', today, CLOUD_COPY.householdFoot['signed-out'], CLOUD_COPY.householdFoot['signed-in'])).toBe(today);
+    expect(pick('off', today, CLOUD_COPY.leaves['signed-out'], CLOUD_COPY.leaves['signed-in'])).toBe(today);
+  });
+  it('signed out', () => {
+    expect(CLOUD_COPY.onboarding).toBe('Everything stays on this device unless you choose to sign in and sync. Save a backup file from Settings to keep a copy.');
+    expect(pick('signed-out', today, CLOUD_COPY.householdFoot['signed-out'], CLOUD_COPY.householdFoot['signed-in'])).toBe(
+      'Everyone shares this device’s Homebase. To use it on another device, sign in to sync, or save a backup here and restore it there.',
+    );
+    expect(pick('signed-out', today, CLOUD_COPY.leaves['signed-out'], CLOUD_COPY.leaves['signed-in'])).toBe(
+      'Nothing, unless you save a backup or calendar file yourself, or sign in to sync. There’s no analytics. The Assistant runs on the device.',
+    );
+  });
+  it('signed in', () => {
+    expect(pick('signed-in', today, CLOUD_COPY.householdFoot['signed-out'], CLOUD_COPY.householdFoot['signed-in'])).toBe(
+      'Everyone who uses this device shares it. Signing in on another device brings the same home there.',
+    );
+    expect(pick('signed-in', today, CLOUD_COPY.leaves['signed-out'], CLOUD_COPY.leaves['signed-in'])).toBe(
+      'Your whole home, including photos and files, is copied to your account after changes. It’s stored with Supabase and only your sign-in can read it through the app. It isn’t end-to-end encrypted, so it could be accessed by whoever runs the Homebase service. No analytics. The Assistant runs on the device.',
+    );
+    expect(CLOUD_COPY.cleared).toBe('Sign in again to bring back your home from your account, or restore a backup file.');
+    expect(CLOUD_COPY.recordFilesFoot).toContain('stored on this device, included in backups, and synced to your account.');
+    expect(CLOUD_COPY.restoreConfirmAddition).toBe('Your account’s copy will be replaced at the next sync.');
+    expect(CLOUD_COPY.eraseConfirmAddition).toBe('You’ll be signed out. Your account’s copy isn’t deleted.');
+  });
+  it('sheets and statuses', () => {
+    expect(SIGN_OUT_MESSAGE).toBe('Your home stays on this device. Changes made here won’t reach your account until you sign in again.');
+    expect(DELETE_MESSAGE).toBe('This deletes your account and the copy of your home stored in it. Your home on this device isn’t touched. This can’t be undone.');
+    expect(CODE_FAILED).toBe('That code didn’t work. Check it, or send a new one.');
+    expect(SEND_FAILED).toBe('Couldn’t send the code. Check the address and your connection.');
+    expect(statusLabel({ status: 'syncing' })).toBe('Syncing…');
+    expect(statusLabel({ status: 'offline' })).toBe('Can’t reach your account');
+    expect(statusLabel({ status: 'too-big' })).toBe('Too big to sync');
+    expect(statusDetail({ status: 'offline' })).toBe(OFFLINE_MESSAGE);
+    expect(OFFLINE_MESSAGE).toBe('Can’t reach your account. Your home is safe on this device and will sync later.');
+    expect(tooBigMessage(52)).toBe('Your home is too big to sync (52 MB). Large photos and PDFs make it big. Backup files still work.');
+    expect(
+      conflictLead({
+        reason: 'diverged',
+        remote: { revision: 2, deviceLabel: 'iPhone', updatedAt: '2026-11-10T09:12:00' },
+        localCounts: { tasks: 1, systems: 0, records: 0, files: 0 },
+        remoteCounts: { tasks: 1, systems: 0, records: 0, files: 0 },
+      }),
+    ).toBe(
+      'Your home changed on this device and on your iPhone (Nov 10, 9:12 AM) since they last synced. Homebase can’t combine them yet, so pick one. The other one is saved as a backup file first, so nothing is lost.',
+    );
+  });
+});
+
+describe('Google on an installed iPhone', () => {
+  const iphone = 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1';
+  it('is hidden there until it is tested, and the fallback line is the one in the spec', () => {
+    expect(googleAvailable({ ua: iphone, platform: 'iPhone', maxTouchPoints: 5, standalone: true })).toBe(false);
+    expect(googleAvailable({ ua: iphone, platform: 'iPhone', maxTouchPoints: 5, standalone: false })).toBe(true);
+    expect(GOOGLE_FALLBACK_LINE).toBe('To use Google, open Homebase in Safari, or sign in with an email code.');
+  });
+});

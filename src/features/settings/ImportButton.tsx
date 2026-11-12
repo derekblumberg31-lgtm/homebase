@@ -1,4 +1,6 @@
 import { useRef, useState } from 'react';
+import { useCloudState } from '../../cloud/cloudContext';
+import { CLOUD_COPY } from '../../cloud/copy';
 import { useStore } from '../../data/DataProvider';
 import { useToast } from '../../ui/overlays';
 import { ConfirmWithBackup } from './ConfirmWithBackup';
@@ -7,6 +9,7 @@ import { prepareRestore, type RestoreSummary } from './importing';
 /** Pick a Homebase backup, see what restoring it will do, then confirm. */
 export function ImportButton({ label = 'Restore from a backup', className = 'row is-action', onDone }: { label?: string; className?: string; onDone?: () => void }) {
   const store = useStore();
+  const cloudState = useCloudState();
   const toast = useToast();
   const input = useRef<HTMLInputElement>(null);
   const [pending, setPending] = useState<RestoreSummary | null>(null);
@@ -62,7 +65,7 @@ export function ImportButton({ label = 'Restore from a backup', className = 'row
         <ConfirmWithBackup
           verb="restore"
           title="Restore this backup?"
-          message={pending.text}
+          message={cloudState === 'signed-in' ? `${pending.text} ${CLOUD_COPY.restoreConfirmAddition}` : pending.text}
           confirmLabel="Restore"
           destructive
           onConfirm={apply}

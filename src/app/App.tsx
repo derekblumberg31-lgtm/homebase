@@ -1,5 +1,7 @@
 import { lazy, Suspense, useEffect, useRef, type ReactNode } from 'react';
 import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom';
+import { CloudProvider } from '../cloud/CloudProvider';
+import { cloudConfig } from '../cloud/config';
 import { DataProvider, useData } from '../data/DataProvider';
 import { SessionProvider, useSession } from '../session/session';
 import { Skeleton } from '../ui/layout';
@@ -98,60 +100,67 @@ function Effects() {
   return null;
 }
 
+/** Cloud sync exists only in a build that has a Supabase project; otherwise nothing of it is mounted. */
+function MaybeCloud({ children }: { children: ReactNode }) {
+  return cloudConfig() ? <CloudProvider>{children}</CloudProvider> : <>{children}</>;
+}
+
 export function App() {
   return (
     <AppErrorBoundary>
       <DataProvider fallback={<Loading />} errorView={(message) => <StorageError message={message} />}>
-        <SessionProvider>
-          <ToastProvider>
-            <Effects />
-            <BrowserRouter basename={import.meta.env.BASE_URL.replace(/\/$/, '') || '/'}>
-              <ScrollToTop />
-              <Gate>
-                <Routes>
-                  <Route path="/welcome" element={<Onboarding />} />
-                  <Route element={<AppShell />}>
-                    <Route path="/" element={<Navigate to="/home" replace />} />
-                    <Route path="/home" element={<HomePage />} />
-                    <Route path="/home/health" element={<HomeHealthPage />} />
-                    <Route path="/home/season" element={<HomeSeasonPage />} />
-                    <Route path="/home/coming-up" element={<HomeComingUpPage />} />
-                    <Route path="/home/activity" element={<HomeActivityPage />} />
-                    <Route path="/property" element={<PropertyPage />} />
-                    <Route path="/property/details" element={<PropertyDetailsPage />} />
-                    <Route path="/property/safety" element={<SafetyPage />} />
-                    <Route path="/property/buy" element={<BuyPage />} />
-                    <Route path="/property/report" element={<ReportPage />} />
-                    <Route path="/property/rooms/:roomId" element={<RoomPage />} />
-                    <Route path="/property/systems" element={<SystemsPage />} />
-                    <Route path="/property/systems/:systemId" element={<SystemPage />} />
-                    <Route path="/property/inventory" element={<InventoryPage />} />
-                    <Route path="/property/items/:itemId" element={<ItemPage />} />
-                    <Route path="/property/keys" element={<KeysPage />} />
-                    <Route path="/property/keys/:keyId" element={<KeyPage />} />
-                    <Route
-                      path="/property/identify-key"
-                      element={
-                        <Suspense fallback={<Loading />}>
-                          <IdentifyKeyPage />
-                        </Suspense>
-                      }
-                    />
-                    <Route path="/tasks" element={<TasksPage />} />
-                    <Route path="/tasks/:taskId" element={<TaskDetailPage />} />
-                    <Route path="/assistant" element={<AssistantPage />} />
-                    <Route path="/records" element={<RecordsPage />} />
-                    <Route path="/records/service-history" element={<ServiceHistoryPage />} />
-                    <Route path="/records/:recordId" element={<RecordPage />} />
-                    <Route path="/settings" element={<SettingsPage />} />
-                    <Route path="/settings/calendar" element={<CalendarGuidePage />} />
-                    <Route path="*" element={<Navigate to="/home" replace />} />
-                  </Route>
-                </Routes>
-              </Gate>
-            </BrowserRouter>
-          </ToastProvider>
-        </SessionProvider>
+        <ToastProvider>
+          <MaybeCloud>
+            <SessionProvider>
+              <Effects />
+              <BrowserRouter basename={import.meta.env.BASE_URL.replace(/\/$/, '') || '/'}>
+                <ScrollToTop />
+                <Gate>
+                  <Routes>
+                    <Route path="/welcome" element={<Onboarding />} />
+                    <Route element={<AppShell />}>
+                      <Route path="/" element={<Navigate to="/home" replace />} />
+                      <Route path="/home" element={<HomePage />} />
+                      <Route path="/home/health" element={<HomeHealthPage />} />
+                      <Route path="/home/season" element={<HomeSeasonPage />} />
+                      <Route path="/home/coming-up" element={<HomeComingUpPage />} />
+                      <Route path="/home/activity" element={<HomeActivityPage />} />
+                      <Route path="/property" element={<PropertyPage />} />
+                      <Route path="/property/details" element={<PropertyDetailsPage />} />
+                      <Route path="/property/safety" element={<SafetyPage />} />
+                      <Route path="/property/buy" element={<BuyPage />} />
+                      <Route path="/property/report" element={<ReportPage />} />
+                      <Route path="/property/rooms/:roomId" element={<RoomPage />} />
+                      <Route path="/property/systems" element={<SystemsPage />} />
+                      <Route path="/property/systems/:systemId" element={<SystemPage />} />
+                      <Route path="/property/inventory" element={<InventoryPage />} />
+                      <Route path="/property/items/:itemId" element={<ItemPage />} />
+                      <Route path="/property/keys" element={<KeysPage />} />
+                      <Route path="/property/keys/:keyId" element={<KeyPage />} />
+                      <Route
+                        path="/property/identify-key"
+                        element={
+                          <Suspense fallback={<Loading />}>
+                            <IdentifyKeyPage />
+                          </Suspense>
+                        }
+                      />
+                      <Route path="/tasks" element={<TasksPage />} />
+                      <Route path="/tasks/:taskId" element={<TaskDetailPage />} />
+                      <Route path="/assistant" element={<AssistantPage />} />
+                      <Route path="/records" element={<RecordsPage />} />
+                      <Route path="/records/service-history" element={<ServiceHistoryPage />} />
+                      <Route path="/records/:recordId" element={<RecordPage />} />
+                      <Route path="/settings" element={<SettingsPage />} />
+                      <Route path="/settings/calendar" element={<CalendarGuidePage />} />
+                      <Route path="*" element={<Navigate to="/home" replace />} />
+                    </Route>
+                  </Routes>
+                </Gate>
+              </BrowserRouter>
+            </SessionProvider>
+          </MaybeCloud>
+        </ToastProvider>
       </DataProvider>
     </AppErrorBoundary>
   );

@@ -39,7 +39,7 @@ export interface SeasonalTip extends Recommendation {
 /** Id prefix of a system's warranty row, so it is counted as a warranty and not as an aging system. */
 const SYSTEM_WARRANTY_PREFIX = 'system-warranty-';
 
-export type AttentionKind = 'warranty' | 'system' | 'backup';
+export type AttentionKind = 'warranty' | 'system' | 'backup' | 'sync';
 
 /** A fact about the home or this device that deserves a look, before it becomes a problem. */
 export interface AttentionItem {
@@ -153,15 +153,16 @@ export function attentionFor(data: HomeData, now: number, backupDismissedAt?: st
   return items;
 }
 
-/** Hides what was dismissed, then fills the alert slot. A backup row always takes a slot. `counted` is what the status sentence covers (never the backup). */
+/** Hides what was dismissed, then fills the alert slot. A backup or sync-paused row always takes a slot. `counted` is what the status sentence covers (never the backup). */
 export function arrangeAttention(
   items: AttentionItem[],
   dismissed: ReadonlySet<string>,
 ): { rows: AttentionItem[]; more: AttentionItem[]; counted: AttentionItem[] } {
   const visible = items.filter((item) => !(item.dismissKey && dismissed.has(item.dismissKey)));
-  const counted = visible.filter((item) => item.kind !== 'backup');
-  const backup = visible.find((item) => item.kind === 'backup');
-  const rows = backup ? [...counted.slice(0, ALERT_ROW_CAP - 1), backup] : counted.slice(0, ALERT_ROW_CAP);
+  // The backup and sync-paused rows are about this device, not the home, so they always take a slot and are never counted.
+  const pinned = visible.filter((item) => item.kind === 'backup' || item.kind === 'sync').sort((a, b) => Number(b.kind === 'sync') - Number(a.kind === 'sync'));
+  const counted = visible.filter((item) => !pinned.includes(item));
+  const rows = [...counted.slice(0, Math.max(0, ALERT_ROW_CAP - pinned.length)), ...pinned];
   return { rows, more: counted.filter((item) => !rows.includes(item)), counted };
 }
 

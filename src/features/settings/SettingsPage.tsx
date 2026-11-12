@@ -1,6 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PRODUCT } from '../../app/areas';
+import { AccountSection, LastSyncedRow } from '../../cloud/AccountSection';
+import { useCloud, useCloudState } from '../../cloud/cloudContext';
+import { CLOUD_COPY, pick } from '../../cloud/copy';
 import { useData, useStore } from '../../data/DataProvider';
 import { uid } from '../../data/ids';
 import type { Member, Settings, ThemePreference } from '../../data/types';
@@ -43,6 +46,8 @@ export function SettingsPage() {
   const data = useData();
   const toast = useToast();
   const navigate = useNavigate();
+  const cloud = useCloud();
+  const cloudState = useCloudState();
   const [memberSheet, setMemberSheet] = useState<Member | 'new' | null>(null);
   const [eraseOpen, setEraseOpen] = useState(false);
   const [installOpen, setInstallOpen] = useState(false);
@@ -119,8 +124,17 @@ export function SettingsPage() {
           ))}
           <Row title="Add someone" tone="action" onClick={() => setMemberSheet('new')} />
         </Group>
-        <p className="section-foot">Everyone shares this device’s Homebase. There’s no syncing between devices; to move to a new one, save a backup here and restore it there.</p>
+        <p className="section-foot">
+          {pick(
+            cloudState,
+            'Everyone shares this device’s Homebase. There’s no syncing between devices; to move to a new one, save a backup here and restore it there.',
+            CLOUD_COPY.householdFoot['signed-out'],
+            CLOUD_COPY.householdFoot['signed-in'],
+          )}
+        </p>
       </Section>
+
+      <AccountSection />
 
       <Section title="Property">
         <Group>
@@ -179,12 +193,21 @@ export function SettingsPage() {
             </div>
             <div>
               <dt>What leaves the device</dt>
-              <dd>Nothing, unless you save a backup or calendar file yourself. There’s no account, no sync and no analytics. The Assistant runs on the device; questions aren’t sent anywhere.</dd>
+              <dd>
+                {pick(
+                  cloudState,
+                  'Nothing, unless you save a backup or calendar file yourself. There’s no account, no sync and no analytics. The Assistant runs on the device; questions aren’t sent anywhere.',
+                  CLOUD_COPY.leaves['signed-out'],
+                  CLOUD_COPY.leaves['signed-in'],
+                )}
+              </dd>
             </div>
             <div>
               <dt>If browser data is cleared</dt>
               <dd>
-                Clearing this site’s data, uninstalling the app, or some private-browsing modes delete everything here. Your other devices don’t have a copy. A backup file is the only way to get it back.
+                {cloudState === 'signed-in'
+                  ? `Clearing this site’s data, uninstalling the app, or some private-browsing modes delete everything here. ${CLOUD_COPY.cleared}`
+                  : 'Clearing this site’s data, uninstalling the app, or some private-browsing modes delete everything here. Your other devices don’t have a copy. A backup file is the only way to get it back.'}
               </dd>
             </div>
           </dl>
@@ -198,6 +221,7 @@ export function SettingsPage() {
               sub={lastBackupChanges > 0 ? changesText(lastBackupChanges) : undefined}
               value={data.settings.lastBackupAt ? formatRelativeTime(data.settings.lastBackupAt) : 'Never'}
             />
+            <LastSyncedRow />
             <Row title="Print a home report" to="/property/report" />
             <Row title={savingBackup ? 'Saving…' : 'Save a backup'} tone="action" onClick={() => void saveBackup()} />
             <ImportButton label="Restore from a backup" />
@@ -255,12 +279,14 @@ export function SettingsPage() {
         <ConfirmWithBackup
           verb="erase"
           title="Erase everything?"
-          message="Every task, item, key, record and file on this device will be removed. Save a backup first if you might want them back later."
+          message={pick(cloudState, 'Every task, item, key, record and file on this device will be removed. Save a backup first if you might want them back later.') + (cloudState === 'signed-in' ? ` ${CLOUD_COPY.eraseConfirmAddition}` : '')}
           confirmLabel="Erase"
           destructive
           onCancel={() => setEraseOpen(false)}
           onConfirm={async () => {
             try {
+              // Signed in: sign out and forget what was synced first, so an empty home is never pushed.
+              await cloud?.beforeErase();
               await store.eraseAll();
             } catch {
               // The dialog stays up so the choice is still there to make again.

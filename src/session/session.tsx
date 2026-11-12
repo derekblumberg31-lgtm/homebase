@@ -1,4 +1,5 @@
 import { createContext, useContext, useMemo, type ReactNode } from 'react';
+import { useCloud } from '../cloud/cloudContext';
 import { useData } from '../data/DataProvider';
 import type { Member } from '../data/types';
 
@@ -8,14 +9,15 @@ import type { Member } from '../data/types';
  * implement the same interface later without screens changing.
  */
 export interface Session {
-  kind: 'local';
+  /** 'cloud' while signed in to sync. The data is still on this device either way. */
+  kind: 'local' | 'cloud';
   /** True once onboarding has created the household. */
   ready: boolean;
   member?: Member;
   /** The owner's first name, cleaned up for greetings; undefined when there isn't a usable one. */
   firstName?: string;
   householdName?: string;
-  /** Not available on local sessions; present so a future cloud session can offer it. */
+  /** Present only while signed in to sync. */
   signOut?: () => Promise<void>;
 }
 
@@ -31,18 +33,22 @@ const SessionContext = createContext<Session>({ kind: 'local', ready: false });
 
 export function SessionProvider({ children }: { children: ReactNode }) {
   const { household } = useData();
+  const cloud = useCloud();
+  const signedIn = Boolean(cloud?.user);
+  const signOut = cloud?.signOut;
   const session = useMemo<Session>(
     () => {
       const member = household?.members.find((m) => m.role === 'owner') ?? household?.members[0];
       return {
-        kind: 'local',
+        kind: signedIn ? 'cloud' : 'local',
         ready: Boolean(household?.onboardedAt),
         member,
         firstName: firstNameOf(member?.name),
         householdName: household?.name,
+        signOut: signedIn ? signOut : undefined,
       };
     },
-    [household],
+    [household, signedIn, signOut],
   );
   return <SessionContext.Provider value={session}>{children}</SessionContext.Provider>;
 }

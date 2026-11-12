@@ -17,6 +17,7 @@ import { arrangeAttention, attentionFor, comingUpSub, homeStatusFor, seasonalTip
 import { healthRowText, starterCheckFor } from './starter';
 import { StarterJobs } from './StarterJobs';
 import { useAlertDismissals } from './useAlertDismissals';
+import { useCloud } from '../../cloud/cloudContext';
 import { useInstallRow } from './useInstallRow';
 
 const UP_NEXT = 3;
@@ -37,6 +38,11 @@ export function HomePage() {
   const now = useNow();
   const { complete } = useTaskActions();
   const toast = useToast();
+  const cloud = useCloud();
+  // "Sync paused" can be hidden, but only for this visit: it comes back next session.
+  const [syncHidden, setSyncHidden] = useState(false);
+  const syncPaused = cloud?.status === 'conflict' && !syncHidden;
+  const syncCovers = Boolean(cloud?.coversBackup);
   const { dismissed, backupDismissedAt, dismiss, restore, dismissBackup, restoreBackup } = useAlertDismissals();
   const install = useInstallRow();
   const [installOpen, setInstallOpen] = useState(false);
@@ -49,11 +55,14 @@ export function HomePage() {
 
   const next = useMemo(() => withInfo(data.tasks.filter((t) => t.status === 'open'), now).sort(compareUrgency).slice(0, UP_NEXT), [data.tasks, now]);
   // One data-safety row at a time: while the install row shows (a Safari tab), the backup row waits.
-  const safetyRow = dataSafetyRow({ installMatters: install.matters, installDismissed: install.dismissed, nudge: backupNudge(data, now, backupDismissedAt) });
+  const safetyRow = dataSafetyRow({ installMatters: install.matters, installDismissed: install.dismissed, nudge: syncCovers ? null : backupNudge(data, now, backupDismissedAt) });
   const attention = useMemo(() => {
-    const items = attentionFor(data, now, backupDismissedAt);
-    return safetyRow === 'install' ? items.filter((item) => item.kind !== 'backup') : items;
-  }, [data, now, backupDismissedAt, safetyRow]);
+    // While sync covers the home, Home says nothing about a backup file.
+    const items = attentionFor(data, now, backupDismissedAt).filter((item) => !(syncCovers && item.kind === 'backup'));
+    const base = safetyRow === 'install' ? items.filter((item) => item.kind !== 'backup') : items;
+    const pausedRow: AttentionItem = { id: 'sync-paused', kind: 'sync', title: 'Sync paused', detail: 'Choose which copy to keep', href: '/settings#account' };
+    return syncPaused ? [pausedRow, ...base] : base;
+  }, [data, now, backupDismissedAt, safetyRow, syncCovers, syncPaused]);
   const { rows, more, counted } = useMemo(() => arrangeAttention(attention, dismissed), [attention, dismissed]);
   const status = useMemo(() => homeStatusFor(data, now, counted), [data, now, counted]);
   const starter = useMemo(() => starterCheckFor(data), [data]);
@@ -72,7 +81,10 @@ export function HomePage() {
 
   function hide(item: AttentionItem) {
     focusRow.current = rows.indexOf(item);
-    if (item.kind === 'backup') {
+    if (item.kind === 'sync') {
+      setSyncHidden(true);
+      toast('Hidden from Home. It’s still in Settings.', { action: { label: 'Undo', run: () => setSyncHidden(false) } });
+    } else if (item.kind === 'backup') {
       dismissBackup();
       toast('Hidden from Home. It’s still in Settings.', { action: { label: 'Undo', run: restoreBackup } });
     } else if (item.dismissKey) {

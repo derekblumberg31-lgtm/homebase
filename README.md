@@ -20,7 +20,7 @@ Homebase replaces two earlier apps and keeps everything they did:
 
 ## Data
 
-- Everything is stored on the device in IndexedDB (`homebase`). There's no account and no server.
+- Everything is stored on the device in IndexedDB (`homebase`). There's no account and no server unless you turn on optional sign-in and sync (below).
 - **Settings → Data and privacy → Save a backup** saves one JSON file, including attached files.
 - **Restore from a backup** (in Settings, or on the welcome screen when moving to a new device) restores a Homebase backup.
 
@@ -54,6 +54,10 @@ Every push to `main` deploys to **GitHub Pages** at https://derekblumberg31-lgtm
 - copies `index.html` to `404.html` so deep links work
 
 The older Netlify site (`./deploy.sh`, homebase-derek.netlify.app) still works if you ever want it. It builds for the root path.
+
+## Optional sign-in and sync
+
+Off by default. Set `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` (see `.env.example`; on GitHub, as repository Variables) and Settings gains an "Account and sync" section. With neither set, the app is exactly the local-only app and the Supabase library is never loaded. The SQL is in `supabase/sql/`, and `docs/CLOUD-SETUP.md` is the owner's step-by-step guide.
 
 ## Docs
 

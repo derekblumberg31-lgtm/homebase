@@ -1,6 +1,9 @@
 import { useMemo, useState, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PRODUCT } from '../../app/areas';
+import { useCloud, useCloudState } from '../../cloud/cloudContext';
+import { CLOUD_COPY, pick } from '../../cloud/copy';
+import { SignInSheet } from '../../cloud/SignInSheet';
 import { useStore } from '../../data/DataProvider';
 import { uid } from '../../data/ids';
 import type { PropertyType } from '../../data/types';
@@ -18,6 +21,9 @@ const STEPS: Step[] = ['welcome', 'household', 'property'];
 /** First run: who you are and which home this is. Two short steps, then Home. */
 export function Onboarding() {
   const store = useStore();
+  const cloud = useCloud();
+  const cloudState = useCloudState();
+  const [signInOpen, setSignInOpen] = useState(false);
   const navigate = useNavigate();
   const [step, setStep] = useState<Step>('welcome');
   const [name, setName] = useState('');
@@ -95,7 +101,7 @@ export function Onboarding() {
             <p className="lead">
               One place for your home: what needs doing, what you own, where the paperwork is, and help when something breaks.
             </p>
-            <p className="lead">Everything stays on this device. No account, no sync. Save a backup file from Settings to keep a copy.</p>
+            <p className="lead">{pick(cloudState, 'Everything stays on this device. No account, no sync. Save a backup file from Settings to keep a copy.', CLOUD_COPY.onboarding)}</p>
             {tabMatters && (
               <>
                 <p className="lead">
@@ -111,7 +117,13 @@ export function Onboarding() {
                 Get started
               </button>
               <ImportButton label={fromSafari ? 'Started in Safari? Restore your backup' : 'Restore from a backup'} className="button is-quiet is-block" />
+              {cloud && cloud.phase !== 'signed-in' && (
+                <button type="button" className="button is-quiet is-block" onClick={() => setSignInOpen(true)}>
+                  Sign in to bring your home here
+                </button>
+              )}
             </div>
+            {signInOpen && cloud && <SignInSheet cloud={cloud} onClose={() => setSignInOpen(false)} />}
             {fromSafari && <p className="section-foot">To make one, open Homebase in Safari, go to Settings and choose Save a backup.</p>}
           </>
         )}

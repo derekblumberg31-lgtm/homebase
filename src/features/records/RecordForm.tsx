@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
+import { useCloudState } from '../../cloud/cloudContext';
+import { CLOUD_COPY } from '../../cloud/copy';
 import { useData, useStore } from '../../data/DataProvider';
 import { uid } from '../../data/ids';
 import type { HomeRecord, RecordKind } from '../../data/types';
@@ -34,6 +36,7 @@ const SHOWS = {
 export function RecordForm({ record, draft, onClose, onSaved }: { record?: HomeRecord; draft?: { kind?: RecordKind; itemId?: string; systemId?: string; title?: string; notes?: string; vendor?: string }; onClose: () => void; onSaved: (r: HomeRecord) => void }) {
   const { items, systems } = useData();
   const store = useStore();
+  const cloudState = useCloudState();
   const toast = useToast();
   const fileInput = useRef<HTMLInputElement>(null);
   const [kind, setKind] = useState<RecordKind>(record?.kind ?? draft?.kind ?? 'warranty');
@@ -207,7 +210,7 @@ export function RecordForm({ record, draft, onClose, onSaved }: { record?: HomeR
         </Section>
       )}
 
-      <Section title="Files" foot="Photos and PDFs are stored on this device and included in backups. Large photos are made smaller to keep backups quick.">
+      <Section title="Files" foot={cloudState === 'signed-in' ? CLOUD_COPY.recordFilesFoot : 'Photos and PDFs are stored on this device and included in backups. Large photos are made smaller to keep backups quick.'}>
         {(existing.length > 0 || files.length > 0) && (
           <Group>
             {existing.map((id, i) => (

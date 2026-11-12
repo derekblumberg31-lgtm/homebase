@@ -30,6 +30,10 @@ jobs:
           # A project site lives at /<repo>/, so assets, routes, the manifest scope,
           # the service worker and the key engine are all rooted there.
           BASE_PATH: /${{ github.event.repository.name }}/
+          # Optional cloud sync. Set these as repository Variables (not secrets): both are public by
+          # design. Until they exist they expand to empty strings and the build is unchanged.
+          VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.VITE_SUPABASE_PUBLISHABLE_KEY }}
       # Pages has no rewrite rules: serve the app for any deep link like /homebase/tasks/abc.
       - run: cp dist/index.html dist/404.html
       - uses: actions/configure-pages@v5
