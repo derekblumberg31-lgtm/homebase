@@ -59,7 +59,7 @@ export function ReportPage() {
         {systems.length === 0 ? (
           <p>{NOTHING}</p>
         ) : (
-          <div className="report-table-wrap">
+          <div className="report-table-wrap" role="region" aria-label="Systems table, scrolls sideways" tabIndex={0}>
             <table>
               <thead>
                 <tr>

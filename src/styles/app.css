@@ -4915,6 +4915,19 @@ a.feed-row:focus-visible {
   font-weight: 500;
 }
 
+/* On a phone the table fits by letting long words break; if it still can't, it scrolls inside its own box. */
+@media (max-width: 600px) {
+  .report table {
+    font-size: var(--text-footnote);
+  }
+
+  .report th,
+  .report td {
+    padding-right: 6px;
+    overflow-wrap: anywhere;
+  }
+}
+
 .report-foot {
   margin-top: 24px;
   color: var(--text-3);
@@ -4968,13 +4981,10 @@ a.feed-row:focus-visible {
     background: #fff;
   }
 
-  .report h1,
-  .report h2,
-  .report h3,
-  .report p,
-  .report th,
-  .report td {
-    color: #000;
+  /* Every report element, in either theme, however specific its screen colour rule is. */
+  .report,
+  .report * {
+    color: #000 !important;
   }
 
   .report h2,

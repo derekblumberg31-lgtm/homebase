@@ -85,6 +85,8 @@ interface Props {
 export function LabelScanButton({ current, onApply, canKeepPhoto = true }: Props) {
   const toast = useToast();
   const input = useRef<HTMLInputElement>(null);
+  const button = useRef<HTMLButtonElement>(null);
+  const wasOpen = useRef(false);
   const [busy, setBusy] = useState(false);
   const [firstUse, setFirstUse] = useState(false);
   const [result, setResult] = useState<{ reading: LabelReading; photo?: string } | null>(null);
@@ -98,6 +100,15 @@ export function LabelScanButton({ current, onApply, canKeepPhoto = true }: Props
       live.current = false;
     };
   }, []);
+
+  // The button was disabled while the label was read, so the sheet has nowhere to hand focus back to. It goes here.
+  useEffect(() => {
+    if (result) wasOpen.current = true;
+    else if (wasOpen.current) {
+      wasOpen.current = false;
+      requestAnimationFrame(() => button.current?.focus());
+    }
+  }, [result]);
 
   async function scan(file: File) {
     setBusy(true);
@@ -127,7 +138,7 @@ export function LabelScanButton({ current, onApply, canKeepPhoto = true }: Props
   return (
     <>
       <div className="button-stack">
-        <button type="button" className="button is-secondary is-block" onClick={() => input.current?.click()} disabled={busy} aria-busy={busy}>
+        <button ref={button} type="button" className="button is-secondary is-block" onClick={() => input.current?.click()} disabled={busy} aria-busy={busy}>
           {busy ? 'Reading the label…' : 'Scan the label'}
         </button>
         {busy && firstUse && (
