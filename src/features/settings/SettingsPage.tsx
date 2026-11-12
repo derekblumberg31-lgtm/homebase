@@ -224,17 +224,19 @@ export function SettingsPage() {
         </Group>
       </Section>
 
-      <Section title="Advanced">
-        <Group>
-          <div className="row">
-            <span className="row-main">
-              <span className="row-title">Key photo debug view</span>
-              <span className="row-sub">Shows each step of key detection</span>
-            </span>
-            <Switch checked={data.settings.keyDebug} onChange={(keyDebug) => void saveSetting({ keyDebug })} label="Key photo debug view" />
-          </div>
-        </Group>
-      </Section>
+      {import.meta.env.DEV && (
+        <Section title="Advanced">
+          <Group>
+            <div className="row">
+              <span className="row-main">
+                <span className="row-title">Key photo debug view</span>
+                <span className="row-sub">Shows each step of key detection</span>
+              </span>
+              <Switch checked={data.settings.keyDebug} onChange={(keyDebug) => void saveSetting({ keyDebug })} label="Key photo debug view" />
+            </div>
+          </Group>
+        </Section>
+      )}
 
       <p className="local-note">
         {PRODUCT.name} · {PRODUCT.tagline}
