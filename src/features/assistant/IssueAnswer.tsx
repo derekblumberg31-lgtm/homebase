@@ -5,10 +5,13 @@ import { AlertTriangle, Camera, Check, ChevronRight, CircleCheck, Clock, FileTex
 import { Sheet, useToast } from '../../ui/overlays';
 import { damageReportHref } from '../records/damageReport';
 import { TRADE_LABEL } from './guides';
+import { telHref } from '../safety/safety';
 import { createFollowUp, createRepairTask, createShoppingList, resolveIssue, saveIssueNote, type Issue } from './issueActions';
 import type { Answer } from './provider';
+import { isCriticalGuide, type ContextFact } from './issueContext';
 
 const VISIBLE_ACTIONS = 4;
+const SHUTOFF_LABELS = ['Main water shutoff', 'Gas shutoff'];
 
 export interface IssueState {
   /** Picked option index per question id. */
@@ -37,7 +40,7 @@ export function IssueAnswer({ answer, state, onChange, go }: Props) {
   const [resolving, setResolving] = useState(false);
   const [expanded, setExpanded] = useState(false);
   // Gas, carbon monoxide and fire: getting out and calling for help is the whole answer.
-  const critical = Boolean(guide.urgentWhen) && !guide.questions?.length;
+  const critical = isCriticalGuide(guide);
 
   const picked = (guide.questions ?? []).flatMap((q) => (state.picks[q.id] !== undefined ? [{ q, o: q.options[state.picks[q.id]] }] : []));
   const emergency = picked.some((p) => p.o.tone === 'emergency');
@@ -57,6 +60,10 @@ export function IssueAnswer({ answer, state, onChange, go }: Props) {
       toast('That wasn’t saved. Try again.', { tone: 'error' });
     }
   }
+
+  // Closing the valve is the first step, so where it is comes before "Do this first".
+  const shutoffFacts = critical ? [] : context.facts.filter((f) => SHUTOFF_LABELS.includes(f.label));
+  const otherFacts = critical ? [] : context.facts.filter((f) => !SHUTOFF_LABELS.includes(f.label));
 
   const done = (id: string) => state.done[id];
   const contractorHref = `/records?new=contractor${guide.trade ? `&vendor=${encodeURIComponent(TRADE_LABEL[guide.trade])}` : ''}`;
@@ -101,8 +108,8 @@ export function IssueAnswer({ answer, state, onChange, go }: Props) {
   if (context.contractor) {
     const contractor = context.contractor;
     actions.push(
-      contractor.phone ? (
-        <ActionRow key="contractor" icon={<Phone size={18} />} label={`Call ${contractor.title}`} href={`tel:${contractor.phone.replace(/[^\d+]/g, '')}`} go={go} />
+      telHref(contractor.phone) ? (
+        <ActionRow key="contractor" icon={<Phone size={18} />} label={`Call ${contractor.title}`} href={telHref(contractor.phone)} go={go} />
       ) : (
         <ActionRow key="contractor" icon={<Phone size={18} />} label={`Open ${contractor.title}`} go={go} onClick={() => go(`/records/${contractor.id}`)} />
       ),
@@ -159,6 +166,12 @@ export function IssueAnswer({ answer, state, onChange, go }: Props) {
       <h3>{guide.title}</h3>
       <p>{guide.summary}</p>
       {critical && <CriticalCall guide={guide} />}
+      {critical && context.facts.length > 0 && (
+        <IssueBlock title="From your home">
+          <FactRows facts={context.facts} go={go} />
+        </IssueBlock>
+      )}
+      {!critical && shutoffFacts.length > 0 && <FactRows facts={shutoffFacts} go={go} />}
 
       {guide.emergency && (
         <div className={`callout is-danger ${emergency ? 'is-active' : ''}`} role={emergency ? 'alert' : undefined}>
@@ -179,22 +192,9 @@ export function IssueAnswer({ answer, state, onChange, go }: Props) {
         </IssueBlock>
       )}
 
-      {context.facts.length > 0 && (
+      {!critical && otherFacts.length > 0 && (
         <IssueBlock title="From your home">
-          <div className="group facts">
-            {context.facts.map((f) => (
-              <div key={f.label} className={`row kv-row ${f.warn ? 'is-warn' : ''}`}>
-                <span className="row-title">{f.label}</span>
-                {f.href ? (
-                  <button type="button" className="text-button row-value" onClick={() => go(f.href!)}>
-                    {f.text}
-                  </button>
-                ) : (
-                  <span className="row-value">{f.text}</span>
-                )}
-              </div>
-            ))}
-          </div>
+          <FactRows facts={otherFacts} go={go} />
         </IssueBlock>
       )}
 
@@ -302,6 +302,35 @@ export function IssueAnswer({ answer, state, onChange, go }: Props) {
 function tradeWord(trade: keyof typeof TRADE_LABEL) {
   const label = TRADE_LABEL[trade];
   return /^[A-Z]{2}/.test(label) ? label : label.toLowerCase();
+}
+
+/** What Homebase knows, as a compact open list. Somebody to call is a phone link; a shutoff with a photo says so. */
+function FactRows({ facts, go }: { facts: ContextFact[]; go: (href: string) => void }) {
+  return (
+    <div className="group facts">
+      {facts.map((f) => (
+        <div key={f.label} className={`row kv-row ${f.warn ? 'is-warn' : ''}`}>
+          <span className="row-title">{f.label}</span>
+          {f.tel ? (
+            <a className="fact-call row-value" href={`tel:${f.tel}`} aria-label={`Call ${f.callName ?? f.text}, ${f.tel}`}>
+              Call {f.callName ?? f.text}
+            </a>
+          ) : f.href ? (
+            <button type="button" className="text-button row-value" onClick={() => go(f.href!)}>
+              {f.text}
+            </button>
+          ) : (
+            <span className="row-value">{f.text}</span>
+          )}
+          {f.photoRecordId && (
+            <button type="button" className="text-button fact-photo" onClick={() => go(`/records/${f.photoRecordId}`)}>
+              See photo <ChevronRight size={14} />
+            </button>
+          )}
+        </div>
+      ))}
+    </div>
+  );
 }
 
 function IssueBlock({ title, children }: { title: string; children: ReactNode }) {

@@ -2,7 +2,7 @@ import type { HomeData } from '../../data/store';
 import type { HomeRecord, HomeSystem, Item } from '../../data/types';
 import { formatDate, toDateInput } from '../../lib/dates';
 import { SYSTEM_LABEL, SYSTEM_LIFESPAN } from '../property/labels';
-import { savedLocation } from '../home/starter';
+import { contactsFor, shutoffLocation, shutoffRecord, telHref } from '../safety/safety';
 import { TRADE_LABEL, TRADE_WORDS, type Guide } from './guides';
 import { plural } from '../../lib/plural';
 
@@ -11,6 +11,12 @@ export interface ContextFact {
   label: string;
   text: string;
   href?: string;
+  /** Digits to dial, when the fact is somebody to call. */
+  tel?: string;
+  /** Who the call goes to: the link text and its accessible name. */
+  callName?: string;
+  /** A record with a photo of this (a shutoff), shown as "See photo". */
+  photoRecordId?: string;
   /** Shown with a warning tone, e.g. a system past its lifespan or a missing shutoff location. */
   warn?: boolean;
 }
@@ -46,16 +52,25 @@ export function findSubject(question: string, data: HomeData, guide?: Guide): { 
   return matches.length >= 1 && kinds[0] !== 'plumbing' ? { system: matches.find((s) => s.kind === kinds[0]) ?? matches[0] } : {};
 }
 
+/** Gas, carbon monoxide and fire: leaving and calling for help is the whole answer, and little else is shown. */
+export const isCriticalGuide = (guide: Guide) => Boolean(guide.urgentWhen) && !guide.questions?.length;
+
 function contractorFor(data: HomeData, guide: Guide, linkedId?: string): HomeRecord | undefined {
-  const contractors = data.records.filter((r) => r.kind === 'contractor');
   if (linkedId) {
-    const linked = contractors.find((c) => c.id === linkedId);
+    const linked = data.records.find((r) => r.kind === 'contractor' && r.id === linkedId);
     if (linked) return linked;
   }
   if (!guide.trade) return undefined;
+  if (guide.trade === 'plumber' || guide.trade === 'electrician' || guide.trade === 'hvac') return contactsFor(data, guide.trade)[0];
   const words = TRADE_WORDS[guide.trade];
-  return contractors.find((c) => words.test([c.title, c.vendor, c.notes].filter(Boolean).join(' ')));
+  return data.records.find((r) => r.kind === 'contractor' && words.test([r.title, r.vendor, r.notes].filter(Boolean).join(' ')));
 }
+
+const dial = (phone?: string) => telHref(phone)?.slice(4);
+const photoOf = (data: HomeData, id: 'water-shutoff' | 'electrical-panel' | 'gas-shutoff') => {
+  const record = shutoffRecord(data, id);
+  return record?.fileIds.length ? record.id : undefined;
+};
 
 export function issueContextFor(guide: Guide, question: string, data: HomeData, now: number): IssueContext {
   const facts: ContextFact[] = [];
@@ -64,12 +79,32 @@ export function issueContextFor(guide: Guide, question: string, data: HomeData, 
 
   // Where the shutoffs and panel are, for the problems that need them.
   const where = (id: 'water-shutoff' | 'electrical-panel' | 'gas-shutoff', label: string) => {
-    const loc = savedLocation(data, id);
-    facts.push(loc ? { label, text: loc } : { label, text: 'Not saved yet. Find it once the problem is under control.', href: '/home/health', warn: true });
+    const loc = shutoffLocation(data, id);
+    facts.push(loc ? { label, text: loc, photoRecordId: photoOf(data, id) } : { label, text: 'Not saved yet. Find it once the problem is under control.', href: '/home/health', warn: true });
   };
-  if (['water-leak', 'frozen-pipes', 'clogged-drain'].includes(guide.id)) where('water-shutoff', 'Main water shutoff');
-  if (['water-leak', 'power-out', 'appliance'].includes(guide.id)) where('electrical-panel', 'Electrical panel');
-  if (['no-heat', 'no-hot-water'].includes(guide.id) && data.settings.hasGas !== false) where('gas-shutoff', 'Gas shutoff');
+  if (guide.id === 'gas-smell') {
+    // An emergency shows only what the homeowner saved, never a prompt to save something.
+    const loc = data.settings.hasGas === false ? undefined : shutoffLocation(data, 'gas-shutoff');
+    if (loc) facts.push({ label: 'Gas shutoff', text: `${loc}. Only touch it if the gas company or firefighters tell you to.`, photoRecordId: photoOf(data, 'gas-shutoff') });
+  } else if (guide.id === 'fire-smoke') {
+    const loc = shutoffLocation(data, 'electrical-panel');
+    if (loc) facts.push({ label: 'Electrical panel', text: loc, photoRecordId: photoOf(data, 'electrical-panel') });
+  } else {
+    if (['water-leak', 'frozen-pipes', 'clogged-drain'].includes(guide.id)) where('water-shutoff', 'Main water shutoff');
+    if (['water-leak', 'power-out', 'appliance'].includes(guide.id)) where('electrical-panel', 'Electrical panel');
+    if (['no-heat', 'no-hot-water'].includes(guide.id) && data.settings.hasGas !== false) where('gas-shutoff', 'Gas shutoff');
+  }
+
+  // The insurer, for the problems where someone is likely to need a claim line.
+  let insurerShown = false;
+  if (['water-leak', 'fire-smoke'].includes(guide.id) || guide.damage) {
+    const insurer = contactsFor(data, 'insurer').find((r) => telHref(r.phone));
+    if (insurer) {
+      facts.push({ label: 'Home insurance', text: insurer.title, href: `/records/${insurer.id}`, tel: dial(insurer.phone), callName: insurer.title });
+      insurerShown = true;
+    }
+  }
+  if (isCriticalGuide(guide)) return { facts };
 
   const { system, item } = findSubject(question, data, guide);
   let subject: IssueSubject | undefined;
@@ -123,11 +158,11 @@ export function issueContextFor(guide: Guide, question: string, data: HomeData, 
     const words = (guide.systemKinds ?? []).map((k) => SYSTEM_LABEL[k].toLowerCase().split(' ')[0]);
     const record = data.records.find((r) => (r.kind === 'warranty' || r.kind === 'insurance') && (r.kind === 'insurance' ? guide.damage : words.some((w) => r.title.toLowerCase().includes(w))));
     warranty = record ? { label: `Open ${record.title}`, href: `/records/${record.id}`, found: true } : { label: 'Find a warranty', href: '/records?show=warranties', found: false };
-    if (record?.kind === 'insurance') facts.push({ label: 'Insurance', text: record.title, href: `/records/${record.id}` });
+    if (record?.kind === 'insurance' && !insurerShown) facts.push({ label: 'Insurance', text: record.title, href: `/records/${record.id}` });
   }
 
   const contractor = contractorFor(data, guide, system?.contractorId ?? item?.contractorId);
-  if (contractor) facts.push({ label: 'Your contractor', text: [contractor.title, contractor.phone].filter(Boolean).join(' · '), href: `/records/${contractor.id}` });
+  if (contractor) facts.push({ label: 'Your contractor', text: [contractor.title, contractor.phone].filter(Boolean).join(' · '), href: `/records/${contractor.id}`, tel: dial(contractor.phone), callName: contractor.title });
   else if (guide.trade && guide.trade !== 'general') facts.push({ label: TRADE_LABEL[guide.trade], text: 'None saved yet. Save the one you call, so it’s here next time.', warn: false });
 
   // When this was last dealt with.

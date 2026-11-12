@@ -14,6 +14,7 @@ import { HomePage } from '../features/home/HomePage';
 import { HomeActivityPage, HomeComingUpPage, HomeHealthPage, HomeSeasonPage } from '../features/home/HomeDetailPages';
 import { PropertyPage } from '../features/property/PropertyPage';
 import { PropertyDetailsPage } from '../features/property/PropertyDetailsPage';
+import { SafetyPage } from '../features/safety/SafetyPage';
 import { RoomPage } from '../features/property/RoomPage';
 import { InventoryPage } from '../features/property/InventoryPage';
 import { ItemPage } from '../features/property/ItemPage';
@@ -116,6 +117,7 @@ export function App() {
                     <Route path="/home/activity" element={<HomeActivityPage />} />
                     <Route path="/property" element={<PropertyPage />} />
                     <Route path="/property/details" element={<PropertyDetailsPage />} />
+                    <Route path="/property/safety" element={<SafetyPage />} />
                     <Route path="/property/rooms/:roomId" element={<RoomPage />} />
                     <Route path="/property/systems" element={<SystemsPage />} />
                     <Route path="/property/systems/:systemId" element={<SystemPage />} />

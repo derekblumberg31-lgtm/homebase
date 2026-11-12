@@ -4,7 +4,7 @@ import { emptyData, type HomeData } from '../../data/store';
 import type { HomeRecord } from '../../data/types';
 import { freshStore } from '../../test/freshStore';
 import { saveLocation } from '../home/starterActions';
-import { SHUTOFFS, shutoffLocation, shutoffRecord } from './safety';
+import { CONTACT_ROLES, contactsFor, noGas, SHUTOFFS, shutoffLocation, shutoffProgress, shutoffRecord, telHref } from './safety';
 
 const note = (over: Partial<HomeRecord> = {}): HomeRecord => ({
   id: 'n1',
@@ -109,5 +109,61 @@ describe('backup regression', () => {
     expect(got.map((f) => f!.type)).toEqual(['image/jpeg', 'application/pdf']);
     expect(new Uint8Array(await got[0]!.data.arrayBuffer())).toEqual(bytesA);
     expect(new Uint8Array(await got[1]!.data.arrayBuffer())).toEqual(bytesB);
+  });
+});
+
+const contact = (over: Partial<HomeRecord> = {}): HomeRecord => ({
+  id: 'c1',
+  kind: 'contractor',
+  title: 'Rivera Plumbing',
+  vendor: 'Plumber',
+  phone: '(555) 010-0100',
+  fileIds: [],
+  createdAt: '2026-11-01T00:00:00.000Z',
+  updatedAt: '2026-11-01T00:00:00.000Z',
+  ...over,
+});
+
+describe('contacts', () => {
+  it('F3-T1: every role is empty in an empty home', () => {
+    for (const { role } of CONTACT_ROLES) expect(contactsFor(emptyData(), role)).toEqual([]);
+  });
+
+  it('F3-T3: finds a plumber by trade and dials digits only', () => {
+    const data: HomeData = { ...emptyData(), records: [contact()] };
+    expect(contactsFor(data, 'plumber')[0].id).toBe('c1');
+    expect(contactsFor(data, 'electrician')).toEqual([]);
+    expect(telHref('(555) 010-0100')).toBe('tel:5550100100');
+    expect(telHref('+1 555 010 0100')).toBe('tel:+15550100100');
+  });
+
+  it('F3-T4: an insurance record without a phone is listed but cannot be dialled', () => {
+    const data: HomeData = { ...emptyData(), records: [contact({ id: 'i1', kind: 'insurance', title: 'Policy', vendor: undefined, phone: undefined })] };
+    const found = contactsFor(data, 'insurer');
+    expect(found).toHaveLength(1);
+    expect(telHref(found[0].phone)).toBeUndefined();
+  });
+
+  it('F3-T5: text that is not a number gives no link', () => {
+    expect(telHref('ext')).toBeUndefined();
+    expect(telHref(undefined)).toBeUndefined();
+  });
+
+  it('lists a contact with a phone before one without, then the newest', () => {
+    const data: HomeData = {
+      ...emptyData(),
+      records: [contact({ id: 'a', phone: undefined, updatedAt: '2026-11-09T00:00:00.000Z' }), contact({ id: 'b', updatedAt: '2026-10-01T00:00:00.000Z' }), contact({ id: 'c', updatedAt: '2026-11-02T00:00:00.000Z' })],
+    };
+    expect(contactsFor(data, 'plumber').map((r) => r.id)).toEqual(['c', 'b', 'a']);
+  });
+});
+
+describe('shutoff progress', () => {
+  it('counts saved places, and leaves gas out of homes without it', () => {
+    const base = emptyData();
+    expect(shutoffProgress(base)).toEqual({ saved: 0, total: 3 });
+    const noGasHome: HomeData = { ...base, settings: { ...base.settings, hasGas: false }, records: [note()] };
+    expect(noGas(noGasHome)).toBe(true);
+    expect(shutoffProgress(noGasHome)).toEqual({ saved: 1, total: 2 });
   });
 });

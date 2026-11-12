@@ -7,6 +7,7 @@ import { formatBytes } from '../../lib/images';
 import { EmptyState, Group, Page, Row, Section, Skeleton } from '../../ui/layout';
 import { Mail, Phone } from '../../ui/Icons';
 import { Confirm, useToast } from '../../ui/overlays';
+import { telHref } from '../safety/safety';
 import { RECORD_KIND_LABEL } from './labels';
 import { RecordForm } from './RecordForm';
 
@@ -73,12 +74,18 @@ export function RecordPage() {
       {(record.phone || record.email) && (
         <Section title="Contact">
           <div className="group">
-            {record.phone && (
-              <a className="row" href={`tel:${record.phone.replace(/[^\d+]/g, '')}`}>
-                <span className="row-lead"><Phone size={18} /></span>
-                <span className="row-main"><span className="row-title">{record.phone}</span><span className="row-sub">Call</span></span>
-              </a>
-            )}
+            {record.phone &&
+              (telHref(record.phone) ? (
+                <a className="row" href={telHref(record.phone)}>
+                  <span className="row-lead"><Phone size={18} /></span>
+                  <span className="row-main"><span className="row-title">{record.phone}</span><span className="row-sub">Call</span></span>
+                </a>
+              ) : (
+                <div className="row">
+                  <span className="row-lead"><Phone size={18} /></span>
+                  <span className="row-main"><span className="row-title">{record.phone}</span></span>
+                </div>
+              ))}
             {record.email && (
               <a className="row" href={`mailto:${record.email}`}>
                 <span className="row-lead"><Mail size={18} /></span>

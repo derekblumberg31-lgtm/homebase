@@ -6,6 +6,7 @@ import { FormGroup, TextField } from '../../ui/controls';
 import { EmptyState, Group, Page, Row, Section } from '../../ui/layout';
 import { Sheet, useToast } from '../../ui/overlays';
 import { SaveFailed, useSave } from '../../ui/save';
+import { shutoffProgress } from '../safety/safety';
 import { PROPERTY_TYPE_LABEL } from './labels';
 
 /** Property: the home itself, its rooms and systems, what's in it, and its keys. */
@@ -18,6 +19,7 @@ export function PropertyPage() {
   const belongings = data.items.filter((item) => item.kind !== 'key');
   const keys = data.items.filter((item) => item.kind === 'key');
   const year = property?.yearBuilt;
+  const shutoffs = shutoffProgress(data);
   const facts = [property?.type ? PROPERTY_TYPE_LABEL[property.type] : null, year ? `Built ${year}` : null, property?.ownership === 'rent' ? 'Rented' : null]
     .filter(Boolean)
     .join(' · ');
@@ -58,6 +60,17 @@ export function PropertyPage() {
           <Row title="Home Inventory" sub="Appliances, electronics, furniture, tools" value={belongings.length || undefined} to="/property/inventory" />
           <Row title="Keys and Locks" sub="Saved keys and the blanks to copy them" value={keys.length || undefined} to="/property/keys" />
           <Row title="Identify a key" sub="Take a photo to find which key it is" to="/property/identify-key" />
+        </Group>
+      </Section>
+
+      <Section title="Quick reference">
+        <Group>
+          <Row
+            title="Shut-offs and who to call"
+            sub="Water, gas, power, and your plumber or insurer"
+            value={shutoffs.saved < shutoffs.total ? `${shutoffs.saved} of ${shutoffs.total} saved` : undefined}
+            to="/property/safety"
+          />
         </Group>
       </Section>
 

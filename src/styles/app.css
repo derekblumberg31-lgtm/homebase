@@ -4688,3 +4688,106 @@ a.feed-row:focus-visible {
   background: var(--fill);
   object-fit: contain;
 }
+
+/* ---------- shut-offs and who to call ---------- */
+.safety-row .row-main {
+  gap: 4px;
+}
+
+.safety-where {
+  color: var(--text);
+  font-size: var(--text-body);
+  overflow-wrap: anywhere;
+}
+
+.safety-where.is-empty {
+  color: var(--text-2);
+}
+
+.safety-thumb {
+  display: block;
+  width: 56px;
+  height: 56px;
+  margin-top: 4px;
+  border-radius: var(--r-sm);
+  background: var(--fill);
+  object-fit: cover;
+}
+
+.safety-contact {
+  padding-block: 0;
+  gap: 4px;
+}
+
+.safety-contact-main {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+  min-height: 52px;
+  padding-block: var(--row-pad);
+  color: inherit;
+}
+
+.safety-call {
+  flex: none;
+  background: transparent;
+  color: var(--text);
+}
+
+.safety-foot {
+  margin: 8px 0 0;
+  color: var(--text-3);
+  font-size: var(--text-footnote);
+}
+
+.safety-photos {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0 0 12px;
+  padding: 0;
+  list-style: none;
+}
+
+.safety-photos li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.safety-photos .text-button {
+  min-height: 44px;
+  padding-inline: 8px;
+}
+
+.fact-call {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  min-height: 44px;
+  color: var(--text);
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.fact-photo {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  min-height: 44px;
+  color: var(--text-2);
+  font-size: var(--text-subhead);
+}
+
+.facts .row:has(.fact-photo) {
+  flex-wrap: wrap;
+}
+
+.facts .fact-photo {
+  flex-basis: 100%;
+  justify-content: flex-end;
+  min-height: 44px;
+}
