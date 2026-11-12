@@ -101,9 +101,11 @@ export function HomeAlertRows({
   if (rows.length === 0) return null;
   return (
     <section className="section home-alerts" aria-labelledby="home-alerts-title">
-      <h2 id="home-alerts-title" className="visually-hidden">
-        Needs a look
-      </h2>
+      <div className="section-head">
+        <h2 id="home-alerts-title" className="section-title">
+          Needs a look
+        </h2>
+      </div>
       <ul className="group">
         {rows.map((item) => (
           <HomeAlertRow

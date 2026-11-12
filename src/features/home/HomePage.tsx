@@ -100,6 +100,7 @@ export function HomePage() {
       title={`${greeting(now)}, ${session.firstName ?? 'there'}`}
       subtitle={<HomeStatusLine status={status} />}
       profile
+      compact
       actions={
         <span className="mobile-only">
           <QuickAdd variant="header" />
@@ -117,8 +118,11 @@ export function HomePage() {
               ))}
             </Group>
             <p className="section-foot">
+              <Link to="/tasks">All tasks</Link>
+            </p>
+            <p className="section-hint">
               <span className="hint-touch">Tap the circle or swipe left to mark a job done.</span>
-              <span className="hint-pointer">Click the circle to mark a job done.</span> <Link to="/tasks">All tasks</Link>
+              <span className="hint-pointer">Click the circle to mark a job done.</span>
             </p>
           </>
         )}
@@ -142,7 +146,12 @@ export function HomePage() {
         </section>
       )}
 
-      <div className="section home-more">
+      <section className="section home-more" aria-labelledby="home-more-title">
+        <div className="section-head">
+          <h2 id="home-more-title" className="section-title">
+            More
+          </h2>
+        </div>
         <Group>
           <Row id="home-ask" title="Ask Homebase" sub="Something broken, leaking or beeping? Get steps, or look up a warranty." to="/assistant" wrap />
           <Row title="Home Health Check" sub={healthRowText(starter)} to="/home/health" />
@@ -150,7 +159,7 @@ export function HomePage() {
           <Row title="Coming up" sub={comingUpSub(comingUp, ending)} to="/home/coming-up" wrap />
           <Row title="Activity" sub={data.activity.length ? 'What’s been done and added' : 'Fills in as you mark jobs done'} to="/home/activity" />
         </Group>
-      </div>
+      </section>
       {installOpen && (
         <InstallSheet
           onClose={() => {
