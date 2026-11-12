@@ -2256,7 +2256,7 @@ select.input {
 .bubble.is-assistant {
   align-self: flex-start;
   max-width: 100%;
-  padding: 2px 2px var(--space-1);
+  padding: 2px 0 var(--space-1);
   border-radius: 0;
 }
 
@@ -4104,7 +4104,7 @@ a.feed-row:focus-visible {
 }
 
 .sheet-subhead {
-  margin: 18px 4px 6px;
+  margin: 18px 0 6px;
   font-size: var(--text-subhead);
   font-weight: 600;
 }
