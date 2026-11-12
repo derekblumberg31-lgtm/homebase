@@ -749,6 +749,10 @@ img {
   font-size: var(--text-subhead);
 }
 
+.section-foot a {
+  white-space: nowrap;
+}
+
 .section-foot {
   padding: var(--space-2) var(--space-4) 0;
   color: var(--text-2);
