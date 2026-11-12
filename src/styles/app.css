@@ -1,53 +1,59 @@
-/* Homebase — calm, native-feeling design system.
-   Warm neutrals, one muted brick accent, the system font, sentence case, gentle contrast.
+/* Homebase — limestone and spruce.
+   A pale stone ground, green-black ink, one deep spruce accent, the system font, sentence case.
+   Lists sit open on the ground; surfaces remain only for fields and things that float.
    Mobile: bottom tab bar. Tablet and desktop (>= 768px): a left sidebar. */
 
 :root {
   color-scheme: light;
-  /* Warm paper ground, soft ink, and colour used sparingly: nothing should shout. */
-  --bg: #f4f3ef;
-  --surface: #ffffff;
-  --surface-2: #f8f7f4;
-  --surface-raised: #ffffff;
-  --sidebar-bg: #efeee9;
-  --fill: #ebe9e4;
-  --fill-strong: #e0ded8;
-  --text: #2b2926;
-  --text-2: #57534d;
-  --text-3: #6b665f;
-  --line: rgba(43, 41, 38, 0.09);
-  --line-strong: rgba(43, 41, 38, 0.15);
-  --grid: #d9d6d0;
-  --ink-x: #9a958d;
-  --accent: #9e4f34;
-  --accent-deep: #86402a;
-  --accent-soft: rgba(158, 79, 52, 0.1);
+  --bg: #f3f4ef;
+  --surface: #fbfbf8;
+  --surface-2: #e9ebe4;
+  --surface-raised: #fbfbf8;
+  --sidebar-bg: #f3f4ef;
+  --fill: #e5e8e0;
+  --fill-strong: #d8dcd2;
+  --text: #1d2420;
+  --text-2: #4a544e;
+  --text-3: #5d6761;
+  --line: rgba(29, 36, 32, 0.12);
+  --line-strong: rgba(29, 36, 32, 0.2);
+  --control-line: #7d847f;
+  --grid: #c3c8c0;
+  --ink-x: #8b928d;
+  --accent: #2e5e4e;
+  --accent-deep: #234a3d;
+  --accent-soft: rgba(46, 94, 78, 0.1);
   --on-accent: #ffffff;
-  --button-bg: #2b2926;
-  --button-text: #f4f3ef;
-  --green: #3d7a55;
-  --green-soft: rgba(61, 122, 85, 0.08);
-  --amber: #8a5a14;
-  --amber-soft: rgba(138, 90, 20, 0.08);
-  --red: #9e4f34;
-  --red-soft: rgba(158, 79, 52, 0.1);
-  --red-line: rgba(158, 79, 52, 0.35);
-  --amber-line: rgba(138, 90, 20, 0.35);
-  --good-soft: #e6f0e8;
-  --cool: #5d7480;
-  --cool-soft: rgba(93, 116, 128, 0.1);
-  --scrim: rgba(43, 41, 38, 0.28);
-  --toast-bg: var(--button-bg);
-  --toast-text: var(--button-text);
-  /* Three named shadows, only for what floats. Groups get a hairline and a trace of lift. */
-  --group-shadow: 0 0 0 0.5px rgba(43, 41, 38, 0.06), 0 1px 2px rgba(43, 41, 38, 0.04);
-  --shadow-float: 0 1px 2px rgba(43, 41, 38, 0.06), 0 12px 32px rgba(43, 41, 38, 0.14);
-  --shadow-sheet: 0 -8px 40px rgba(43, 41, 38, 0.16);
-  --shadow-alert: 0 24px 64px rgba(0, 0, 0, 0.28);
+  --button-bg: var(--accent);
+  --button-text: var(--on-accent);
+  --ink-bg: var(--text);
+  --ink-text: var(--bg);
+  --green: var(--accent);
+  --green-soft: var(--accent-soft);
+  --good-soft: var(--accent-soft);
+  --cool: var(--accent);
+  --cool-soft: var(--accent-soft);
+  --amber: #835710;
+  --amber-soft: rgba(131, 87, 16, 0.12);
+  --amber-line: rgba(131, 87, 16, 0.35);
+  --red: #a1452b;
+  --overdue: var(--red);
+  --red-soft: rgba(161, 69, 43, 0.1);
+  --red-line: rgba(161, 69, 43, 0.35);
+  --scrim: rgba(29, 36, 32, 0.32);
+  --toast-bg: var(--ink-bg);
+  --toast-text: var(--ink-text);
+  --toast-action: #b9dccb;
+  /* Only what floats carries a shadow. */
+  --group-shadow: none;
+  --field-ring: 0 0 0 0.5px var(--line-strong);
+  --shadow-float: 0 1px 2px rgba(29, 36, 32, 0.06), 0 12px 32px rgba(29, 36, 32, 0.12);
+  --shadow-sheet: 0 -8px 40px rgba(29, 36, 32, 0.14);
+  --shadow-alert: 0 24px 64px rgba(29, 36, 32, 0.24);
   --r-xs: 6px;
   --r-sm: 10px;
   --r-sm-inner: 8px;
-  --r-md: 12px;
+  --r-md: 14px;
   --r-lg: 14px;
   --r-xl: 20px;
   --r-pill: 999px;
@@ -63,7 +69,9 @@
   --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
   --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
   --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
-  --page-max: 760px;
+  --page-max: 680px;
+  --gutter: 20px;
+  --row-pad: 14px;
   --sidebar: 232px;
   --font: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   /* Page titles go through one token, so the title face can change in one place. */
@@ -81,6 +89,7 @@
   --space-6: 24px;
   --space-8: 32px;
   --space-10: 40px;
+  --space-12: 48px;
 
   --text-display: 3rem;
   --lh-display: 1;
@@ -99,49 +108,44 @@
   --text-caption: 0.6875rem;
   --lh-caption: 1.2;
   --text-count: 1.25rem;
-  --text-count-lead: 1.75rem;
+  --text-count-lead: 3rem;
 }
 
 :root[data-theme='dark'] {
   color-scheme: dark;
-  /* Soft charcoal, warm off-white ink, muted terracotta only where something needs you. */
-  --bg: #1b1a18;
-  --surface: #252321;
-  --surface-2: #2c2a27;
-  --surface-raised: #252321;
-  --sidebar-bg: #161513;
-  --fill: #312f2c;
-  --fill-strong: #3b3935;
-  --text: #f1ece4;
-  --text-2: #c9c3b9;
-  --text-3: #a8a298;
-  --line: rgba(236, 232, 220, 0.09);
-  --line-strong: rgba(236, 232, 220, 0.16);
-  --grid: #45423e;
-  --ink-x: #8f8c84;
-  --accent: #d6957c;
-  --accent-deep: #e2ab95;
-  --accent-soft: rgba(214, 149, 124, 0.1);
-  --on-accent: #1b1a18;
-  --button-bg: #f1ece4;
-  --button-text: #1b1a18;
-  --green: #a2bfa0;
-  --green-soft: rgba(162, 191, 160, 0.12);
-  --amber: #d6ac6a;
-  --amber-soft: rgba(214, 172, 106, 0.12);
-  --red: #d6957c;
-  --red-soft: rgba(214, 149, 124, 0.1);
-  --red-line: rgba(214, 149, 124, 0.45);
-  --amber-line: rgba(214, 172, 106, 0.45);
-  --good-soft: rgba(162, 191, 160, 0.14);
-  --cool: #a3b5be;
-  --cool-soft: rgba(163, 181, 190, 0.12);
-  --scrim: rgba(0, 0, 0, 0.45);
+  --bg: #171b19;
+  --surface: #1e2321;
+  --surface-2: #262c29;
+  --surface-raised: #1e2321;
+  --sidebar-bg: #171b19;
+  --fill: #282e2b;
+  --fill-strong: #333a36;
+  --text: #e8ece6;
+  --text-2: #b2bab3;
+  --text-3: #939c95;
+  --line: rgba(232, 236, 230, 0.1);
+  --line-strong: rgba(232, 236, 230, 0.16);
+  --control-line: #757d77;
+  --grid: #3a413c;
+  --ink-x: #7c847e;
+  --accent: #8fc4ad;
+  --accent-deep: #a9d3c0;
+  --accent-soft: rgba(143, 196, 173, 0.14);
+  --on-accent: #0f1512;
+  --amber: #d9b16e;
+  --amber-soft: rgba(217, 177, 110, 0.16);
+  --amber-line: rgba(217, 177, 110, 0.45);
+  --red: #e39a7f;
+  --red-soft: rgba(227, 154, 127, 0.14);
+  --red-line: rgba(227, 154, 127, 0.45);
+  --scrim: rgba(0, 0, 0, 0.5);
   --toast-bg: var(--fill-strong);
   --toast-text: var(--text);
+  --toast-action: var(--accent);
   --group-shadow: none;
-  --shadow-float: 0 0 0 0.5px rgba(255, 255, 255, 0.06), 0 1px 2px rgba(0, 0, 0, 0.5), 0 12px 32px rgba(0, 0, 0, 0.5);
-  --shadow-sheet: 0 -8px 40px rgba(0, 0, 0, 0.45);
+  --field-ring: none;
+  --shadow-float: 0 0 0 0.5px rgba(232, 236, 230, 0.06), 0 12px 32px rgba(0, 0, 0, 0.5);
+  --shadow-sheet: 0 -8px 40px rgba(0, 0, 0, 0.5);
   --shadow-alert: 0 24px 64px rgba(0, 0, 0, 0.6);
 }
 
@@ -935,8 +939,8 @@ button.row:focus-visible {
 .button.is-danger-quiet {
   min-height: 44px;
   padding: 0 8px;
-  color: var(--text-2);
-  font-weight: 500;
+  color: var(--red);
+  font-weight: 600;
 }
 
 .button.is-block {
@@ -2863,7 +2867,7 @@ select.input {
   width: 7px;
   height: 7px;
   border-radius: 50%;
-  background: var(--accent);
+  background: var(--text-2);
   opacity: 0.8;
 }
 
@@ -2977,7 +2981,7 @@ select.input {
 
 .menu-item.is-danger,
 .menu-item.is-danger .menu-icon {
-  color: var(--accent);
+  color: var(--red);
 }
 
 .menu-text {
@@ -3302,7 +3306,7 @@ select.input {
 }
 
 .timeline-entry.is-overdue a::before {
-  background: var(--accent);
+  background: var(--red);
 }
 
 @media (hover: hover) {
@@ -3706,7 +3710,7 @@ a.feed-row:focus-visible {
 }
 
 .home-status-clause.is-overdue {
-  color: var(--accent);
+  color: var(--red);
 }
 
 /* The alert slot under the next jobs: up to two rows, one anatomy for every row. */
@@ -4017,7 +4021,7 @@ a.feed-row:focus-visible {
   background: var(--good-soft);
 }
 
-/* Overdue countdowns use the brick. */
+/* Overdue countdowns use clay. */
 .countdown.is-overdue,
 .countdown.is-overdue .countdown-unit {
   color: var(--red);
@@ -4149,7 +4153,7 @@ a.feed-row:focus-visible {
 }
 
 .issue.is-emergency h3 {
-  color: var(--accent);
+  color: var(--red);
 }
 
 .issue > p {
