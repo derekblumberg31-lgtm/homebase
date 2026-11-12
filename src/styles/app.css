@@ -991,6 +991,11 @@ button.row:focus-visible {
   width: auto;
 }
 
+/* A quiet second action lines its text up with the content edge, not its own padding. */
+.empty .button.is-quiet {
+  margin-left: calc(var(--space-2) * -1);
+}
+
 /* A long label on a button wraps inside the column instead of widening the page (Welcome at 375px). */
 .button .row-main,
 .button .row-title {
