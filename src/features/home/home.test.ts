@@ -98,9 +98,9 @@ describe('task metadata', () => {
     expect(taskCategory({ typeId: 'custom', category: 'air' })).toBe('air');
   });
 
-  it('describes where, when, cost and season in one line', () => {
+  it('describes the kind and the date in one short line', () => {
     const t = task({ category: 'air', cost: 24, seasonal: true });
-    expect(taskMetaParts(t, getTaskInfo(t, NOW))).toEqual(['Hallway', 'Air', 'Due Oct 30', '$24', 'Seasonal']);
+    expect(taskMetaParts(t, getTaskInfo(t, NOW))).toEqual(['Air', 'Due Oct 30']);
   });
 });
 

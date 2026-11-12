@@ -74,6 +74,12 @@ export function formatCurrency(value: number, precise = false): string {
   }).format(value);
 }
 
+/** "Every year", "Every 3 months": a single unit drops its "1". */
+export function formatEvery(days: number): string {
+  const interval = formatInterval(days);
+  return interval.startsWith('1 ') ? `Every ${interval.slice(2)}` : `Every ${interval}`;
+}
+
 export function formatInterval(days: number): string {
   if (days % 365 === 0) return days === 365 ? '1 year' : `${days / 365} years`;
   if (days % 30 === 0) return days === 30 ? '1 month' : `${days / 30} months`;

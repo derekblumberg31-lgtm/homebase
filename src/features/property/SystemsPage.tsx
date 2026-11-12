@@ -24,8 +24,7 @@ export function systemAge(system: HomeSystem, now = Date.now()): number | undefi
 function ageText(system: HomeSystem): string | undefined {
   const age = systemAge(system);
   if (age === undefined) return undefined;
-  const year = system.installYear ?? Number(system.installDate!.slice(0, 4));
-  return age <= 0 ? 'Installed this year' : `Installed ${year} · ${age} ${age === 1 ? 'year' : 'years'} old`;
+  return age <= 0 ? 'Installed this year' : `${age} ${age === 1 ? 'year' : 'years'} old`;
 }
 
 /** The big systems that keep the home running, with their age for lifespan reminders. */
@@ -61,7 +60,7 @@ export function SystemsPage() {
         ) : (
           <Group>
             {systems.map((system) => (
-              <Row key={system.id} title={system.name} sub={[SYSTEM_LABEL[system.kind], system.brand, ageText(system)].filter(Boolean).join(' · ')} to={`/property/systems/${system.id}`} />
+              <Row key={system.id} title={system.name} sub={[SYSTEM_LABEL[system.kind].toLowerCase() === system.name.trim().toLowerCase() ? null : SYSTEM_LABEL[system.kind], system.brand, ageText(system)].filter(Boolean).join(' · ')} to={`/property/systems/${system.id}`} />
             ))}
           </Group>
         )}

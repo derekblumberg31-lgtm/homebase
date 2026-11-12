@@ -68,7 +68,6 @@ export function AppShell() {
           <img src={`${import.meta.env.BASE_URL}icons/icon-192.png`} alt="" />
           <div className="brand-text">
             <div className="brand-name">{PRODUCT.name}</div>
-            <div className="brand-tagline">{PRODUCT.tagline}</div>
           </div>
         </div>
         <div className="side-add">

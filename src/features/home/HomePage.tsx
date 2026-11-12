@@ -117,7 +117,8 @@ export function HomePage() {
               ))}
             </Group>
             <p className="section-foot">
-              Tap the circle or swipe left to mark a job done. <Link to="/tasks">All tasks</Link>
+              <span className="hint-touch">Tap the circle or swipe left to mark a job done.</span>
+              <span className="hint-pointer">Click the circle to mark a job done.</span> <Link to="/tasks">All tasks</Link>
             </p>
           </>
         )}

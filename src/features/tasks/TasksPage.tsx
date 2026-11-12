@@ -134,14 +134,17 @@ export function TasksPage() {
               <SearchField value={query} onChange={setQuery} label="Search tasks" placeholder="Search tasks or rooms" />
             </div>
           )}
-          <TaskList title="This month" items={thisMonth} now={now} aside={overdue ? `${thisMonth.length} · ${overdue} overdue` : String(thisMonth.length)} onDone={(t) => complete(t)} featureFirst />
+          <TaskList title="This month" items={thisMonth} now={now} aside={String(thisMonth.length)} onDone={(t) => complete(t)} featureFirst />
           <TaskList title="Later" items={later} now={now} aside={String(later.length)} onDone={(t) => complete(t)} />
           {visible.length === 0 && (
             <div className="section">
               <EmptyState inline title={`Nothing matches “${query.trim()}”`} body="Try a room or part of the task name." />
             </div>
           )}
-          <p className="local-note">Tap the circle or swipe left to mark a task done.</p>
+          <p className="local-note">
+            <span className="hint-touch">Tap the circle or swipe left to mark a task done.</span>
+            <span className="hint-pointer">Click the circle to mark a task done.</span>
+          </p>
         </>
       )}
 

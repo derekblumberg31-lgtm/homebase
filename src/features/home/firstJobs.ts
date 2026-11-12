@@ -1,7 +1,7 @@
 import type { HomeData } from '../../data/store';
 import { uid } from '../../data/ids';
 import type { Task, TaskCategory } from '../../data/types';
-import { daysBetween, formatDateShort, formatInterval, startOfDay, toDateInput } from '../../lib/dates';
+import { daysBetween, formatDateShort, formatEvery, startOfDay, toDateInput } from '../../lib/dates';
 import { firstDueFor, type LastDoneChoice } from '../tasks/lastDone';
 import { findType } from '../tasks/presets';
 import { seasonalTipsFor, similar } from './insights';
@@ -81,7 +81,7 @@ export function chooseStarter(picks: StarterPicks, key: string, choice: LastDone
 
 /** The row's second line: how often, then (once ticked) what the answer means for the first due date. */
 export function starterSubLine(job: StarterJob, choice: LastDoneChoice | undefined, now: number): string {
-  const every = `Every ${job.intervalDays === 365 ? 'year' : formatInterval(job.intervalDays)}`;
+  const every = formatEvery(job.intervalDays);
   if (!choice) return job.seasonal ? `${every} · Seasonal` : every;
   const due = firstDueFor(choice, job.intervalDays, now);
   if (daysBetween(toDateInput(startOfDay(now)), due) <= 7) return `${every} · Due within a week`;

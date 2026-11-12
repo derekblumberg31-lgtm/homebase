@@ -21,11 +21,11 @@ describe('ToastStack', () => {
         { id: 1, text: 'Furnace filter done', tone: 'info', action: { label: 'Undo', run: noop } },
         { id: 2, text: 'That wasn’t saved.', tone: 'error' },
       ],
-      polite: { id: 1, text: 'Furnace filter done. Undo is available.' },
+      polite: { id: 1, text: 'Furnace filter done. Undo button.' },
       assertive: { id: 2, text: 'That wasn’t saved.' },
     });
     const [, politePart, assertivePart] = html.split(/aria-live="/);
-    expect(politePart).toContain('Furnace filter done. Undo is available.');
+    expect(politePart).toContain('Furnace filter done. Undo button.');
     expect(politePart).not.toContain('That wasn’t saved.');
     expect(assertivePart).toContain('That wasn’t saved.');
     expect(html).not.toContain('role="status"');

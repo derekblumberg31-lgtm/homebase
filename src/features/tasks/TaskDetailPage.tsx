@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useData, useNow, useStore } from '../../data/DataProvider';
-import { formatCurrency, formatDate, formatInterval } from '../../lib/dates';
+import { formatCurrency, formatDate, formatEvery } from '../../lib/dates';
 import { Calendar, Check, Clock } from '../../ui/Icons';
 import { EmptyState, Group, Page, Row, Section } from '../../ui/layout';
 import { Confirm, useToast } from '../../ui/overlays';
@@ -78,7 +78,7 @@ export function TaskDetailPage() {
               <Row title="Last done" value={lastDoneKnown(task) ? formatDate(task.lastDoneAt) : 'Not recorded yet'} />
               <Row title={info.status === 'overdue' ? 'Was due' : 'Due'} value={formatDate(info.dueDate)} />
               {task.nextDue && <Row title="Moved" sub="Snoozed or rescheduled. The usual rhythm returns after you mark it done." value={formatDate(task.nextDue)} wrap />}
-              <Row title="Repeats" value={`Every ${formatInterval(task.intervalDays)}`} />
+              <Row title="Repeats" value={formatEvery(task.intervalDays)} />
             </>
           ) : (
             <Row title={task.status === 'done' ? 'Finished' : 'Do by'} value={formatDate(task.status === 'done' ? task.lastDoneAt : info.dueDate)} />
@@ -209,7 +209,7 @@ export function TaskDetailPage() {
           }
         >
           <div className="form-group">
-            <TextField label="New due date" type="date" value={newDate} onChange={(e) => setNewDate(e.target.value)} hint={task.recurring ? `After this, it repeats every ${formatInterval(task.intervalDays)} from the day you mark it done.` : undefined} />
+            <TextField label="New due date" type="date" value={newDate} onChange={(e) => setNewDate(e.target.value)} hint={task.recurring ? `After this, it repeats ${formatEvery(task.intervalDays).toLowerCase()} from the day you mark it done.` : undefined} />
           </div>
         </Sheet>
       )}

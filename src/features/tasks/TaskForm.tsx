@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useData } from '../../data/DataProvider';
 import { uid } from '../../data/ids';
 import type { Task, TaskCategory, TaskKind, TaskPriority } from '../../data/types';
-import { addDays, daysBetween, formatCurrency, formatDate, formatInterval, isRealDate, startOfDay, toDateInput } from '../../lib/dates';
+import { addDays, daysBetween, formatCurrency, formatDate, formatEvery, isRealDate, startOfDay, toDateInput } from '../../lib/dates';
 import { Chips, FormGroup, Segmented, SelectField, Switch, TextArea, TextField } from '../../ui/controls';
 import { ChevronDown } from '../../ui/Icons';
 import { Section } from '../../ui/layout';
@@ -207,7 +207,7 @@ export function TaskForm({ initial, draft, onClose, onSave }: TaskFormProps) {
   }
 
   const summary = [
-    kind === 'maintenance' ? `Repeats every ${formatInterval(Number(interval) || 90)}` : kind === 'repair' ? 'One-off repair' : 'Project',
+    kind === 'maintenance' ? `Repeats ${formatEvery(Number(interval) || 90).toLowerCase()}` : kind === 'repair' ? 'One-off repair' : 'Project',
     CATEGORY_META[category].label,
     PRIORITY_LABEL[priority],
     seasonal ? 'Seasonal' : null,

@@ -311,7 +311,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     const toast: ToastMessage = { id: counter.current, text, tone: options.tone ?? 'info', action: options.action };
     setToasts((list) => pushToast(list, toast));
     // An Undo is part of what is announced, so a screen reader user knows there is one to reach.
-    const spoken = { id: toast.id, text: toast.action ? `${text}. ${toast.action.label} is available.` : text };
+    const spoken = { id: toast.id, text: toast.action ? `${text}. ${toast.action.label} button.` : text };
     if (toast.tone === 'error') setAssertive(spoken);
     else setPolite(spoken);
   }, []);

@@ -58,11 +58,11 @@ export function ItemPage() {
 
       <Section title="Details">
         <Group>
-          <Row title="Brand" value={item.brand ?? '—'} />
-          <Row title="Model number" value={item.model ?? '—'} />
-          <Row title="Serial number" value={item.serial ?? '—'} />
-          <Row title="Purchased" value={item.purchaseDate ? formatDate(item.purchaseDate) : '—'} />
-          <Row title="Value" value={item.value != null ? formatCurrency(item.value) : '—'} />
+          <Row title="Brand" value={item.brand ?? 'Not added'} />
+          <Row title="Model number" value={item.model ?? 'Not added'} />
+          <Row title="Serial number" value={item.serial ?? 'Not added'} />
+          <Row title="Purchased" value={item.purchaseDate ? formatDate(item.purchaseDate) : 'Not added'} />
+          <Row title="Value" value={item.value != null ? formatCurrency(item.value) : 'Not added'} />
           {room && <Row title="Room" value={room.name} to={`/property/rooms/${room.id}`} />}
         </Group>
       </Section>

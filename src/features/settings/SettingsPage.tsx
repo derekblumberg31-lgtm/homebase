@@ -146,7 +146,7 @@ export function SettingsPage() {
               value={data.settings.theme}
               onChange={(theme) => void saveSetting({ theme })}
               options={[
-                { value: 'system', label: 'Match device' },
+                { value: 'system', label: 'Automatic' },
                 { value: 'light', label: 'Light' },
                 { value: 'dark', label: 'Dark' },
               ]}
@@ -182,12 +182,6 @@ export function SettingsPage() {
           </Group>
           <p className="section-foot">Calendar entries don’t update themselves, and they won’t move when you mark a job done. After you change a lot of dates, export again and remove the old ones.</p>
         </div>
-      </Section>
-
-      <Section title="Integrations" foot="There are no connected services. Homebase works fully on its own and doesn’t connect to smart-home devices or accounts.">
-        <Group>
-          <Row title="Connected services" value="None" />
-        </Group>
       </Section>
 
       <Section title="Your data and privacy" id="data">

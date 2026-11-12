@@ -2183,6 +2183,21 @@ select.input {
 
 /* ---------- small helpers ---------- */
 
+/* Hints name the gesture the device has: a tap and a swipe, or a click. */
+.hint-pointer {
+  display: none;
+}
+
+@media (pointer: fine) {
+  .hint-touch {
+    display: none;
+  }
+
+  .hint-pointer {
+    display: inline;
+  }
+}
+
 .muted {
   color: var(--text-2);
 }

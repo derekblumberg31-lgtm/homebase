@@ -1,5 +1,5 @@
 import type { Task, TaskCategory, TaskPriority } from '../../data/types';
-import { formatCurrency, formatDateShort } from '../../lib/dates';
+import { formatDateShort } from '../../lib/dates';
 import { CATEGORY_META, findType } from './presets';
 import type { TaskInfo } from './taskMath';
 
@@ -18,16 +18,13 @@ export function taskCategory(task: Pick<Task, 'category' | 'typeId'>): TaskCateg
 export const taskPriority = (task: Pick<Task, 'priority'>): TaskPriority => task.priority ?? 'normal';
 
 /**
- * The short line under a task's name: where, what kind, when, how much, and whether it's seasonal.
- * Normal priority isn't mentioned, so only the exceptions stand out.
+ * The short line under a task's name: what kind and when, nothing more. The place, the cost and
+ * whether it's seasonal are on the task's own page. Normal priority isn't mentioned.
  */
 export function taskMetaParts(task: Task, info: TaskInfo): string[] {
   const category = taskCategory(task);
   return [
-    task.location || null,
     task.kind === 'repair' ? 'Repair' : task.kind === 'project' ? 'Project' : category !== 'other' ? CATEGORY_META[category].label : null,
     task.status === 'done' ? null : `${info.status === 'overdue' ? 'Was due' : 'Due'} ${formatDateShort(info.dueDate)}`,
-    task.cost ? formatCurrency(task.cost) : null,
-    task.seasonal ? 'Seasonal' : null,
   ].filter((part): part is string => Boolean(part));
 }

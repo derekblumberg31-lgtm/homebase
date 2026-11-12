@@ -6,20 +6,19 @@ export type Category = TaskCategory;
 
 export interface CategoryMeta {
   label: string;
-  color: string;
 }
 
 export const CATEGORY_META: Record<Category, CategoryMeta> = {
-  cleaning: { label: 'Cleaning', color: '#b8375f' },
-  maintenance: { label: 'Maintenance', color: '#4b53c9' },
-  outdoor: { label: 'Outdoor', color: '#2f855a' },
-  safety: { label: 'Safety', color: '#c2410c' },
-  air: { label: 'Air', color: '#0f766e' },
-  water: { label: 'Water', color: '#2563a8' },
-  appliance: { label: 'Appliance', color: '#7c4dbe' },
-  pool: { label: 'Pool & spa', color: '#0e7490' },
-  vehicle: { label: 'Vehicle', color: '#b45309' },
-  other: { label: 'Other', color: '#5b6b62' },
+  cleaning: { label: 'Cleaning' },
+  maintenance: { label: 'Maintenance' },
+  outdoor: { label: 'Outdoor' },
+  safety: { label: 'Safety' },
+  air: { label: 'Air' },
+  water: { label: 'Water' },
+  appliance: { label: 'Appliance' },
+  pool: { label: 'Pool & spa' },
+  vehicle: { label: 'Vehicle' },
+  other: { label: 'Other' },
 };
 
 export interface TaskPreset {
