@@ -3229,7 +3229,9 @@ select.input {
   position: relative;
   display: grid;
   grid-template-columns: 56px minmax(0, 1fr);
+  align-items: center;
   gap: 10px;
+  min-height: 44px;
   padding: 7px 8px 7px 20px;
   margin-left: -2px;
   border-radius: var(--r-sm-inner);
@@ -3239,10 +3241,11 @@ select.input {
 .timeline-entry a::before {
   content: '';
   position: absolute;
-  top: 14px;
+  top: 50%;
   left: 2px;
   width: 7px;
   height: 7px;
+  margin-top: -3.5px;
   border-radius: 50%;
   background: var(--cool);
   box-shadow: 0 0 0 3px var(--surface);
