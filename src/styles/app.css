@@ -780,6 +780,15 @@ img {
   justify-content: space-between;
   gap: var(--space-3);
   padding: 0;
+  /* Above the rows it overlaps; only its links catch the pointer. */
+  position: relative;
+  z-index: 3;
+  pointer-events: none;
+}
+
+.section-head a,
+.section-head button {
+  pointer-events: auto;
 }
 
 /* The first row's own padding already gives air, so a label reads as belonging to the rows below it. */
@@ -4119,6 +4128,18 @@ a.feed-row:focus-visible {
   border-radius: var(--r-md);
   background: var(--fill);
   font-size: var(--text-subhead);
+}
+
+/* A callout with no status is plain information, so it stays open like the rest of read-only content. */
+.callout:not(.is-warn, .is-danger, .is-good) {
+  padding: var(--space-3) 0 0;
+  border-radius: 0;
+  background: none;
+  color: var(--text-2);
+}
+
+.callout:not(.is-warn, .is-danger, .is-good) b {
+  color: var(--text);
 }
 
 .callout.is-warn {
