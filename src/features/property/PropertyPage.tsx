@@ -6,6 +6,7 @@ import { FormGroup, TextField } from '../../ui/controls';
 import { EmptyState, Group, Page, Row, Section } from '../../ui/layout';
 import { Sheet, useToast } from '../../ui/overlays';
 import { SaveFailed, useSave } from '../../ui/save';
+import { findBuyRecord, parseBuyList } from '../buy/buyList';
 import { shutoffProgress } from '../safety/safety';
 import { PROPERTY_TYPE_LABEL } from './labels';
 
@@ -20,6 +21,7 @@ export function PropertyPage() {
   const keys = data.items.filter((item) => item.kind === 'key');
   const year = property?.yearBuilt;
   const shutoffs = shutoffProgress(data);
+  const buyCount = parseBuyList(findBuyRecord(data.records)?.notes).length;
   const facts = [property?.type ? PROPERTY_TYPE_LABEL[property.type] : null, year ? `Built ${year}` : null, property?.ownership === 'rent' ? 'Rented' : null]
     .filter(Boolean)
     .join(' · ');
@@ -71,6 +73,7 @@ export function PropertyPage() {
             value={shutoffs.saved < shutoffs.total ? `${shutoffs.saved} of ${shutoffs.total} saved` : undefined}
             to="/property/safety"
           />
+          <Row title="What to buy" sub={buyCount ? `${buyCount} saved` : 'Filter sizes, bulbs, paint, batteries'} to="/property/buy" />
         </Group>
       </Section>
 

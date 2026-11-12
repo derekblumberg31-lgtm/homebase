@@ -4791,3 +4791,49 @@ a.feed-row:focus-visible {
   justify-content: flex-end;
   min-height: 44px;
 }
+
+/* ---------- what to buy ---------- */
+.buy-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.buy-list li {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 14px 0;
+}
+
+.buy-list li + li {
+  border-top: 0.5px solid var(--line);
+}
+
+.buy-label {
+  color: var(--text-2);
+  font-size: 0.9375rem;
+}
+
+.buy-value {
+  color: var(--text);
+  font-size: var(--text-title);
+  font-weight: 600;
+  overflow-wrap: anywhere;
+  user-select: text;
+  -webkit-user-select: text;
+}
+
+.buy-entry {
+  margin-bottom: 8px;
+}
+
+.buy-remove {
+  min-height: 44px;
+  padding-inline: 4px;
+  color: var(--text-2);
+}
+
+.buy-chips {
+  margin-top: 16px;
+}
