@@ -67,9 +67,9 @@
   --sidebar: 232px;
   --font: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   /* Page titles go through one token, so the title face can change in one place. */
-  --font-title: ui-serif, 'New York', 'Iowan Old Style', 'Palatino Linotype', Palatino, Georgia, serif;
-  --title-weight: 500;
-  --title-tracking: -0.012em;
+  --font-title: var(--font);
+  --title-weight: 700;
+  --title-tracking: -0.022em;
 
   /* Type scale: size, line-height, weight and tracking per role. Sizes are rem so they follow the
      reader's own text size. Weights are 400, 500, 600 and 700 only. */
