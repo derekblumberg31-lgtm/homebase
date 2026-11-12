@@ -1338,7 +1338,8 @@ select.input {
   font-weight: 500;
 }
 
-.chip[aria-pressed='true'] {
+.chip[aria-pressed='true'],
+.chip[aria-checked='true'] {
   background: var(--button-bg);
   color: var(--button-text);
 }
