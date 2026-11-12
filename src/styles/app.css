@@ -4326,7 +4326,7 @@ a.feed-row:focus-visible {
 }
 
 :root[data-theme='dark'] .segmented button[aria-pressed='true'] {
-  background: var(--surface-2);
+  background: var(--fill-strong);
   box-shadow: 0 0 0 0.5px rgba(255, 255, 255, 0.06);
 }
 
