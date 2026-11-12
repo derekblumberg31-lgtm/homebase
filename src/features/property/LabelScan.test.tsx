@@ -4,6 +4,7 @@ import { freshStore } from '../../test/freshStore';
 import { applyScan, initialValues, LabelConfirmBody, replacedValue } from './LabelScan';
 
 vi.mock('../../engine/label/labelReader', () => ({
+  LOAD_FAILED: 'load failed',
   labelReaderCached: async () => true,
   readLabel: vi.fn(async () => ({ text: 'x', fields: { brand: 'Rheem', model: 'XE50T10H45U0', serial: 'Q201512345' } })),
 }));

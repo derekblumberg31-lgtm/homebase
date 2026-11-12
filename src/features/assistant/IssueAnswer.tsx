@@ -312,7 +312,7 @@ function FactRows({ facts, go }: { facts: ContextFact[]; go: (href: string) => v
         <div key={f.label} className={`row kv-row ${f.warn ? 'is-warn' : ''}`}>
           <span className="row-title">{f.label}</span>
           {f.tel ? (
-            <a className="fact-call row-value" href={`tel:${f.tel}`} aria-label={`Call ${f.callName ?? f.text}, ${f.tel}`}>
+            <a className="fact-call row-value" href={`tel:${f.tel}`} aria-label={`Call ${f.callName ?? f.text}, ${f.phoneText ?? f.tel}`}>
               Call {f.callName ?? f.text}
             </a>
           ) : f.href ? (

@@ -8,7 +8,7 @@ import { useData, useStore } from '../../data/DataProvider';
 import { uid } from '../../data/ids';
 import type { Member, Settings, ThemePreference } from '../../data/types';
 import { formatRelativeTime } from '../../lib/dates';
-import { changesSince, changesText, deviceLabel,installMatters, isStandalone, readDeviceEnv, storageCopy, storageCopyOptions, storageStatus } from '../../lib/dataSafety';
+import { changesSince, changesText, deviceLabel, installMatters, isStandalone, readDeviceEnv, storageCopy, storageCopyOptions, storageStatus } from '../../lib/dataSafety';
 import { clearHomeFlags } from '../../lib/deviceFlags';
 import { storagePersisted } from '../../lib/storage';
 import { FormGroup, Segmented, Switch, TextField } from '../../ui/controls';
@@ -174,7 +174,7 @@ export function SettingsPage() {
             </div>
             <Row
               title="Add the whole schedule to my calendar"
-              sub={openTasks.length ? `Downloads a calendar file with ${openTasks.length} open ${openTasks.length === 1 ? 'job' : 'jobs'}. Open it to add them to Apple, Google or Outlook Calendar.` : 'Add a task first'}
+              sub={openTasks.length ? `Downloads a calendar file with ${openTasks.length} open ${openTasks.length === 1 ? 'job' : 'jobs'}. Open it to add them to Apple, Google or Outlook Calendar.` : 'Add a job first'}
               tone="action"
               wrap
               to={openTasks.length ? '/settings/calendar' : undefined}

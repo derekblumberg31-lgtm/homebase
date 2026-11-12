@@ -130,21 +130,30 @@ window.__ENGINE_BASE__ = ENGINE_BASE;
 
 const SCRIPTS = ['engine-config.js', 'vendor/tesseract.min.js', 'identify.js', 'vision.js', 'match.js', 'ocr.js', 'engine-export.js'];
 
+const scriptLoads = new Map<string, Promise<void>>();
+
+/**
+ * Adds one engine script. Callers asking for the same file share one load, so none resolves before it has run.
+ * A failed load removes its script tag and is forgotten, so asking again (after the connection is back) tries again.
+ */
 export function addEngineScript(src: string, async = false): Promise<void> {
-  return new Promise((resolve, reject) => {
-    const existing = document.querySelector<HTMLScriptElement>(`script[data-engine="${src}"]`);
-    if (existing) {
-      resolve();
-      return;
-    }
+  const existing = scriptLoads.get(src);
+  if (existing) return existing;
+  const load = new Promise<void>((resolve, reject) => {
     const script = document.createElement('script');
     script.src = `${ENGINE_BASE}${src}`;
     script.async = async;
     script.dataset.engine = src;
     script.onload = () => resolve();
-    script.onerror = () => reject(new Error('The key tools didn’t download. Check your connection, then try again.'));
+    script.onerror = () => {
+      script.remove();
+      scriptLoads.delete(src);
+      reject(new Error('The key tools didn’t download. Check your connection, then try again.'));
+    };
     document.head.appendChild(script);
   });
+  scriptLoads.set(src, load);
+  return load;
 }
 
 let loading: Promise<EngineGlobals> | null = null;

@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { useData, useStore } from '../../data/DataProvider';
 import type { StoredFile } from '../../data/types';
-import { photoForStorage } from '../../lib/images';
+import { createAttachQueue } from './attachQueue';
+import { photoForStorage, shouldShrink } from '../../lib/images';
 import { TextArea } from '../../ui/controls';
 import { Section } from '../../ui/layout';
 import { Sheet, useToast } from '../../ui/overlays';
@@ -45,33 +46,45 @@ export function ShutoffSheet({ id, onClose }: { id: StarterStepId; onClose: () =
   const [added, setAdded] = useState<string[]>([]);
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
+  const queue = useRef<ReturnType<typeof createAttachQueue>>(undefined);
+  queue.current ??= createAttachQueue(async (file) => {
+    try {
+      const ready = await photoForStorage(file);
+      if (ready.size > MAX_FILE) {
+        toast(`${file.name} is over 15 MB. Try a smaller photo.`, { tone: 'error' });
+        return undefined;
+      }
+      return (await store.saveFile(ready)).id;
+    } catch {
+      toast('That photo couldn’t be saved. The device may be out of space.', { tone: 'error' });
+      return undefined;
+    }
+  });
   if (def?.action.type !== 'locate') return null;
   const action = def.action;
 
   async function attach(list: FileList | null) {
     if (!list) return;
     for (const file of [...list]) {
-      if (file.size > MAX_FILE) {
+      // Big photos are checked again after they are made smaller; anything else is refused up front.
+      if (file.size > MAX_FILE && !shouldShrink(file)) {
         toast(`${file.name} is over 15 MB. Try a smaller photo.`, { tone: 'error' });
         continue;
       }
-      try {
-        const stored = await store.saveFile(await photoForStorage(file));
-        setAdded((a) => [...a, stored.id]);
-      } catch {
-        toast('That photo couldn’t be saved. The device may be out of space.', { tone: 'error' });
-      }
+      void queue.current!.add(file).then((stored) => stored && setAdded((a) => [...a, stored]));
     }
   }
 
   async function removeAdded(fileId: string) {
+    queue.current!.forget(fileId);
     await store.removeFile(fileId);
     setAdded((a) => a.filter((x) => x !== fileId));
   }
 
   async function cancel() {
-    // Photos picked for a save that never happened shouldn't linger.
-    for (const fileId of added) await store.removeFile(fileId);
+    if (saving) return;
+    // Photos picked for a save that never happened shouldn't linger, including one that is still being stored.
+    for (const fileId of await queue.current!.settled()) await store.removeFile(fileId);
     onClose();
   }
 
@@ -79,7 +92,8 @@ export function ShutoffSheet({ id, onClose }: { id: StarterStepId; onClose: () =
     if (!where.trim()) return setError('Say where it is, even roughly. You can change it later.');
     setSaving(true);
     try {
-      const fileIds = [...kept, ...added];
+      // A photo still being stored is waited for, so it is linked rather than left behind.
+      const fileIds = [...kept, ...(await queue.current!.settled())];
       const removed = (record?.fileIds ?? []).filter((fileId) => !kept.includes(fileId));
       const undo = await saveLocation(store, id, where.trim(), { fileIds });
       // A removed photo is deleted for good, so there is nothing for Undo to bring back.
@@ -127,6 +141,7 @@ export function ShutoffSheet({ id, onClose }: { id: StarterStepId; onClose: () =
                 <button
                   type="button"
                   className="text-button"
+                  aria-label={`Remove photo ${photos.indexOf(fileId) + 1}`}
                   onClick={() => (added.includes(fileId) ? void removeAdded(fileId) : setKept((k) => k.filter((x) => x !== fileId)))}
                 >
                   Remove photo
@@ -152,7 +167,7 @@ export function ShutoffSheet({ id, onClose }: { id: StarterStepId; onClose: () =
           }}
         />
       </Section>
-      <p className="section-foot">Saved as a note in Records, with the photo, so it’s in your backup.</p>
+      <p className="section-foot">Saved as a note in Records, with the photo, so it’s in your backup. A photo you remove is deleted when you save.</p>
     </Sheet>
   );
 }

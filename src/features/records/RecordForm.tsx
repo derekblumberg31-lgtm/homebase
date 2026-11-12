@@ -5,7 +5,7 @@ import { useData, useStore } from '../../data/DataProvider';
 import { uid } from '../../data/ids';
 import type { HomeRecord, RecordKind } from '../../data/types';
 import { isRealDate } from '../../lib/dates';
-import { formatBytes, photoForStorage } from '../../lib/images';
+import { formatBytes, photoForStorage, shouldShrink } from '../../lib/images';
 import { FormGroup, SelectField, TextArea, TextField } from '../../ui/controls';
 import { Group, Row, Section } from '../../ui/layout';
 import { Sheet, useToast } from '../../ui/overlays';
@@ -71,12 +71,18 @@ export function RecordForm({ record, draft, onClose, onSaved }: { record?: HomeR
   async function attach(list: FileList | null) {
     if (!list) return;
     for (const file of [...list]) {
-      if (file.size > MAX_FILE) {
+      // Big photos are checked again after they are made smaller; anything else is refused up front.
+      if (file.size > MAX_FILE && !shouldShrink(file)) {
         toast(`${file.name} is over 15 MB. Try a smaller scan or photo.`, { tone: 'error' });
         continue;
       }
       try {
-        const stored = await store.saveFile(await photoForStorage(file));
+        const ready = await photoForStorage(file);
+        if (ready.size > MAX_FILE) {
+          toast(`${file.name} is over 15 MB. Try a smaller scan or photo.`, { tone: 'error' });
+          continue;
+        }
+        const stored = await store.saveFile(ready);
         setFiles((f) => [...f, { id: stored.id, name: stored.name, size: stored.size }]);
       } catch {
         toast(`${file.name} couldn’t be saved. The device may be out of space.`, { tone: 'error' });

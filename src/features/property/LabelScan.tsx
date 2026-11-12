@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { labelReaderCached, readLabel, type LabelReading } from '../../engine/label/labelReader';
+import { LOAD_FAILED, labelReaderCached, readLabel, type LabelReading } from '../../engine/label/labelReader';
 import type { LabelFields } from '../../engine/label/parseLabel';
 import { compressPhoto } from '../../lib/images';
 import { FormGroup, Switch, TextField } from '../../ui/controls';
@@ -12,6 +12,7 @@ export interface LabelValues {
   serial: string;
 }
 
+const UNREADABLE = 'That photo couldn’t be read. Try a JPEG, or take a new photo.';
 const NOTHING_FOUND = 'Couldn’t read a model or serial number. Try again closer, with less glare, or type them in.';
 const FIRST_USE = 'The first scan downloads the text reader (about 7 MB). After that it works offline.';
 
@@ -114,7 +115,7 @@ export function LabelScanButton({ current, onApply, canKeepPhoto = true }: Props
       setKeepPhoto(true);
       setResult({ reading, photo });
     } catch (error) {
-      if (live.current) toast(error instanceof Error && error.message ? error.message : NOTHING_FOUND, { tone: 'error' });
+      if (live.current) toast(error instanceof Error && error.message === LOAD_FAILED ? LOAD_FAILED : UNREADABLE, { tone: 'error' });
     } finally {
       if (live.current) {
         setBusy(false);

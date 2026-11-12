@@ -45,6 +45,10 @@ export async function labelReaderCached(): Promise<boolean> {
 
 /** Loads Tesseract on its own and starts a worker for label text (no character whitelist). */
 export async function loadLabelReader(): Promise<LabelWorker> {
+  // Set once the timeout (or any failure) has given up, so a worker that finishes starting later is shut down instead of left running.
+  let abandoned = false;
+  let worker: LabelWorker | undefined;
+  const discard = () => void worker?.terminate().catch(() => undefined);
   const start = async () => {
     try {
       await addEngineScript('vendor/tesseract.min.js');
@@ -54,18 +58,24 @@ export async function loadLabelReader(): Promise<LabelWorker> {
     const tesseract = (window as unknown as { Tesseract?: TesseractGlobal }).Tesseract;
     if (!tesseract) throw new Error(LOAD_FAILED);
     const base = `${engineBase()}vendor/`;
-    const worker = await tesseract.createWorker('eng', 1, {
+    worker = await tesseract.createWorker('eng', 1, {
       workerPath: `${base}worker.min.js`,
       corePath: base,
       langPath: base,
       workerBlobURL: false,
     });
+    if (abandoned) {
+      discard();
+      throw new Error(LOAD_FAILED);
+    }
     await worker.setParameters({ tessedit_pageseg_mode: '11', preserve_interword_spaces: '1' });
     return worker;
   };
   try {
     return await withTimeout(start(), LOAD_TIMEOUT, 'Text reader load');
   } catch {
+    abandoned = true;
+    discard();
     throw new Error(LOAD_FAILED);
   }
 }

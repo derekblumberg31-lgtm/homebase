@@ -48,12 +48,18 @@ export function contactsFor(data: HomeData, role: ContactRole): HomeRecord[] {
   return [...matches].sort((a, b) => Number(Boolean(telHref(b.phone))) - Number(Boolean(telHref(a.phone))) || b.updatedAt.localeCompare(a.updatedAt));
 }
 
-/** `tel:` plus the digits (and a leading +), or nothing when there are fewer than 3 digits to dial. */
+/**
+ * `tel:` plus the digits (and a leading +) of the main number, or nothing when it can't be dialled safely.
+ * An extension (ext, x, #) or anything after a comma or semicolon is dropped, never joined onto the number.
+ * Letters, a stray +, or fewer than 3 or more than 15 digits give nothing, so the number shows as text instead of dialling the wrong one.
+ */
 export function telHref(phone: string | undefined): string | undefined {
   if (!phone) return undefined;
-  const digits = phone.replace(/[^\d]/g, '');
-  if (digits.length < 3) return undefined;
-  return `tel:${phone.trim().startsWith('+') ? '+' : ''}${digits}`;
+  const main = phone.replace(/\s*(ext\b|extension\b|x|#|,|;).*$/i, '').trim();
+  if (!/^\+?[\d\s().\-\u2013]+$/.test(main)) return undefined;
+  const digits = main.replace(/\D/g, '');
+  if (digits.length < 3 || digits.length > 15) return undefined;
+  return `tel:${main.startsWith('+') ? '+' : ''}${digits}`;
 }
 
 /** True when this home has no gas, so there is no gas shutoff to save. */

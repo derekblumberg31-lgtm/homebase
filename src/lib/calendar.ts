@@ -8,7 +8,7 @@ import { formatDate, toDateInput } from './dates';
  * has. Each task becomes an all-day event with an alert at 9 a.m.; recurring tasks repeat.
  */
 
-const escape = (text: string) => text.replace(/\\/g, '\\\\').replace(/\n/g, '\\n').replace(/([,;])/g, '\\$1');
+const escape = (text: string) => text.replace(/\\/g, '\\\\').replace(/\r\n?|\n/g, '\\n').replace(/([,;])/g, '\\$1');
 
 const encoder = new TextEncoder();
 
@@ -40,10 +40,25 @@ function stamp(now: Date) {
   return now.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
 }
 
-/** Homebase's repeat is whole days. Calendars repeat by year, month or week, so months here are a 30-day approximation of Homebase's own. */
-function rrule(days: number): string {
-  if (days % 365 === 0) return `FREQ=YEARLY;INTERVAL=${days / 365}`;
-  if (days % 30 === 0) return `FREQ=MONTHLY;INTERVAL=${days / 30}`;
+/**
+ * Homebase's repeat is whole days. Calendars repeat by year, month or week, so months here are a 30-day approximation of Homebase's own.
+ * `start` is the first date (YYYY-MM-DD). A calendar skips a month that has no 29th, 30th or 31st rather than using its last day,
+ * so for those start days the rule picks the last valid day from 28 up to the start day (BYMONTHDAY with BYSETPOS=-1):
+ * a 31st lands on the last day of every month, a 30th on the 30th or Feb's last day, a 29th on the 29th or Feb's last day.
+ * The result depends only on the start date, not on the day it was exported.
+ */
+function rrule(days: number, start: string): string {
+  const month = Number(start.slice(5, 7));
+  const day = Number(start.slice(8, 10));
+  const upTo = (from: number, to: number) => Array.from({ length: to - from + 1 }, (_, i) => from + i).join(',');
+  if (days % 365 === 0) {
+    const base = `FREQ=YEARLY;INTERVAL=${days / 365}`;
+    return month === 2 && day === 29 ? `${base};BYMONTH=2;BYMONTHDAY=${upTo(28, 29)};BYSETPOS=-1` : base;
+  }
+  if (days % 30 === 0) {
+    const base = `FREQ=MONTHLY;INTERVAL=${days / 30}`;
+    return day > 28 ? `${base};BYMONTHDAY=${upTo(28, day)};BYSETPOS=-1` : base;
+  }
   if (days % 7 === 0) return `FREQ=WEEKLY;INTERVAL=${days / 7}`;
   return `FREQ=DAILY;INTERVAL=${days}`;
 }
@@ -80,7 +95,7 @@ export function taskEvent(task: Task, now = new Date(), options: CalendarOptions
     `DTEND;VALUE=DATE:${compact(toDateInput(next))}`,
     `SUMMARY:${escape(task.name)}`,
     `DESCRIPTION:${escape(description)}`,
-    ...(task.recurring ? [`RRULE:${rrule(task.intervalDays)}`] : []),
+    ...(task.recurring ? [`RRULE:${rrule(task.intervalDays, due)}`] : []),
     'BEGIN:VALARM',
     'ACTION:DISPLAY',
     `DESCRIPTION:${escape(task.name)}`,

@@ -149,6 +149,21 @@ describe('contacts', () => {
     expect(telHref(undefined)).toBeUndefined();
   });
 
+  it('dials only the main number, never an extension', () => {
+    expect(telHref('800-555-0100 ext. 4')).toBe('tel:8005550100');
+    expect(telHref('800-555-0100 x4')).toBe('tel:8005550100');
+    expect(telHref('(800) 555-0100 #22')).toBe('tel:8005550100');
+    expect(telHref('800-555-0100, 4')).toBe('tel:8005550100');
+    expect(telHref('+1 800 555 0100 extension 12')).toBe('tel:+18005550100');
+  });
+
+  it('gives no link when letters or odd characters remain', () => {
+    expect(telHref('1-800-PLUMBER')).toBeUndefined();
+    expect(telHref('555 0100 or 555 0199')).toBeUndefined();
+    expect(telHref('555+0100')).toBeUndefined();
+    expect(telHref('1234567890123456')).toBeUndefined();
+  });
+
   it('lists a contact with a phone before one without, then the newest', () => {
     const data: HomeData = {
       ...emptyData(),

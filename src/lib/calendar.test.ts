@@ -38,6 +38,33 @@ describe('buildCalendar', () => {
     expect(buildCalendar([task({ intervalDays: 10 })], NOW)).toContain('RRULE:FREQ=DAILY;INTERVAL=10');
   });
 
+  it('S6: monthly jobs starting on the 29th to 31st use the last valid day, so no month is skipped', () => {
+    const rule = (dueDate: string) => unfold(buildCalendar([task({ dueDate })], NOW)).match(/RRULE:(.*)/)![1].trim();
+    expect(rule('2026-12-31')).toBe('FREQ=MONTHLY;INTERVAL=3;BYMONTHDAY=28,29,30,31;BYSETPOS=-1');
+    expect(rule('2026-12-30')).toBe('FREQ=MONTHLY;INTERVAL=3;BYMONTHDAY=28,29,30;BYSETPOS=-1');
+    expect(rule('2026-12-29')).toBe('FREQ=MONTHLY;INTERVAL=3;BYMONTHDAY=28,29;BYSETPOS=-1');
+    expect(rule('2026-12-28')).toBe('FREQ=MONTHLY;INTERVAL=3');
+  });
+
+  it('S6: a yearly job due on Feb 29 falls on Feb 28 in other years; other dates are plain yearly', () => {
+    const rule = (dueDate: string) => unfold(buildCalendar([task({ intervalDays: 365, dueDate })], NOW)).match(/RRULE:(.*)/)![1].trim();
+    expect(rule('2028-02-29')).toBe('FREQ=YEARLY;INTERVAL=1;BYMONTH=2;BYMONTHDAY=28,29;BYSETPOS=-1');
+    expect(rule('2027-01-31')).toBe('FREQ=YEARLY;INTERVAL=1');
+  });
+
+  it('S6: an overdue monthly job exported on the 31st starts on the 31st but still reaches every month; mid-month exports stay plain', () => {
+    const overdue = task({ dueDate: '2026-09-10' });
+    const rule = (now: Date) => unfold(buildCalendar([overdue], now)).match(/RRULE:(.*)/)![1].trim();
+    expect(rule(new Date('2026-10-31T10:00:00'))).toBe('FREQ=MONTHLY;INTERVAL=3;BYMONTHDAY=28,29,30,31;BYSETPOS=-1');
+    expect(rule(new Date('2026-10-15T10:00:00'))).toBe('FREQ=MONTHLY;INTERVAL=3');
+  });
+
+  it('M8: a carriage return in the notes never lands bare in a content line', () => {
+    const text = buildCalendar([task({ notes: 'one\r\ntwo\rthree' })], NOW);
+    expect(text.replace(/\r\n/g, '')).not.toContain('\r');
+    expect(unfold(text)).toContain('one\\ntwo\\nthree');
+  });
+
   it('T2: an overdue one-off starts today and says when it was due', () => {
     const ics = unfold(buildCalendar([task({ recurring: false, dueDate: '2026-09-10' })], NOW));
     expect(ics).toContain('DTSTART;VALUE=DATE:20261112');

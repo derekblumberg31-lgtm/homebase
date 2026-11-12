@@ -36,6 +36,13 @@ describe('issueContextFor: shutoffs and phone numbers', () => {
     expect(issueContextFor(guide('gas-smell'), 'I smell gas', data, NOW).facts).toEqual([]);
   });
 
+  it('treats a gas step marked not applicable as no gas, the same as the Safety page', () => {
+    const settings = { ...emptyData().settings, healthSteps: { 'gas-shutoff': { state: 'not-applicable' as const, at: '2026-11-01T00:00:00.000Z' } } };
+    const data: HomeData = { ...home([record({})]), settings };
+    expect(issueContextFor(guide('gas-smell'), 'I smell gas', data, NOW).facts).toEqual([]);
+    expect(issueContextFor(guide('no-heat'), 'no heat', data, NOW).facts.some((f) => f.label === 'Gas shutoff')).toBe(false);
+  });
+
   it('keeps emergency answers to what was saved: no prompts, no system or contractor noise', () => {
     const data = home([record({ id: 'p', title: 'Electrical panel', notes: 'Garage' }), record({ id: 'c', kind: 'contractor', title: 'Rivera Electric', vendor: 'Electrician', phone: '555 0100' })]);
     const { facts } = issueContextFor(guide('fire-smoke'), 'there is smoke from my furnace', data, NOW);
