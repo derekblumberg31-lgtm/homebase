@@ -252,10 +252,8 @@ export function TaskRow({ task, info, now, featured = false, onDone }: TaskRowPr
         >
           <span className="row-line">
             <span className="row-main">
-              <span className="row-title">
-                {priority === 'high' && <span className="priority-mark" title={PRIORITY_LABEL.high} aria-hidden="true" />}
-                {task.name}
-              </span>
+              {priority === 'high' && <span className="priority-mark" title={PRIORITY_LABEL.high} aria-hidden="true" />}
+              <span className="row-title">{task.name}</span>
               {where && <span className="row-sub is-wrap">{where}</span>}
             </span>
             <Countdown info={info} />

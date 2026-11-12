@@ -57,6 +57,15 @@
 
   /* Type scale: size, line-height, weight and tracking per role. Sizes are rem so they follow the
      reader's own text size. Weights are 400, 500, 600 and 700 only. */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+
   --text-display: 3rem;
   --lh-display: 1;
   --text-large: 2.125rem;
@@ -622,11 +631,34 @@ img {
 }
 
 .page-head {
-  display: flex;
+  display: grid;
+  grid-template:
+    'back actions' auto
+    'title title' auto
+    'sub sub' auto / minmax(0, 1fr) auto;
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  min-height: 52px;
+}
+
+/* The back link and the actions share one 44px row above the title, so the title gets the full
+   width and starts at the same height on every screen. */
+.page-head > .back-link {
+  grid-area: back;
+  justify-self: start;
+}
+
+.page-head > .page-actions {
+  grid-area: actions;
+  min-height: 44px;
+}
+
+.page-head > .page-title {
+  grid-area: title;
+  margin-top: var(--space-1);
+}
+
+.page-head > .page-sub {
+  grid-area: sub;
+  margin-top: 6px;
 }
 
 .page-title {
@@ -657,6 +689,7 @@ img {
   display: flex;
   align-items: center;
   gap: 8px;
+  white-space: nowrap;
 }
 
 .back-link {
@@ -664,7 +697,6 @@ img {
   align-items: center;
   gap: 4px;
   min-height: 44px;
-  margin-block: -2px;
   margin-left: -4px;
   color: var(--accent);
   font-size: var(--text-subhead);
@@ -688,15 +720,20 @@ img {
 /* ---------- sections and grouped lists ---------- */
 
 .section {
-  margin-top: 26px;
+  margin-top: var(--space-8);
 }
 
+.page-head + .section {
+  margin-top: var(--space-6);
+}
+
+/* Heading text lines up with row text: group edge plus row padding. */
 .section-head {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
-  gap: 12px;
-  padding: 0 4px 8px;
+  gap: var(--space-3);
+  padding: 0 var(--space-4) var(--space-2);
 }
 
 .section-title {
@@ -718,7 +755,7 @@ img {
 }
 
 .section-foot {
-  padding: 8px 4px 0;
+  padding: var(--space-2) var(--space-4) 0;
   color: var(--text-2);
   font-size: var(--text-footnote);
 }
@@ -774,6 +811,7 @@ button.row:focus-visible {
   flex: none;
   display: grid;
   place-items: center;
+  width: 28px;
   color: var(--text-2);
 }
 
@@ -1057,15 +1095,16 @@ button.row:focus-visible {
 }
 
 .starter-footer .button {
-  max-width: 320px;
-  margin: 0 auto;
+  max-width: none;
+  margin: 0;
 }
 
 .starter-links {
   display: flex;
-  justify-content: center;
-  gap: 8px;
-  margin-top: 4px;
+  justify-content: flex-start;
+  gap: var(--space-4);
+  margin-top: var(--space-1);
+  margin-left: calc(var(--space-3) * -1);
 }
 
 .starter-links .text-button {
@@ -1082,15 +1121,6 @@ button.row:focus-visible {
     justify-content: start;
   }
 
-  /* Under a left-aligned list, the footer lines up with it. */
-  .starter-footer .button {
-    margin-left: 0;
-  }
-
-  .starter-links {
-    justify-content: flex-start;
-    margin-left: -12px;
-  }
 }
 
 .empty.is-inline {
@@ -2684,14 +2714,19 @@ select.input {
   }
 }
 
+/* The dot sits in the margin beside the title, so a wrapped title's lines share one left edge. */
+.row-main:has(> .priority-mark) {
+  position: relative;
+}
+
 .priority-mark {
-  display: inline-block;
+  position: absolute;
+  top: 0.55em;
+  left: -12px;
   width: 7px;
   height: 7px;
-  margin: 0 8px 2px 0;
   border-radius: 50%;
   background: var(--accent);
-  vertical-align: middle;
 }
 
 .field.is-switch {
@@ -3730,7 +3765,7 @@ a.feed-row:focus-visible {
 
 /* The alert slot under the next jobs: up to two rows, one anatomy for every row. */
 .home-alerts {
-  margin-top: 16px;
+  margin-top: var(--space-8);
 }
 
 .home-alerts > ul {
@@ -3787,15 +3822,15 @@ a.feed-row:focus-visible {
 }
 
 .home-next {
-  margin-top: 22px;
+  margin-top: var(--space-6);
 }
 
 .home-more {
-  margin-top: 30px;
+  margin-top: var(--space-8);
 }
 
 .page-note {
-  margin-top: 22px;
+  margin-top: var(--space-8);
   color: var(--text-2);
   font-size: var(--text-subhead);
 }
@@ -4289,11 +4324,11 @@ a.feed-row:focus-visible {
 
 .field-label.is-standalone {
   display: block;
-  padding: 0 4px 8px;
+  padding: 0 var(--space-4) var(--space-2);
 }
 
 .page-subhead {
-  margin: 30px 4px 0;
+  margin: var(--space-8) var(--space-4) 0;
   color: var(--text-2);
   font-size: var(--text-subhead);
   font-weight: 600;

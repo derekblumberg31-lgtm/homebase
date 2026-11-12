@@ -29,18 +29,16 @@ export function Page({ title, subtitle, actions, back, wide = false, compact = f
   }
   return (
     <div className={`page ${wide ? 'is-wide' : ''}`}>
-      {back && (
-        <Link className="back-link" to={back.to}>
-          <ArrowLeft size={17} />
-          {back.label}
-        </Link>
-      )}
       <header className="page-head">
-        <div>
-          <h1 className={`page-title ${compact ? 'is-compact' : ''}`}>{title}</h1>
-          {subtitle && <p className="page-sub">{subtitle}</p>}
-        </div>
+        {back && (
+          <Link className="back-link" to={back.to}>
+            <ArrowLeft size={17} />
+            {back.label}
+          </Link>
+        )}
         {actions && <div className="page-actions">{actions}</div>}
+        <h1 className={`page-title ${compact ? 'is-compact' : ''}`}>{title}</h1>
+        {subtitle && <p className="page-sub">{subtitle}</p>}
       </header>
       {children}
     </div>
@@ -90,10 +88,11 @@ interface RowProps {
   label?: string;
   /** Let the title and subtitle wrap instead of truncating. */
   wrap?: boolean;
+  id?: string;
 }
 
 /** One line in a grouped list: a link, a button, or a plain read-only row. */
-export function Row({ title, sub, value, lead, to, onClick, tone, chevron, label, wrap = false }: RowProps) {
+export function Row({ title, sub, value, lead, to, onClick, tone, chevron, label, wrap = false, id }: RowProps) {
   const className = `row ${tone === 'action' ? 'is-action' : tone === 'danger' ? 'is-danger' : ''}`;
   const showChevron = chevron ?? Boolean(to);
   const body = (
@@ -109,19 +108,19 @@ export function Row({ title, sub, value, lead, to, onClick, tone, chevron, label
   );
   if (to) {
     return (
-      <Link className={className} to={to} aria-label={label}>
+      <Link className={className} to={to} aria-label={label} id={id}>
         {body}
       </Link>
     );
   }
   if (onClick) {
     return (
-      <button type="button" className={className} onClick={onClick} aria-label={label}>
+      <button type="button" className={className} onClick={onClick} aria-label={label} id={id}>
         {body}
       </button>
     );
   }
-  return <div className={className}>{body}</div>;
+  return <div className={className} id={id}>{body}</div>;
 }
 
 interface EmptyStateProps {

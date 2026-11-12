@@ -3,7 +3,6 @@ import { useData, useStore } from '../../data/DataProvider';
 import { uid } from '../../data/ids';
 import type { Room } from '../../data/types';
 import { FormGroup, TextField } from '../../ui/controls';
-import { Camera, Key } from '../../ui/Icons';
 import { EmptyState, Group, Page, Row, Section } from '../../ui/layout';
 import { Sheet, useToast } from '../../ui/overlays';
 import { SaveFailed, useSave } from '../../ui/save';
@@ -57,8 +56,8 @@ export function PropertyPage() {
         <Group>
           <Row title="Home Systems" sub="Heating, cooling, water heater, roof" value={data.systems.length || undefined} to="/property/systems" />
           <Row title="Home Inventory" sub="Appliances, electronics, furniture, tools" value={belongings.length || undefined} to="/property/inventory" />
-          <Row title="Keys and Locks" sub="Saved keys and the blanks to copy them" value={keys.length || undefined} lead={<Key size={19} />} to="/property/keys" />
-          <Row title="Identify a key" sub="Take a photo to find which key it is" lead={<Camera size={19} />} to="/property/identify-key" />
+          <Row title="Keys and Locks" sub="Saved keys and the blanks to copy them" value={keys.length || undefined} to="/property/keys" />
+          <Row title="Identify a key" sub="Take a photo to find which key it is" to="/property/identify-key" />
         </Group>
       </Section>
 

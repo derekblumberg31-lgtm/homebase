@@ -5,7 +5,7 @@ import { useData, useNow } from '../../data/DataProvider';
 import { useSession } from '../../session/session';
 import { useToast } from '../../ui/overlays';
 import { backupNudge, dataSafetyRow, deviceLabel, installRowCopy, readDeviceEnv } from '../../lib/dataSafety';
-import { MessageCircle, Share } from '../../ui/Icons';
+import { Share } from '../../ui/Icons';
 import { Group, Page, Row } from '../../ui/layout';
 import { InstallSheet } from '../settings/InstallSheet';
 import { useSaveBackup } from '../settings/useSaveBackup';
@@ -66,7 +66,7 @@ export function HomePage() {
     if (focusRow.current === null) return;
     const index = Math.min(focusRow.current, rows.length - 1);
     focusRow.current = null;
-    const target = index >= 0 ? alertsRef.current?.querySelectorAll<HTMLElement>('.home-alert-row > .row')[index] : document.querySelector<HTMLElement>('#home-ask a');
+    const target = index >= 0 ? alertsRef.current?.querySelectorAll<HTMLElement>('.home-alert-row > .row')[index] : document.querySelector<HTMLElement>('a#home-ask');
     target?.focus();
   }, [rows]);
 
@@ -84,7 +84,7 @@ export function HomePage() {
 
   // The install row is outside the alert slot, so focus goes to Ask Homebase once it is gone.
   function focusAsk() {
-    requestAnimationFrame(() => document.querySelector<HTMLElement>('#home-ask a')?.focus());
+    requestAnimationFrame(() => document.querySelector<HTMLElement>('a#home-ask')?.focus());
   }
 
   const installCopy = useMemo(() => installRowCopy(deviceLabel(readDeviceEnv())), []);
@@ -141,14 +141,9 @@ export function HomePage() {
         </section>
       )}
 
-      <div className="section" id="home-ask">
-        <Group>
-          <Row title="Ask Homebase" sub="Something broken, leaking or beeping? Get steps, or look up a warranty." lead={<MessageCircle size={20} />} to="/assistant" wrap />
-        </Group>
-      </div>
-
       <div className="section home-more">
         <Group>
+          <Row id="home-ask" title="Ask Homebase" sub="Something broken, leaking or beeping? Get steps, or look up a warranty." to="/assistant" wrap />
           <Row title="Home Health Check" sub={healthRowText(starter)} to="/home/health" />
           <Row title="This season" sub={season ? `${season} seasonal ${season === 1 ? 'job' : 'jobs'} to plan` : 'All planned or done'} to="/home/season" />
           <Row title="Coming up" sub={comingUpSub(comingUp, ending)} to="/home/coming-up" wrap />
