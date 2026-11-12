@@ -109,7 +109,7 @@ export function SettingsPage() {
   async function share() {
     const url = new URL('/', location.href).href;
     try {
-      if (navigator.share) await navigator.share({ title: PRODUCT.name, text: PRODUCT.tagline, url });
+      if (navigator.share) await navigator.share({ title: PRODUCT.name, url });
       else {
         await navigator.clipboard.writeText(url);
         toast('Link copied');
@@ -239,7 +239,7 @@ export function SettingsPage() {
       )}
 
       <p className="local-note">
-        {PRODUCT.name} · {PRODUCT.tagline}
+        {PRODUCT.name}
       </p>
 
       {memberSheet && household && (

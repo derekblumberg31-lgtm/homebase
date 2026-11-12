@@ -18,7 +18,7 @@ export default defineConfig({
         id: base,
         name: 'Homebase',
         short_name: 'Homebase',
-        description: 'Your intelligent homeowner assistant: maintenance, property details, keys, records and help, all in one place.',
+        description: 'Maintenance, property details, keys, records and help for your home, all in one place.',
         start_url: `${base}home`,
         scope: base,
         display: 'standalone',

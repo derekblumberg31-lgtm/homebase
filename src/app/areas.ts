@@ -27,5 +27,4 @@ export const AREAS: Area[] = [
 
 export const PRODUCT = {
   name: 'Homebase',
-  tagline: 'Your intelligent homeowner assistant',
 };
