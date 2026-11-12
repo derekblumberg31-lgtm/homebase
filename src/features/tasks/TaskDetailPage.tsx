@@ -66,7 +66,7 @@ export function TaskDetailPage() {
   const kindLabel = task.kind === 'maintenance' ? 'Maintenance' : task.kind === 'repair' ? 'Repair' : 'Project';
 
   return (
-    <Page title={task.name} subtitle={[kindLabel, task.location].filter(Boolean).join(' · ')} back={{ to: '/tasks', label: 'Tasks' }} actions={<button type="button" className="button is-quiet" onClick={() => setEditing(true)}>Edit</button>}>
+    <Page title={task.name} subtitle={[kindLabel, task.location].filter(Boolean).join(' · ')} back={{ to: '/tasks', label: 'Tasks' }} compact actions={<button type="button" className="button is-quiet" onClick={() => setEditing(true)}>Edit</button>}>
       <Section>
         <Group>
           <div className="row is-stacked is-hero">

@@ -8,13 +8,15 @@ interface PageProps {
   actions?: ReactNode;
   back?: { to: string; label: string };
   wide?: boolean;
+  /** A detail screen whose big line is something else (the countdown), so its title steps down. */
+  compact?: boolean;
   /** Top-level areas show a profile button that opens Settings on phones (the sidebar has it otherwise). */
   profile?: boolean;
   children: ReactNode;
 }
 
 /** Every screen's frame: an optional back link, a large title, actions on the right. */
-export function Page({ title, subtitle, actions, back, wide = false, profile = false, children }: PageProps) {
+export function Page({ title, subtitle, actions, back, wide = false, compact = false, profile = false, children }: PageProps) {
   if (profile) {
     actions = (
       <>
@@ -35,7 +37,7 @@ export function Page({ title, subtitle, actions, back, wide = false, profile = f
       )}
       <header className="page-head">
         <div>
-          <h1 className="page-title">{title}</h1>
+          <h1 className={`page-title ${compact ? 'is-compact' : ''}`}>{title}</h1>
           {subtitle && <p className="page-sub">{subtitle}</p>}
         </div>
         {actions && <div className="page-actions">{actions}</div>}

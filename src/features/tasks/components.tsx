@@ -196,7 +196,7 @@ export function TaskRow({ task, info, now, featured = false, onDone }: TaskRowPr
   return (
     <div
       ref={shellRef}
-      className={`swipe-shell row-wrap ${open || dragX !== null ? 'is-revealed' : ''} ${finish ? 'is-leaving' : ''}`}
+      className={`swipe-shell row-wrap ${featured ? 'is-featured' : ''} ${open || dragX !== null ? 'is-revealed' : ''} ${finish ? 'is-leaving' : ''}`}
       style={finish ? ({ '--collapse-delay': `${finish.collapseDelayMs}ms` } as CSSProperties) : undefined}
     >
       {canSwipe && (
