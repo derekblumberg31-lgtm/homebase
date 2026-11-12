@@ -994,7 +994,7 @@ button.row:focus-visible {
 .button-stack {
   display: grid;
   gap: 10px;
-  margin-top: 20px;
+  margin-top: var(--space-6);
 }
 
 /* ---------- empty, loading, error ---------- */
@@ -4105,6 +4105,7 @@ a.feed-row:focus-visible {
   padding: var(--space-3) var(--space-4);
   border: 0;
   border-radius: var(--r-md);
+  background: var(--fill);
   font-size: var(--text-subhead);
 }
 
@@ -4159,7 +4160,7 @@ a.feed-row:focus-visible {
 }
 
 .notice.is-plain {
-  background: var(--surface);
+  background: var(--fill);
 }
 
 .suggest-box {
@@ -4210,8 +4211,7 @@ a.feed-row:focus-visible {
 
 .privacy-list {
   margin: 0;
-  padding: 4px 16px;
-  background: var(--surface);
+  padding: 0;
 }
 
 .privacy-list > div {
@@ -4563,4 +4563,42 @@ a.feed-row:focus-visible {
 /* Focus moves here programmatically after starter jobs are added; the section itself needs no ring. */
 .home-next:focus-visible {
   outline: none;
+}
+
+/* ---------- task detail: the countdown is open, Mark done is the one fill ---------- */
+
+.detail-hero {
+  display: grid;
+  gap: var(--space-3);
+  justify-items: start;
+  margin-top: var(--space-8);
+}
+
+.task-actions {
+  gap: var(--space-2);
+  margin-top: var(--space-6);
+}
+
+.task-actions .button-row {
+  display: flex;
+  gap: var(--space-6);
+}
+
+.task-actions .button.is-quiet {
+  padding: 0;
+}
+
+.task-actions + .section {
+  margin-top: var(--space-8);
+}
+
+.page > .button-stack > .button.is-quiet,
+.page > .button-stack > .button.is-danger-quiet {
+  justify-self: start;
+  padding: 0;
+}
+
+.composer .input:focus-visible,
+.search-field input:focus-visible {
+  outline: 0;
 }

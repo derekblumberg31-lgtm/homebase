@@ -67,23 +67,10 @@ export function TaskDetailPage() {
 
   return (
     <Page title={task.name} subtitle={[kindLabel, task.location].filter(Boolean).join(' · ')} back={{ to: '/tasks', label: 'Tasks' }} compact actions={<button type="button" className="button is-quiet" onClick={() => setEditing(true)}>Edit</button>}>
-      <Section>
-        <Group>
-          <div className="row is-stacked is-hero">
-            <Countdown info={info} large />
-            {task.recurring && task.status === 'open' && lastDoneKnown(task) && <DayStrip task={task} now={now} />}
-          </div>
-          {task.recurring ? (
-            <>
-              <Row title="Last done" value={lastDoneKnown(task) ? formatDate(task.lastDoneAt) : 'Not recorded yet'} />
-              <Row title={info.status === 'overdue' ? 'Was due' : 'Due'} value={formatDate(info.dueDate)} />
-              {task.nextDue && <Row title="Moved" sub="Snoozed or rescheduled. The usual rhythm returns after you mark it done." value={formatDate(task.nextDue)} wrap />}
-            </>
-          ) : (
-            <Row title={task.status === 'done' ? 'Finished' : 'Do by'} value={formatDate(task.status === 'done' ? task.lastDoneAt : info.dueDate)} />
-          )}
-        </Group>
-      </Section>
+      <div className="detail-hero">
+        <Countdown info={info} large />
+        {task.recurring && task.status === 'open' && lastDoneKnown(task) && <DayStrip task={task} now={now} />}
+      </div>
 
       {task.status === 'open' && (
         <div className="button-stack task-actions">
@@ -94,7 +81,7 @@ export function TaskDetailPage() {
           <div className="button-row">
             <button
               type="button"
-              className="button is-secondary"
+              className="button is-quiet"
               onClick={async () => {
                 try {
                   const { nextDue, undo } = await snoozeTask(store, task, 7, now);
@@ -108,7 +95,7 @@ export function TaskDetailPage() {
             </button>
             <button
               type="button"
-              className="button is-secondary"
+              className="button is-quiet"
               onClick={() => {
                 setNewDate(toDateInput(addDays(info.dueDate, 7)));
                 setRescheduling(true);
@@ -122,6 +109,15 @@ export function TaskDetailPage() {
 
       <Section>
         <Group>
+          {task.recurring ? (
+            <>
+              <Row title="Last done" value={lastDoneKnown(task) ? formatDate(task.lastDoneAt) : 'Not recorded yet'} />
+              <Row title={info.status === 'overdue' ? 'Was due' : 'Due'} value={formatDate(info.dueDate)} />
+              {task.nextDue && <Row title="Moved" sub="Snoozed or rescheduled. The usual rhythm returns after you mark it done." value={formatDate(task.nextDue)} wrap />}
+            </>
+          ) : (
+            <Row title={task.status === 'done' ? 'Finished' : 'Do by'} value={formatDate(task.status === 'done' ? task.lastDoneAt : info.dueDate)} />
+          )}
           {task.recurring && <Row title="Repeats" value={formatEvery(task.intervalDays)} />}
           {task.cost != null && <Row title={task.recurring ? 'Cost each time' : 'Estimated cost'} value={formatCurrency(task.cost)} />}
           {yearly > 0 && <Row title="Per year" value={formatCurrency(Math.round(yearly))} />}

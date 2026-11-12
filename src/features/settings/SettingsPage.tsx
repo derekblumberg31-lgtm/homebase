@@ -138,21 +138,16 @@ export function SettingsPage() {
       </Section>
 
       <Section title="Appearance">
-        <Group>
-          <div className="row is-stacked">
-            <span className="row-title">Theme</span>
-            <Segmented<ThemePreference>
-              label="Theme"
-              value={data.settings.theme}
-              onChange={(theme) => void saveSetting({ theme })}
-              options={[
-                { value: 'system', label: 'Automatic' },
-                { value: 'light', label: 'Light' },
-                { value: 'dark', label: 'Dark' },
-              ]}
-            />
-          </div>
-        </Group>
+        <Segmented<ThemePreference>
+          label="Theme"
+          value={data.settings.theme}
+          onChange={(theme) => void saveSetting({ theme })}
+          options={[
+            { value: 'system', label: 'Automatic' },
+            { value: 'light', label: 'Light' },
+            { value: 'dark', label: 'Dark' },
+          ]}
+        />
       </Section>
 
       <Section title="Reminders and notifications" id="reminders">
