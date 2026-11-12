@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <title>Homebase</title>
     <meta name="description" content="Your intelligent homeowner assistant: maintenance, property details, keys, records and help, all in one place." />
-    <meta name="theme-color" content="#faf9f5" />
+    <meta name="theme-color" content="#f4f3ef" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
@@ -14,8 +14,8 @@
     <link rel="icon" href="/icons/favicon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
     <style>
-      html { background: #faf9f5; }
-      html[data-theme='dark'] { background: #262624; }
+      html { background: #f4f3ef; }
+      html[data-theme='dark'] { background: #1b1a18; }
     </style>
     <script>
       // Apply the saved theme before first paint so there is no flash.
@@ -26,7 +26,7 @@
         document.documentElement.dataset.theme = theme;
         document.documentElement.style.colorScheme = theme;
         var meta = document.querySelector('meta[name="theme-color"]');
-        if (meta) meta.setAttribute('content', theme === 'dark' ? '#262624' : '#faf9f5');
+        if (meta) meta.setAttribute('content', theme === 'dark' ? '#1b1a18' : '#f4f3ef');
       } catch (error) {}
     </script>
   </head>
