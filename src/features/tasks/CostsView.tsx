@@ -1,17 +1,85 @@
-import type { Task } from '../../data/types';
+import { useState } from 'react';
+import type { HomeSystem, Item, ServiceEvent, Task } from '../../data/types';
 import { addDays, formatCurrency, startOfDay } from '../../lib/dates';
+import { Segmented } from '../../ui/controls';
 import { EmptyState, Group, Row, Section } from '../../ui/layout';
 import { CATEGORY_META, findType } from './presets';
+import { hasLoggedCosts, spentBySystem, spentByYear } from './spent';
 import { annualCost, dueDateOf } from './taskMath';
 
-/** What upkeep costs: per year, the next 90 days, by category, and what's due each month. */
-export function CostsView({ tasks, now }: { tasks: Task[]; now: number }) {
+const ALL = 'all';
+
+/** What was actually spent: only costs entered in Service history, by year and by system. */
+function SpentSection({ events, systems, items, tasks, now }: { events: ServiceEvent[]; systems: HomeSystem[]; items: Item[]; tasks: Task[]; now: number }) {
+  const years = spentByYear(events);
+  const currentYear = String(new Date(now).getFullYear());
+  const [picked, setPicked] = useState<string | undefined>();
+  if (!hasLoggedCosts(events)) {
+    return (
+      <Section title="What you’ve spent">
+        <p className="section-foot">No costs logged yet. Add what a job cost when you mark it done, or in Service history.</p>
+      </Section>
+    );
+  }
+  const withCosts = years.filter((y) => y.count > 0);
+  const fallback = withCosts.some((y) => y.year === currentYear) ? currentYear : withCosts[0].year;
+  const choice = picked && (picked === ALL || years.some((y) => y.year === picked)) ? picked : fallback;
+  const shown = choice === ALL ? years : years.filter((y) => y.year === choice);
+  const total = shown.reduce((sum, y) => sum + y.total, 0);
+  const priced = shown.reduce((sum, y) => sum + y.count, 0);
+  const jobs = priced + shown.reduce((sum, y) => sum + y.unpriced, 0);
+  const bySystem = spentBySystem(events, systems, items, tasks, choice === ALL ? undefined : choice);
+
+  return (
+    <Section title="What you’ve spent" foot="Totals of the costs entered in Service history. Jobs saved without a cost aren’t counted.">
+      {years.length > 1 && (
+        <Segmented
+          label="Year"
+          value={choice}
+          onChange={setPicked}
+          options={[...years.map((y) => ({ value: y.year, label: y.year })), { value: ALL, label: 'All years' }]}
+        />
+      )}
+      <Group>
+        <Row title="Total" value={<strong className="figure">{formatCurrency(Math.round(total * 100) / 100)}</strong>} />
+        <Row title="Jobs with a cost" value={`${priced} of ${jobs}`} />
+      </Group>
+      {bySystem.length > 0 && (
+        <>
+          <h3 className="spent-sub">By system</h3>
+          <Group>
+            {bySystem.map((row) => (
+              <Row key={row.key} title={row.label} value={formatCurrency(Math.round(row.total * 100) / 100)} to={row.href} />
+            ))}
+          </Group>
+        </>
+      )}
+    </Section>
+  );
+}
+
+interface Props {
+  tasks: Task[];
+  serviceEvents: ServiceEvent[];
+  systems: HomeSystem[];
+  items: Item[];
+  /** Every task, open or not: a finished job's system is found through its task. */
+  allTasks: Task[];
+  now: number;
+}
+
+/** Costs: what was spent (from Service history), then what upkeep is planned to cost (estimates). */
+export function CostsView({ tasks, serviceEvents, systems, items, allTasks, now }: Props) {
+  const spent = <SpentSection events={serviceEvents} systems={systems} items={items} tasks={allTasks} now={now} />;
   const priced = tasks.filter((task) => task.cost);
   if (tasks.length === 0) {
     return (
-      <div className="section">
-        <EmptyState title="No costs yet" body="Add a task with its cost and you’ll see what upkeep runs each year." />
-      </div>
+      <>
+        {spent}
+        <div className="section">
+          <EmptyState title="No costs yet" body="Add a task with its cost and you’ll see what upkeep runs each year." />
+        </div>
+      </>
     );
   }
 
@@ -43,9 +111,14 @@ export function CostsView({ tasks, now }: { tasks: Task[]; now: number }) {
 
   return (
     <>
+      {spent}
       <Section
-        title="Costs"
-        foot={priced.length === tasks.length ? 'Based on the cost entered for each task. Actual prices vary.' : `Based on ${priced.length} of ${tasks.length} tasks with a cost.`}
+        title="Planned upkeep"
+        foot={
+          priced.length === tasks.length
+            ? 'Based on the cost you entered for each task. These are estimates, not what you spent.'
+            : `Based on ${priced.length} of ${tasks.length} tasks with a cost. These are estimates, not what you spent.`
+        }
       >
         <Group>
           <Row title="Upkeep per year" value={<strong className="figure">{formatCurrency(Math.round(yearly))}</strong>} />

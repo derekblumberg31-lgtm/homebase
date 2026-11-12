@@ -74,6 +74,7 @@ export function PropertyPage() {
             to="/property/safety"
           />
           <Row title="What to buy" sub={buyCount ? `${buyCount} saved` : 'Filter sizes, bulbs, paint, batteries'} to="/property/buy" />
+          <Row title="Home report" sub="Systems, ages, warranties and service history, ready to print" to="/property/report" />
         </Group>
       </Section>
 

@@ -16,6 +16,7 @@ import { PropertyPage } from '../features/property/PropertyPage';
 import { PropertyDetailsPage } from '../features/property/PropertyDetailsPage';
 import { SafetyPage } from '../features/safety/SafetyPage';
 import { BuyPage } from '../features/buy/BuyPage';
+import { ReportPage } from '../features/report/ReportPage';
 import { RoomPage } from '../features/property/RoomPage';
 import { InventoryPage } from '../features/property/InventoryPage';
 import { ItemPage } from '../features/property/ItemPage';
@@ -120,6 +121,7 @@ export function App() {
                     <Route path="/property/details" element={<PropertyDetailsPage />} />
                     <Route path="/property/safety" element={<SafetyPage />} />
                     <Route path="/property/buy" element={<BuyPage />} />
+                    <Route path="/property/report" element={<ReportPage />} />
                     <Route path="/property/rooms/:roomId" element={<RoomPage />} />
                     <Route path="/property/systems" element={<SystemsPage />} />
                     <Route path="/property/systems/:systemId" element={<SystemPage />} />

@@ -155,7 +155,7 @@ export function TasksPage() {
       )}
 
       {view === 'schedule' && <ScheduleView items={items} now={now} onDone={(t) => complete(t)} />}
-      {view === 'costs' && <CostsView tasks={open} now={now} />}
+      {view === 'costs' && <CostsView tasks={open} allTasks={data.tasks} serviceEvents={data.serviceEvents} systems={data.systems} items={data.items} now={now} />}
 
       {form && (
         <TaskForm

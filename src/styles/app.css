@@ -4837,3 +4837,173 @@ a.feed-row:focus-visible {
 .buy-chips {
   margin-top: 16px;
 }
+
+/* ---------- spent summary ---------- */
+.spent-sub {
+  margin: 20px 0 4px;
+  color: var(--text-2);
+  font-size: var(--text-subhead);
+  font-weight: 600;
+}
+
+.history-totals {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  margin-top: 4px;
+  color: var(--accent);
+  font-size: var(--text-subhead);
+  font-weight: 600;
+}
+
+/* ---------- home report ---------- */
+.report {
+  margin-top: var(--space-8);
+  color: var(--text);
+}
+
+.report h1 {
+  margin: 0 0 4px;
+  font-size: var(--text-title);
+  font-weight: 700;
+}
+
+.report h2 {
+  margin: 28px 0 8px;
+  font-size: var(--text-body);
+  font-weight: 700;
+}
+
+.report h3 {
+  margin: 16px 0 6px;
+  font-size: var(--text-subhead);
+  font-weight: 600;
+  color: var(--text-2);
+}
+
+.report p {
+  margin: 0 0 4px;
+  color: var(--text-2);
+  font-size: var(--text-subhead);
+}
+
+.report-table-wrap {
+  overflow-x: auto;
+}
+
+.report table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--text-subhead);
+}
+
+.report th,
+.report td {
+  padding: 8px 10px 8px 0;
+  border-bottom: 0.5px solid var(--line);
+  text-align: left;
+  vertical-align: top;
+}
+
+.report thead th {
+  color: var(--text-2);
+  font-size: var(--text-footnote);
+  font-weight: 600;
+}
+
+.report tbody th {
+  font-weight: 500;
+}
+
+.report-foot {
+  margin-top: 24px;
+  color: var(--text-3);
+}
+
+/* ---------- print ---------- */
+/* The one place literal colours are allowed: paper is white and ink is black, in either theme. */
+@media print {
+  @page {
+    margin: 16mm;
+  }
+
+  html,
+  body,
+  :root[data-theme='dark'] body {
+    background: #fff !important;
+    color: #000 !important;
+  }
+
+  .tab-bar,
+  .sidebar,
+  .skip-link,
+  .report-controls,
+  .page-actions,
+  .back-link,
+  .toast-stack,
+  .launcher-dock,
+  .overlay,
+  .page:has(.report) .page-head {
+    display: none !important;
+  }
+
+  .shell,
+  .main,
+  .page {
+    display: block !important;
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    animation: none !important;
+  }
+
+  a {
+    color: inherit;
+    text-decoration: none;
+  }
+
+  .report {
+    margin: 0;
+    color: #000;
+    background: #fff;
+  }
+
+  .report h1,
+  .report h2,
+  .report h3,
+  .report p,
+  .report th,
+  .report td {
+    color: #000;
+  }
+
+  .report h2,
+  .report h3 {
+    break-after: avoid;
+  }
+
+  .report table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 10.5pt;
+  }
+
+  .report th,
+  .report td {
+    padding: 4pt 6pt;
+    border-bottom: 0.5pt solid #999;
+    text-align: left;
+  }
+
+  .report tr {
+    break-inside: avoid;
+  }
+
+  .report thead {
+    display: table-header-group;
+  }
+
+  .report-table-wrap {
+    overflow: visible;
+  }
+}

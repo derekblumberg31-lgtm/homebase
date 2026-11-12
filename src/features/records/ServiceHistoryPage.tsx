@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { useData } from '../../data/DataProvider';
 import { formatCurrency, formatDate } from '../../lib/dates';
 import { CircleCheck } from '../../ui/Icons';
@@ -37,6 +37,9 @@ export function ServiceHistoryPage() {
         </div>
       ) : (
         <>
+          <Link className="history-totals" to="/tasks?view=costs">
+            Totals by year and system ›
+          </Link>
           <div className="section">
             <Group>
               <Row title="Log something done" tone="action" lead={<CircleCheck size={20} />} chevron={false} onClick={openLog} />

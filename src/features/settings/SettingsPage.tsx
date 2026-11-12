@@ -198,6 +198,7 @@ export function SettingsPage() {
               sub={lastBackupChanges > 0 ? changesText(lastBackupChanges) : undefined}
               value={data.settings.lastBackupAt ? formatRelativeTime(data.settings.lastBackupAt) : 'Never'}
             />
+            <Row title="Print a home report" to="/property/report" />
             <Row title={savingBackup ? 'Saving…' : 'Save a backup'} tone="action" onClick={() => void saveBackup()} />
             <ImportButton label="Restore from a backup" />
             <Row title="Erase everything on this device" tone="danger" onClick={() => setEraseOpen(true)} />
