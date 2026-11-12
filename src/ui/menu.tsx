@@ -10,6 +10,8 @@ export interface MenuItem {
   onSelect: () => void;
 }
 
+const MENU_EXIT_MS = 150;
+
 interface MenuProps {
   /** Accessible name of the trigger button. */
   label: string;
@@ -28,6 +30,9 @@ interface MenuProps {
 export function Menu({ label, trigger, triggerClassName = 'button is-quiet', items, align = 'end', placement = 'below' }: MenuProps) {
   const [open, setOpen] = useState(false);
   const [flip, setFlip] = useState(false);
+  // The menu fades out over 150ms before it unmounts, so it never just vanishes.
+  const [leaving, setLeaving] = useState(false);
+  const leaveTimer = useRef<number | undefined>(undefined);
   const id = useId();
   const root = useRef<HTMLDivElement>(null);
   const button = useRef<HTMLButtonElement>(null);
@@ -37,22 +42,35 @@ export function Menu({ label, trigger, triggerClassName = 'button is-quiet', ite
     if (!open) return;
     itemRefs.current[0]?.focus();
     function onPointer(event: PointerEvent) {
-      if (!root.current?.contains(event.target as Node)) setOpen(false);
+      if (!root.current?.contains(event.target as Node)) hide();
     }
     document.addEventListener('pointerdown', onPointer);
     return () => document.removeEventListener('pointerdown', onPointer);
   }, [open]);
+
+  useEffect(() => () => window.clearTimeout(leaveTimer.current), []);
+
+  function hide() {
+    if (!open || leaving) return;
+    setLeaving(true);
+    leaveTimer.current = window.setTimeout(() => {
+      setOpen(false);
+      setLeaving(false);
+    }, MENU_EXIT_MS);
+  }
 
   /** Opens upwards when there isn't room below the button (rows near the bottom of the screen). */
   function show() {
     const rect = button.current?.getBoundingClientRect();
     const needed = 64 + items.length * 52;
     setFlip(placement === 'below' && rect ? window.innerHeight - rect.bottom < needed && rect.top > needed : false);
+    window.clearTimeout(leaveTimer.current);
+    setLeaving(false);
     setOpen(true);
   }
 
   function close(refocus = true) {
-    setOpen(false);
+    hide();
     if (refocus) button.current?.focus();
   }
 
@@ -90,7 +108,7 @@ export function Menu({ label, trigger, triggerClassName = 'button is-quiet', ite
         aria-haspopup="menu"
         aria-expanded={open}
         aria-controls={open ? id : undefined}
-        onClick={() => (open ? setOpen(false) : show())}
+        onClick={() => (open ? hide() : show())}
         onKeyDown={(event) => {
           if (event.key === 'ArrowDown' && !open) {
             event.preventDefault();
@@ -101,7 +119,7 @@ export function Menu({ label, trigger, triggerClassName = 'button is-quiet', ite
         {trigger}
       </button>
       {open && (
-        <div id={id} className={`menu is-${align} is-${flip ? 'above' : placement}`} role="menu" aria-label={label} onKeyDown={onMenuKey}>
+        <div id={id} className={`menu is-${align} is-${flip ? 'above' : placement} ${leaving ? 'is-leaving' : ''}`} role="menu" aria-label={label} onKeyDown={onMenuKey}>
           {items.map(({ id: itemId, label: itemLabel, hint, icon: Icon, tone, onSelect }, i) => (
             <button
               key={itemId}

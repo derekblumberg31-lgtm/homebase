@@ -28,7 +28,7 @@ export function Page({ title, subtitle, actions, back, wide = false, compact = f
     );
   }
   return (
-    <div className={`page ${wide ? 'is-wide' : ''}`}>
+    <div className={`page ${wide ? 'is-wide' : ''} ${back ? 'has-back' : ''}`}>
       <header className="page-head">
         {back && (
           <Link className="back-link" to={back.to}>

@@ -92,7 +92,7 @@ export function Sheet({ title, onClose, children, leading, trailing, footer }: S
   function dismiss() {
     if (leaving) return;
     setLeaving(true);
-    window.setTimeout(onClose, 260);
+    window.setTimeout(onClose, 200);
   }
   dismissRef.current = dismiss;
 

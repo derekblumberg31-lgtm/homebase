@@ -65,8 +65,6 @@
   --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
   --page-max: 760px;
   --sidebar: 232px;
-  --ease: cubic-bezier(0.22, 0.8, 0.24, 1);
-  --ease-settle: cubic-bezier(0.32, 0.72, 0, 1);
   --font: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   /* Page titles go through one token, so the title face can change in one place. */
   --font-title: ui-serif, 'New York', 'Iowan Old Style', 'Palatino Linotype', Palatino, Georgia, serif;
@@ -293,7 +291,7 @@ img {
   font-size: var(--text-caption);
   font-weight: 600;
   letter-spacing: 0;
-  transition: color 0.15s var(--ease);
+  transition: color var(--dur-fast) var(--ease-out);
 }
 
 .tab-item.is-active,
@@ -440,7 +438,7 @@ img {
     font-size: var(--text-caption);
     font-weight: 600;
     text-align: center;
-    transition: background 0.15s var(--ease), color 0.15s var(--ease);
+    transition: background var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out);
   }
 
   .side-icon {
@@ -451,7 +449,7 @@ img {
 
   .side-link svg {
     color: var(--text-3);
-    transition: color 0.15s var(--ease);
+    transition: color var(--dur-fast) var(--ease-out);
   }
 
   /* Active: a slim accent bar at the edge and brighter ink, not a filled pill. */
@@ -465,7 +463,7 @@ img {
     border-radius: 0 var(--r-xs) var(--r-xs) 0;
     background: var(--accent);
     transform: translateY(-50%) scaleY(0);
-    transition: transform 0.2s var(--ease);
+    transition: transform var(--dur-fast) var(--ease-out);
   }
 
   .side-link.is-active {
@@ -606,7 +604,11 @@ img {
   max-width: var(--page-max);
   margin: 0 auto;
   padding: calc(12px + env(safe-area-inset-top)) 16px 0;
-  animation: page-in 0.28s var(--ease);
+}
+
+/* Detail pages fade in. Tabs are used dozens of times a day, so they switch without it. */
+.page.has-back {
+  animation: page-in var(--dur-fast) var(--ease-out);
 }
 
 .page.is-wide {
@@ -705,7 +707,7 @@ img {
   border-radius: 50%;
   background: var(--fill);
   color: var(--text-2);
-  transition: background 0.15s var(--ease);
+  transition: transform var(--dur-press) var(--ease-out), background var(--dur-fast) var(--ease-out);
 }
 
 .round-button:active {
@@ -778,12 +780,13 @@ img {
   color: inherit;
   text-align: left;
   background: var(--surface);
-  transition: background 0.15s var(--ease);
+  transition: background var(--dur-fast) var(--ease-out);
 }
 
 a.row:active,
 button.row:active {
   background: var(--surface-2);
+  transition-duration: 0s;
 }
 
 a.row:focus-visible,
@@ -897,11 +900,13 @@ button.row:focus-visible {
   border-radius: var(--r-lg);
   font-size: var(--text-subhead);
   font-weight: 600;
-  transition: transform 0.15s var(--ease), background 0.15s var(--ease), opacity 0.15s var(--ease);
+  transition: transform var(--dur-press) var(--ease-out), background var(--dur-fast) var(--ease-out), opacity var(--dur-fast) var(--ease-out);
 }
 
-.button:active:not(:disabled) {
-  transform: scale(0.98);
+.button:active:not(:disabled),
+.round-button:active,
+.chip:active {
+  transform: scale(0.97);
 }
 
 .button.is-primary {
@@ -1050,7 +1055,7 @@ button.row:focus-visible {
   color: inherit;
   text-align: left;
   background: var(--surface);
-  transition: background 0.15s var(--ease);
+  transition: background var(--dur-fast) var(--ease-out);
 }
 
 .starter-row:active {
@@ -1076,7 +1081,7 @@ button.row:focus-visible {
   border: 1.5px solid var(--text-3);
   border-radius: 50%;
   color: var(--button-text);
-  transition: background 0.15s var(--ease), border-color 0.15s var(--ease);
+  transition: background var(--dur-fast) var(--ease-out), border-color var(--dur-fast) var(--ease-out);
 }
 
 .starter-row[aria-checked='true'] .starter-tick {
@@ -1102,7 +1107,7 @@ button.row:focus-visible {
 }
 
 .starter-choices .chip {
-  transition: background 0.15s var(--ease), color 0.15s var(--ease);
+  transition: background var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out);
 }
 
 .starter-footer {
@@ -1315,6 +1320,7 @@ select.input {
   min-height: 44px;
   padding: 0 12px;
   border-radius: var(--r-sm);
+  transition: transform var(--dur-press) var(--ease-out), background var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out);
   background: var(--fill);
   color: var(--text-2);
   font-size: var(--text-footnote);
@@ -1342,7 +1348,7 @@ select.input {
   color: var(--text-2);
   font-size: var(--text-footnote);
   font-weight: 500;
-  transition: background 0.2s var(--ease), color 0.2s var(--ease);
+  transition: background var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out);
 }
 
 .segmented button[aria-pressed='true'] {
@@ -1382,7 +1388,7 @@ select.input {
   border-radius: 50%;
   background: #ffffff;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.18);
-  transition: transform 0.22s var(--ease-settle);
+  transition: transform var(--dur-base) var(--ease-drawer);
 }
 
 .switch[aria-checked='true']::before {
@@ -1403,7 +1409,7 @@ select.input {
   align-items: flex-end;
   justify-content: center;
   background: var(--scrim);
-  animation: fade-in 0.2s var(--ease);
+  animation: fade-in var(--dur-fast) var(--ease-out);
 }
 
 @keyframes fade-in {
@@ -1421,7 +1427,7 @@ select.input {
   border-radius: var(--radius-sheet) var(--radius-sheet) 0 0;
   background: var(--bg);
   box-shadow: var(--shadow-sheet);
-  animation: sheet-in 0.36s var(--ease-settle);
+  animation: sheet-in var(--dur-sheet) var(--ease-drawer);
 }
 
 .sheet.is-dragging {
@@ -1430,7 +1436,7 @@ select.input {
 }
 
 .sheet:not(.is-dragging) {
-  transition: transform 0.3s var(--ease-settle);
+  transition: transform var(--dur-base) var(--ease-drawer);
 }
 
 @keyframes sheet-in {
@@ -1448,7 +1454,7 @@ select.input {
   .sheet {
     border-radius: var(--radius-sheet);
     max-height: min(860px, calc(100dvh - 64px));
-    animation: sheet-pop 0.28s var(--ease-settle);
+    animation: sheet-pop var(--dur-base) var(--ease-drawer);
   }
 
   @keyframes sheet-pop {
@@ -1531,7 +1537,7 @@ select.input {
   place-items: center;
   padding: 24px;
   background: var(--scrim);
-  animation: fade-in 0.2s var(--ease);
+  animation: fade-in var(--dur-fast) var(--ease-out);
 }
 
 .alert {
@@ -1541,7 +1547,7 @@ select.input {
   background: var(--surface);
   box-shadow: var(--shadow-alert);
   text-align: center;
-  animation: alert-in 0.24s var(--ease-settle);
+  animation: alert-in var(--dur-base) var(--ease-drawer);
 }
 
 @keyframes alert-in {
@@ -1642,7 +1648,7 @@ select.input {
   font-size: var(--text-subhead);
   box-shadow: var(--shadow-float);
   pointer-events: auto;
-  animation: toast-in 0.3s var(--ease-settle);
+  animation: toast-in var(--dur-base) var(--ease-out);
 }
 
 .toast:not(.has-action) {
@@ -1659,20 +1665,43 @@ select.input {
 @keyframes toast-in {
   from {
     opacity: 0;
-    transform: translateY(10px);
+    transform: translateY(12px);
   }
 }
 
-/* Leaves the way it arrived: down and out. Reduced motion removes the toast without this. */
+/* Leaves the way it arrived: down and out. */
 .toast.is-leaving {
-  animation: toast-out 0.15s var(--ease) forwards;
+  animation: toast-out var(--dur-exit) var(--ease-out) forwards;
   pointer-events: none;
 }
 
 @keyframes toast-out {
   to {
     opacity: 0;
-    transform: translateY(10px);
+    transform: translateY(12px);
+  }
+}
+
+/* Where transitions can start from a style, the toast is a transition, so one that arrives
+   mid-exit retargets instead of restarting. The keyframes above stay as the fallback. */
+@supports (transition-behavior: allow-discrete) {
+  .toast {
+    animation: none;
+    transition: opacity var(--dur-base) var(--ease-out), transform var(--dur-base) var(--ease-out);
+  }
+
+  .toast.is-leaving {
+    animation: none;
+    opacity: 0;
+    transform: translateY(12px);
+    transition-duration: var(--dur-exit);
+  }
+
+  @starting-style {
+    .toast {
+      opacity: 0;
+      transform: translateY(12px);
+    }
   }
 }
 
@@ -1791,7 +1820,7 @@ select.input {
   display: grid;
   grid-template-rows: 1fr;
   overflow: hidden;
-  transition: grid-template-rows 0.2s var(--ease-settle), opacity 0.2s var(--ease-settle);
+  transition: grid-template-rows var(--dur-base) var(--ease-drawer), opacity var(--dur-base) var(--ease-drawer);
 }
 
 .swipe-shell.is-leaving {
@@ -1834,7 +1863,7 @@ select.input {
   overflow: hidden;
   background: var(--surface);
   touch-action: pan-y;
-  transition: transform 0.3s var(--ease-settle), background 0.15s var(--ease);
+  transition: transform var(--dur-base) var(--ease-drawer), background var(--dur-fast) var(--ease-out);
 }
 
 .task-track:has(.task-row:active) {
@@ -1866,11 +1895,23 @@ select.input {
   border: 1.5px solid var(--text-3);
   border-radius: 50%;
   color: transparent;
-  transition: background 0.16s var(--ease), border-color 0.16s var(--ease), color 0.16s var(--ease);
+  transition: background var(--dur-fast) var(--ease-out), border-color var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out);
 }
 
 .task-check:active .task-check-mark {
   background: var(--fill);
+}
+
+/* Ticking fills the circle from 85% and fades it in; nothing grows from nothing. */
+.task-check:not(.is-static) .task-check-mark.is-checked {
+  animation: check-in var(--dur-base) var(--ease-out);
+}
+
+@keyframes check-in {
+  from {
+    opacity: 0;
+    transform: scale(0.85);
+  }
 }
 
 .task-check-mark.is-checked,
@@ -2227,24 +2268,6 @@ select.input {
   text-align: center;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-  }
-
-  /* The finish still fades the row (150 ms), then closes the gap instantly. */
-  .swipe-shell.is-leaving {
-    transition-property: opacity, grid-template-rows !important;
-    transition-duration: 150ms, 0.01ms !important;
-    transition-delay: var(--collapse-delay), calc(var(--collapse-delay) + 150ms) !important;
-    transition-timing-function: linear !important;
-  }
-}
-
 .search-field {
   display: flex;
   align-items: center;
@@ -2470,7 +2493,7 @@ select.input {
   height: 100%;
   border-radius: 50%;
   background: var(--accent);
-  transition: transform 0.12s var(--ease);
+  transition: transform var(--dur-fast) var(--ease-out);
 }
 
 .shutter:active span {
@@ -2696,7 +2719,7 @@ select.input {
   height: 44px;
   border-radius: var(--r-sm);
   color: var(--text-2);
-  transition: background 0.15s var(--ease), color 0.15s var(--ease);
+  transition: background var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out);
 }
 
 .icon-button[aria-expanded='true'] {
@@ -2803,7 +2826,7 @@ select.input {
   border-radius: var(--r-md);
   background: var(--surface-raised);
   box-shadow: var(--shadow-float);
-  animation: menu-in 0.16s var(--ease);
+  animation: menu-in var(--dur-fast) var(--ease-out);
 }
 
 .menu.is-end {
@@ -2833,6 +2856,14 @@ select.input {
 
 .menu.is-above.is-start {
   transform-origin: bottom left;
+}
+
+/* Leaves with opacity alone, over the same 150ms as every exit. */
+.menu.is-leaving {
+  animation: none;
+  opacity: 0;
+  transition: opacity var(--dur-exit) var(--ease-out);
+  pointer-events: none;
 }
 
 @keyframes menu-in {
@@ -3438,7 +3469,7 @@ a.feed-row:focus-visible {
 
 /* A new suggestion: two slow pulses of the ring, then still. Never loops. */
 .launcher.has-news {
-  animation: launcher-nudge 1.6s var(--ease) 0.6s 2;
+  animation: launcher-nudge 1.6s var(--ease-in-out) 0.6s 2;
 }
 
 @keyframes launcher-nudge {
@@ -3476,7 +3507,7 @@ a.feed-row:focus-visible {
   pointer-events: none;
   opacity: 0;
   transform: translate(4px, -50%);
-  transition: opacity 0.15s var(--ease), transform 0.15s var(--ease);
+  transition: opacity var(--dur-fast) var(--ease-out), transform var(--dur-fast) var(--ease-out);
 }
 
 .launcher:hover + .launcher-tip,
@@ -3500,7 +3531,7 @@ a.feed-row:focus-visible {
   border-radius: var(--r-lg);
   background: var(--bg);
   box-shadow: var(--shadow-float);
-  animation: panel-in 0.22s var(--ease);
+  animation: panel-in var(--dur-base) var(--ease-out);
 }
 
 /* The panel grows out of the launcher, so it's clear where it came from. */
@@ -3594,12 +3625,6 @@ a.feed-row:focus-visible {
 .inline-empty .text-button {
   margin-top: 6px;
   font-size: var(--text-subhead);
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .launcher.has-news {
-    animation: none;
-  }
 }
 
 .form-segment {
@@ -3721,16 +3746,16 @@ a.feed-row:focus-visible {
 
 /* A sheet let go short of dismissing settles back from wherever it was. */
 .sheet:not(.is-dragging) {
-  transition: transform 0.3s var(--ease-settle);
+  transition: transform var(--dur-base) var(--ease-drawer);
 }
 
 .sheet.is-leaving {
-  transition: transform 0.26s var(--ease-settle), opacity 0.26s var(--ease-settle);
+  transition: transform var(--dur-exit) var(--ease-drawer), opacity var(--dur-exit) var(--ease-drawer);
   transform: translateY(100%) !important;
 }
 
 .overlay.is-leaving {
-  transition: opacity 0.26s var(--ease-settle);
+  transition: opacity var(--dur-exit) var(--ease-drawer);
   opacity: 0;
 }
 
@@ -3764,18 +3789,6 @@ a.feed-row:focus-visible {
     --line-strong: rgba(241, 236, 228, 0.4);
     --text-2: #d2ccc3;
     --text-3: #c0b9af;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .sheet.is-leaving {
-    transform: none !important;
-    opacity: 0;
-  }
-
-  .menu,
-  .assistant-panel {
-    animation-name: fade-in;
   }
 }
 
@@ -4063,7 +4076,7 @@ a.feed-row:focus-visible {
 }
 
 .disclosure svg {
-  transition: transform 0.2s var(--ease);
+  transition: transform var(--dur-fast) var(--ease-out);
 }
 
 .disclosure[aria-expanded='true'] svg {
@@ -4310,4 +4323,104 @@ a.feed-row:focus-visible {
 
 .button.quick-add {
   min-height: 44px;
+}
+
+/* ---------- reduced motion: fades stay, movement goes ---------- */
+
+@media (prefers-reduced-motion: reduce) {
+  /* Things that slid or scaled in now fade in, quickly and linearly. */
+  .sheet,
+  .alert,
+  .toast,
+  .menu,
+  .assistant-panel {
+    animation-name: fade-in;
+    animation-duration: var(--dur-fast);
+    animation-timing-function: linear;
+  }
+
+  .task-check:not(.is-static) .task-check-mark.is-checked {
+    animation-name: fade-in;
+    animation-duration: var(--dur-fast);
+    animation-timing-function: linear;
+  }
+
+  .toast.is-leaving {
+    animation: toast-fade var(--dur-exit) linear forwards;
+  }
+
+  @keyframes toast-fade {
+    to {
+      opacity: 0;
+    }
+  }
+
+  .overlay,
+  .alert-overlay,
+  .page.has-back {
+    animation-duration: var(--dur-fast);
+    animation-timing-function: linear;
+  }
+
+  .launcher.has-news {
+    animation: none;
+  }
+
+  /* No transform on press, and no sliding: opacity and colour only. */
+  .button:active:not(:disabled),
+  .round-button:active,
+  .chip:active,
+  .launcher:active {
+    transform: none;
+  }
+
+  .sheet.is-leaving {
+    transform: none !important;
+    opacity: 0;
+    transition: opacity var(--dur-exit) linear;
+  }
+
+  .overlay.is-leaving {
+    transition-duration: var(--dur-exit);
+    transition-timing-function: linear;
+  }
+
+  .task-track {
+    transition-property: background;
+  }
+
+  .progress span,
+  .disclosure svg,
+  .switch::after,
+  .launcher-tip {
+    transition: none;
+  }
+
+  /* The finish still fades the row (150 ms), then closes the gap at once. */
+  .swipe-shell.is-leaving {
+    transition-property: opacity, grid-template-rows;
+    transition-duration: var(--dur-exit), 0.01ms;
+    transition-delay: var(--collapse-delay), calc(var(--collapse-delay) + 150ms);
+    transition-timing-function: linear;
+  }
+
+  @supports (transition-behavior: allow-discrete) {
+    .toast {
+      transform: none;
+      transition-property: opacity;
+      transition-duration: var(--dur-fast);
+      transition-timing-function: linear;
+    }
+
+    .toast.is-leaving {
+      transform: none;
+      transition-duration: var(--dur-exit);
+    }
+
+    @starting-style {
+      .toast {
+        transform: none;
+      }
+    }
+  }
 }
