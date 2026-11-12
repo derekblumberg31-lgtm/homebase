@@ -28,7 +28,7 @@ export function Countdown({ info, large = false }: { info: TaskInfo; large?: boo
 }
 
 /** Most days one strip shows; longer jobs show their final stretch, every square still one day. */
-const MAX_SQUARES = 20;
+const MAX_SQUARES = 14;
 
 /** A recurring task's run as calendar days: gone by are crossed off, today fills, late days are red. */
 export function DayStrip({ task, now }: { task: Pick<Task, 'lastDoneAt' | 'intervalDays'>; now: number }) {
