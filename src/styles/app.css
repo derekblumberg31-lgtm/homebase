@@ -1597,6 +1597,10 @@ select.input {
   font-size: var(--text-body);
 }
 
+.alert-actions button:focus-visible {
+  outline-offset: -3px;
+}
+
 .alert-actions button + button {
   border-left: 0.5px solid var(--line-strong);
   font-weight: 600;
