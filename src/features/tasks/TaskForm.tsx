@@ -13,6 +13,7 @@ import { PRIORITY_LABEL, taskCategory } from './meta';
 import { firstDueFor, LAST_DONE_OPTIONS, resolveLastDone, type LastDoneChoice } from './lastDone';
 import { CATEGORY_META, CATEGORY_ORDER, TASK_PRESETS, findType, presetCostHint } from './presets';
 import { dueDateOf } from './taskMath';
+import { WHEN_OPTIONS, whenToDate, type When } from './when';
 
 const INTERVALS = [
   { value: 7, label: '1 wk' },
@@ -22,22 +23,6 @@ const INTERVALS = [
   { value: 365, label: '1 yr' },
   { value: 730, label: '2 yr' },
 ];
-
-type When = 'today' | 'week' | 'month' | 'date';
-const WHEN_OPTIONS: { value: When; label: string }[] = [
-  { value: 'today', label: 'Today' },
-  { value: 'week', label: 'This week' },
-  { value: 'month', label: 'This month' },
-  { value: 'date', label: 'Pick a date' },
-];
-
-function whenToDate(when: When, picked: string): string {
-  const today = new Date();
-  if (when === 'today') return toDateInput(today);
-  if (when === 'week') return toDateInput(addDays(today, 7));
-  if (when === 'month') return toDateInput(addDays(today, 30));
-  return picked;
-}
 
 export interface TaskDraft {
   name?: string;
