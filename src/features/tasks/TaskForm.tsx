@@ -138,7 +138,9 @@ export function TaskForm({ initial, draft, onClose, onSave }: TaskFormProps) {
   function pickJob(id: string) {
     const g = guessForJob(id);
     if (!g) return;
-    if (g.name) setName(g.name);
+    const job = COMMON_JOBS.find((j) => j.id === id);
+    const picked = g.name ?? job?.name;
+    if (picked) setName(picked);
     apply(g);
   }
 
