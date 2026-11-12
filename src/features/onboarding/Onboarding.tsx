@@ -83,7 +83,11 @@ export function Onboarding() {
   return (
     <div className="onboarding">
       <div className="onboarding-card">
-        <img className="onboarding-mark" src={`${import.meta.env.BASE_URL}icons/icon-192.png`} alt="" />
+        <div className="steps-dots" aria-label={`Step ${index + 1} of ${STEPS.length}`}>
+          {STEPS.map((s, i) => (
+            <i key={s} className={i === index ? 'is-on' : ''} />
+          ))}
+        </div>
 
         {step === 'welcome' && (
           <>
@@ -106,7 +110,7 @@ export function Onboarding() {
               <button type="button" className="button is-primary is-block" onClick={() => setStep('household')}>
                 Get started
               </button>
-              <ImportButton label={fromSafari ? 'Started in Safari? Restore your backup' : 'Moving from another device? Restore a backup'} className="button is-quiet is-block" />
+              <ImportButton label={fromSafari ? 'Started in Safari? Restore your backup' : 'Restore from a backup'} className="button is-quiet is-block" />
             </div>
             {fromSafari && <p className="section-foot">To make one, open Homebase in Safari, go to Settings and choose Save a backup.</p>}
           </>
@@ -199,12 +203,6 @@ export function Onboarding() {
         )}
 
         {installOpen && <InstallSheet onClose={() => setInstallOpen(false)} />}
-
-        <div className="steps-dots" aria-label={`Step ${index + 1} of ${STEPS.length}`}>
-          {STEPS.map((s, i) => (
-            <i key={s} className={i === index ? 'is-on' : ''} />
-          ))}
-        </div>
       </div>
     </div>
   );

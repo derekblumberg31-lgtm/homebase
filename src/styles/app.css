@@ -1090,7 +1090,7 @@ button.row:focus-visible {
 }
 
 .starter-when {
-  padding: 0 16px 12px 50px;
+  padding: 0 var(--space-4) var(--space-3);
   background: var(--surface);
 }
 
@@ -1111,7 +1111,11 @@ button.row:focus-visible {
 }
 
 .starter-footer {
-  margin-top: 12px;
+  margin-top: var(--space-4);
+}
+
+.starter-footer .button:disabled {
+  opacity: 0.4;
 }
 
 .starter-footer .button {
@@ -2171,24 +2175,27 @@ select.input {
 /* ---------- onboarding ---------- */
 
 .onboarding {
-  display: grid;
-  place-items: center;
+  display: flex;
+  justify-content: center;
   min-height: 100dvh;
-  padding: 24px 16px calc(24px + env(safe-area-inset-bottom));
+  padding: max(12vh, 48px) var(--space-4) 0;
 }
 
+/* One calm column: the title near the top, the actions pinned in the thumb zone. */
 .onboarding-card {
+  display: flex;
+  flex-direction: column;
   width: min(100%, 520px);
+  min-height: calc(100dvh - max(12vh, 48px));
 }
 
-.onboarding-mark {
-  width: 64px;
-  height: 64px;
-  border-radius: var(--r-lg);
+.onboarding form {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
 }
 
 .onboarding h1 {
-  margin-top: 20px;
   font-family: var(--font-title);
   font-size: var(--text-large);
   font-weight: var(--title-weight);
@@ -2198,15 +2205,25 @@ select.input {
 }
 
 .onboarding .lead {
-  margin-top: 8px;
+  max-width: 34ch;
+  margin-top: var(--space-2);
   color: var(--text-2);
   font-size: var(--text-body);
+  text-wrap: pretty;
+}
+
+.onboarding .button-stack {
+  position: sticky;
+  bottom: 0;
+  margin: auto calc(var(--space-4) * -1) 0;
+  padding: var(--space-4) var(--space-4) calc(var(--space-6) + env(safe-area-inset-bottom));
+  background: var(--bg);
 }
 
 .steps-dots {
   display: flex;
   gap: 6px;
-  margin-top: 28px;
+  margin-bottom: var(--space-6);
 }
 
 .steps-dots i {
@@ -2219,7 +2236,7 @@ select.input {
 .steps-dots i.is-on {
   width: 18px;
   border-radius: var(--r-xs);
-  background: var(--accent);
+  background: var(--text);
 }
 
 /* ---------- small helpers ---------- */
