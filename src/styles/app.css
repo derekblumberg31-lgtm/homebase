@@ -26,9 +26,9 @@
   --button-bg: #29271f;
   --button-text: #faf9f5;
   --green: #4f7353;
-  --green-soft: rgba(79, 115, 83, 0.1);
+  --green-soft: rgba(79, 115, 83, 0.08);
   --amber: #8a6420;
-  --amber-soft: rgba(138, 100, 32, 0.1);
+  --amber-soft: rgba(138, 100, 32, 0.08);
   --red: #9e4f34;
   --red-soft: rgba(158, 79, 52, 0.1);
   --red-line: rgba(158, 79, 52, 0.35);
@@ -121,7 +121,7 @@
   --ink-x: #8f8c84;
   --accent: #d6957c;
   --accent-deep: #e2ab95;
-  --accent-soft: rgba(214, 149, 124, 0.13);
+  --accent-soft: rgba(214, 149, 124, 0.1);
   --on-accent: #1f1e1c;
   --button-bg: #f3f1ea;
   --button-text: #262624;
@@ -130,7 +130,7 @@
   --amber: #d6ac6a;
   --amber-soft: rgba(214, 172, 106, 0.12);
   --red: #d6957c;
-  --red-soft: rgba(214, 149, 124, 0.13);
+  --red-soft: rgba(214, 149, 124, 0.1);
   --red-line: rgba(214, 149, 124, 0.45);
   --amber-line: rgba(214, 172, 106, 0.45);
   --good-soft: rgba(162, 191, 160, 0.14);
