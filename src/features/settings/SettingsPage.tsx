@@ -4,9 +4,8 @@ import { PRODUCT } from '../../app/areas';
 import { useData, useStore } from '../../data/DataProvider';
 import { uid } from '../../data/ids';
 import type { Member, Settings, ThemePreference } from '../../data/types';
-import { downloadCalendar } from '../../lib/calendar';
 import { formatRelativeTime } from '../../lib/dates';
-import { deviceLabel, installMatters, isStandalone, readDeviceEnv, storageCopy, storageCopyOptions, storageStatus } from '../../lib/dataSafety';
+import { changesSince, changesText, deviceLabel,installMatters, isStandalone, readDeviceEnv, storageCopy, storageCopyOptions, storageStatus } from '../../lib/dataSafety';
 import { clearHomeFlags } from '../../lib/deviceFlags';
 import { storagePersisted } from '../../lib/storage';
 import { FormGroup, Segmented, Switch, TextField } from '../../ui/controls';
@@ -63,20 +62,12 @@ export function SettingsPage() {
   const notificationsSupported = typeof Notification !== 'undefined';
   const household = data.household;
   const openTasks = data.tasks.filter((t) => t.status === 'open');
+  const lastBackupChanges = data.settings.lastBackupAt ? changesSince(data, data.settings.lastBackupAt) : 0;
   // Links like /settings#data (from Home's backup reminder) land on that section.
   useEffect(() => {
     const id = window.location.hash.slice(1);
     if (id) window.setTimeout(() => document.getElementById(id)?.scrollIntoView({ block: 'start' }), 50);
   }, []);
-
-  function exportCalendar() {
-    try {
-      downloadCalendar(openTasks);
-      toast('Calendar file saved. Open it to import.');
-    } catch {
-      toast('The calendar file couldn’t be saved. Try again.', { tone: 'error' });
-    }
-  }
 
   // Instant settings have no sheet to hold a notice, so a failed write is a toast. The control reads the stored value, so it stays put.
   async function saveSetting(patch: Partial<Settings>): Promise<boolean> {
@@ -168,11 +159,11 @@ export function SettingsPage() {
               <Switch checked={data.settings.reminders} onChange={toggleReminders} label="Notify me while Homebase is open" />
             </div>
             <Row
-              title="Add all tasks to my calendar"
-              sub={openTasks.length ? `Downloads a calendar file with ${openTasks.length} open ${openTasks.length === 1 ? 'task' : 'tasks'}. Open it to add them to Apple, Google or Outlook Calendar.` : 'Add a task first'}
+              title="Add the whole schedule to my calendar"
+              sub={openTasks.length ? `Downloads a calendar file with ${openTasks.length} open ${openTasks.length === 1 ? 'job' : 'jobs'}. Open it to add them to Apple, Google or Outlook Calendar.` : 'Add a task first'}
               tone="action"
               wrap
-              onClick={openTasks.length ? exportCalendar : undefined}
+              to={openTasks.length ? '/settings/calendar' : undefined}
             />
           </Group>
           <p className="section-foot">Calendar entries don’t update themselves, and they won’t move when you mark a job done. After you change a lot of dates, export again and remove the old ones.</p>
@@ -202,7 +193,11 @@ export function SettingsPage() {
           <Group>
             {/* The row is always there; its line fills in when the browser answers, so nothing below jumps. */}
             <Row title="Storage" sub={<StorageLine persisted={persisted} installMatters={tabMatters} />} wrap />
-            <Row title="Last backup" value={data.settings.lastBackupAt ? formatRelativeTime(data.settings.lastBackupAt) : 'Never'} />
+            <Row
+              title="Last backup"
+              sub={lastBackupChanges > 0 ? changesText(lastBackupChanges) : undefined}
+              value={data.settings.lastBackupAt ? formatRelativeTime(data.settings.lastBackupAt) : 'Never'}
+            />
             <Row title={savingBackup ? 'Saving…' : 'Save a backup'} tone="action" onClick={() => void saveBackup()} />
             <ImportButton label="Restore from a backup" />
             <Row title="Erase everything on this device" tone="danger" onClick={() => setEraseOpen(true)} />

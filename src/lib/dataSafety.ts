@@ -84,7 +84,21 @@ export function worthLosing(data: HomeData): boolean {
 
 export type BackupNudge = { kind: 'first' } | { kind: 'stale'; lastBackupAt: string };
 
-export const BACKUP_STALE_DAYS = 30;
+export const BACKUP_STALE_DAYS = 14;
+
+const COUNTED_KINDS = ['task-added', 'task-done', 'item-added', 'key-added', 'record-added', 'import'];
+/** The activity log keeps this many entries, so a count that reaches it is "at least". */
+const ACTIVITY_CAP = 200;
+
+/** Jobs, items, keys and records added or done since a time. Capped by the activity log, and edits that log nothing aren't counted. */
+export function changesSince(data: HomeData, iso: string): number {
+  return data.activity.filter((a) => a.at > iso && COUNTED_KINDS.includes(a.kind)).length;
+}
+
+/** "1 thing added or done since", "200+ things added or done since". */
+export function changesText(count: number): string {
+  return count >= ACTIVITY_CAP ? `${ACTIVITY_CAP}+ things added or done since` : `${count} ${count === 1 ? 'thing' : 'things'} added or done since`;
+}
 
 /**
  * Whether to ask for a backup. Never because of a clock alone: a stale backup only counts when

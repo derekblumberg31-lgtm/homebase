@@ -1,6 +1,6 @@
 import type { Task } from '../data/types';
 import { dueDateOf } from '../features/tasks/taskMath';
-import { toDateInput } from './dates';
+import { formatDate, toDateInput } from './dates';
 
 /**
  * Calendar export (.ics). Browsers can't wake Homebase to send a reminder while it's closed, and
@@ -10,11 +10,27 @@ import { toDateInput } from './dates';
 
 const escape = (text: string) => text.replace(/\\/g, '\\\\').replace(/\n/g, '\\n').replace(/([,;])/g, '\\$1');
 
-/** Lines over 75 octets fold onto continuation lines, as RFC 5545 asks. */
+const encoder = new TextEncoder();
+
+/** Lines over 75 octets fold onto continuation lines (each begins with a space), as RFC 5545 asks. Never splits a character. */
 function fold(line: string): string {
-  if (line.length <= 74) return line;
+  if (encoder.encode(line).length <= 75) return line;
   const parts: string[] = [];
-  for (let i = 0; i < line.length; i += 73) parts.push((i ? ' ' : '') + line.slice(i, i + 73));
+  let current = '';
+  let size = 0;
+  for (const char of line) {
+    const bytes = encoder.encode(char).length;
+    // Continuation lines start with a space, so they hold one octet less.
+    const limit = parts.length ? 74 : 75;
+    if (size + bytes > limit) {
+      parts.push(parts.length ? ` ${current}` : current);
+      current = '';
+      size = 0;
+    }
+    current += char;
+    size += bytes;
+  }
+  parts.push(parts.length ? ` ${current}` : current);
   return parts.join('\r\n');
 }
 
@@ -24,6 +40,7 @@ function stamp(now: Date) {
   return now.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
 }
 
+/** Homebase's repeat is whole days. Calendars repeat by year, month or week, so months here are a 30-day approximation of Homebase's own. */
 function rrule(days: number): string {
   if (days % 365 === 0) return `FREQ=YEARLY;INTERVAL=${days / 365}`;
   if (days % 30 === 0) return `FREQ=MONTHLY;INTERVAL=${days / 30}`;
@@ -32,10 +49,21 @@ function rrule(days: number): string {
 }
 
 export function taskEvent(task: Task, now = new Date()): string[] {
-  const due = toDateInput(dueDateOf(task));
+  const dueDate = toDateInput(dueDateOf(task));
+  const today = toDateInput(now);
+  // A job that is already overdue starts today, so its alert still fires and the series isn't planted in the past.
+  const overdue = dueDate < today;
+  const due = overdue ? today : dueDate;
   const next = new Date(`${due}T12:00:00`);
   next.setDate(next.getDate() + 1);
-  const description = [task.location ? `Where: ${task.location}` : null, task.notes ?? null, 'From Homebase. This entry doesn’t move when you mark the job done; export again after big changes.'].filter(Boolean).join('\n');
+  const description = [
+    overdue ? `Was due ${formatDate(dueDate)}.` : null,
+    task.location ? `Where: ${task.location}` : null,
+    task.notes ?? null,
+    'From Homebase. This entry doesn’t move when you mark the job done; export again after big changes.',
+  ]
+    .filter(Boolean)
+    .join('\n');
   return [
     'BEGIN:VEVENT',
     `UID:${task.id}@homebase`,
@@ -72,4 +100,9 @@ export function downloadCalendar(tasks: Task[], name = `homebase-tasks-${toDateI
   a.click();
   a.remove();
   window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+/** Every open job in one file, named for the day it was made. */
+export function exportSchedule(tasks: Task[]) {
+  downloadCalendar(tasks, `homebase-schedule-${toDateInput()}.ics`);
 }

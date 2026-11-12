@@ -162,6 +162,9 @@ export function TaskDetailPage() {
               Add to my calendar (.ics file)
             </button>
             <p className="section-foot">The calendar entry won’t move when you mark it done.</p>
+            <Link className="button is-quiet" to="/settings/calendar">
+              How to add it to your calendar ›
+            </Link>
           </>
         )}
         <button type="button" className="button is-danger-quiet" onClick={() => setDeleting(true)}>

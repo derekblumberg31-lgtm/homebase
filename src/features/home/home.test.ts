@@ -70,6 +70,28 @@ describe('backup nudge', () => {
     expect(hasNudge(home({ ...base, settings: settings('2026-08-01T00:00:00.000Z') }))).toBe(true);
     expect(hasNudge(home({ ...base, activity: [], settings: settings('2026-08-01T00:00:00.000Z') }))).toBe(false);
   });
+
+  it('F8-T5: the row says how long ago and how many things changed since', () => {
+    const at = (day: string) => `2026-10-${day}T00:00:00.000Z`;
+    const log = [
+      { id: 'x', at: at('20'), kind: 'task-done' as const, text: 'Done' },
+      { id: 'y', at: at('21'), kind: 'task-added' as const, text: 'Added' },
+    ];
+    const base = { household: household('2026-01-01T00:00:00.000Z'), records: [record({})], settings: settings('2026-10-10T00:00:00.000Z') };
+    const detail = (activity: typeof log) => attentionFor(home({ ...base, activity }), NOW).find((a) => a.id === 'backup')?.detail;
+    expect(detail(log)).toBe('Last backed up 17 days ago · 2 things added or done since');
+    expect(detail(log.slice(0, 1))).toBe('Last backed up 17 days ago · 1 thing added or done since');
+  });
+
+  it('F8-T6: a hidden row stays hidden until a newer backup plus new changes', () => {
+    const changed = [{ id: 'x', at: '2026-09-01T00:00:00.000Z', kind: 'task-added' as const, text: 'Added' }];
+    const base = { household: household('2026-01-01T00:00:00.000Z'), records: [record({})], activity: changed, settings: settings('2026-08-01T00:00:00.000Z') };
+    const shown = (dismissedAt?: string) => attentionFor(home(base), NOW, dismissedAt).some((alert) => alert.id === 'backup');
+    expect(shown()).toBe(true);
+    expect(shown('2026-09-15T00:00:00.000Z')).toBe(false);
+    const afterNewBackup = { ...base, settings: settings('2026-09-20T00:00:00.000Z'), activity: [{ id: 'z', at: '2026-10-01T00:00:00.000Z', kind: 'task-done' as const, text: 'Done' }] };
+    expect(attentionFor(home(afterNewBackup), NOW, '2026-09-15T00:00:00.000Z').some((alert) => alert.id === 'backup')).toBe(true);
+  });
 });
 
 describe('greeting name', () => {

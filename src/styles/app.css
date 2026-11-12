@@ -4660,3 +4660,20 @@ a.feed-row:focus-visible {
     margin-top: var(--space-8);
   }
 }
+
+/* ---------- calendar guide ---------- */
+
+.guide-steps {
+  display: grid;
+  gap: var(--space-4);
+  margin: var(--space-6) 0 0;
+  padding-left: 1.5em;
+  color: var(--text);
+  font-size: var(--text-body);
+  line-height: 1.45;
+}
+
+.guide-steps li::marker {
+  color: var(--text-2);
+  font-weight: 600;
+}

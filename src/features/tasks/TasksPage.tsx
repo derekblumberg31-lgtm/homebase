@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { useData, useNow, useStore } from '../../data/DataProvider';
 import type { Task } from '../../data/types';
 import { formatCurrency } from '../../lib/dates';
@@ -198,6 +198,12 @@ function ScheduleView({ items, now, onDone }: { items: TaskItem[]; now: number; 
       {groups.map((group) => (
         <TaskList key={group.title} title={group.title} items={group.items} now={now} aside={String(group.items.length)} onDone={onDone} />
       ))}
+      <div className="section">
+        <Link className="button is-quiet" to="/settings/calendar">
+          Add the whole schedule to my calendar
+        </Link>
+        <p className="section-foot">One file with every open job. Repeating jobs repeat in your calendar. Entries don’t move when you mark a job done, so export again after big changes.</p>
+      </div>
       <p className="local-note">Due dates move forward when you mark a task done.</p>
     </>
   );

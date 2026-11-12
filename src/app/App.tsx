@@ -26,6 +26,7 @@ import { AssistantPage } from '../features/assistant/AssistantPage';
 import { RecordsPage } from '../features/records/RecordsPage';
 import { RecordPage } from '../features/records/RecordPage';
 import { ServiceHistoryPage } from '../features/records/ServiceHistoryPage';
+import { CalendarGuidePage } from '../features/settings/CalendarGuidePage';
 import { SettingsPage } from '../features/settings/SettingsPage';
 import { Onboarding } from '../features/onboarding/Onboarding';
 
@@ -137,6 +138,7 @@ export function App() {
                     <Route path="/records/service-history" element={<ServiceHistoryPage />} />
                     <Route path="/records/:recordId" element={<RecordPage />} />
                     <Route path="/settings" element={<SettingsPage />} />
+                    <Route path="/settings/calendar" element={<CalendarGuidePage />} />
                     <Route path="*" element={<Navigate to="/home" replace />} />
                   </Route>
                 </Routes>

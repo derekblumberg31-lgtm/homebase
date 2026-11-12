@@ -3,6 +3,8 @@ import { emptyData, type HomeData } from '../data/store';
 import type { Task } from '../data/types';
 import {
   backupNudge,
+  changesSince,
+  changesText,
   dataSafetyRow,
   deliverBackup,
   deviceLabel,
@@ -98,11 +100,34 @@ describe('backupNudge', () => {
   it('stays away after being hidden, until a later backup', () => {
     expect(backupNudge(home({ tasks: tasks(3) }), NOW, '2026-11-01T00:00:00.000Z')).toBeNull();
   });
-  it('is quiet for a backup under 30 days old, or one with nothing after it', () => {
-    expect(backupNudge(home({ tasks: tasks(3), settings: settings('2026-10-20T00:00:00.000Z'), activity: activity('2026-11-01T00:00:00.000Z') }), NOW)).toBeNull();
+  const daysAgo = (n: number) => new Date(NOW - n * 86_400_000).toISOString();
+  it('F8-T1: is quiet 13 days after a backup, even with changes', () => {
+    expect(backupNudge(home({ tasks: tasks(3), settings: settings(daysAgo(13)), activity: activity(daysAgo(2)) }), NOW)).toBeNull();
+  });
+  it('F8-T2: goes stale 14 days after a backup when something changed', () => {
+    expect(backupNudge(home({ tasks: tasks(3), settings: settings(daysAgo(14)), activity: activity(daysAgo(2)) }), NOW)).toEqual({ kind: 'stale', lastBackupAt: daysAgo(14) });
+  });
+  it('F8-T3: is quiet 60 days after a backup with no changes', () => {
+    expect(backupNudge(home({ tasks: tasks(3), settings: settings(daysAgo(60)) }), NOW)).toBeNull();
+  });
+  it('F8-T4: changesSince counts jobs done and ignores property edits', () => {
+    const at = daysAgo(1);
+    const log = [
+      { id: 'a', at, kind: 'task-done' as const, text: 'x' },
+      { id: 'b', at, kind: 'property-updated' as const, text: 'x' },
+      { id: 'c', at: daysAgo(30), kind: 'task-added' as const, text: 'x' },
+    ];
+    expect(changesSince(home({ activity: log }), daysAgo(14))).toBe(1);
+  });
+  it('F8-T5: says "1 thing" for one change, and caps at 200', () => {
+    expect(changesText(1)).toBe('1 thing added or done since');
+    expect(changesText(5)).toBe('5 things added or done since');
+    expect(changesText(200)).toBe('200+ things added or done since');
+  });
+  it('is quiet for a backup with nothing after it', () => {
     expect(backupNudge(home({ tasks: tasks(3), settings: settings('2026-09-01T00:00:00.000Z') }), NOW)).toBeNull();
   });
-  it('goes stale only when something changed after a 30 day old backup', () => {
+  it('goes stale only when something changed after a stale backup', () => {
     const data = home({ tasks: tasks(3), settings: settings('2026-09-01T00:00:00.000Z'), activity: activity('2026-09-10T00:00:00.000Z') });
     expect(backupNudge(data, NOW)).toEqual({ kind: 'stale', lastBackupAt: '2026-09-01T00:00:00.000Z' });
     expect(backupNudge(data, NOW, '2026-10-15T00:00:00.000Z')).toBeNull();

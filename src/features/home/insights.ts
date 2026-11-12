@@ -1,7 +1,7 @@
 import type { HomeData } from '../../data/store';
 import type { HomeRecord, TaskCategory, TipState } from '../../data/types';
-import { addDays, formatCurrency, formatDateShort, formatRelativeTime, toDateInput } from '../../lib/dates';
-import { backupNudge } from '../../lib/dataSafety';
+import { addDays, DAY_MS, formatCurrency, formatDateShort, toDateInput } from '../../lib/dates';
+import { backupNudge, changesSince, changesText } from '../../lib/dataSafety';
 import { SYSTEM_LIFESPAN } from '../property/labels';
 import { EXPIRY_WARNING_DAYS } from '../records/labels';
 import { taskCategory } from '../tasks/meta';
@@ -73,6 +73,13 @@ function endsText(expiresAt: string, now: number): string {
   return `Ends ${formatDateShort(expiresAt, now)}`;
 }
 
+function staleDetail(data: HomeData, lastBackupAt: string, now: number): string {
+  const days = Math.floor((now - new Date(lastBackupAt).getTime()) / DAY_MS);
+  const ago = `Last backed up ${days} ${plural(days, 'day', 'days')} ago`;
+  const changes = changesSince(data, lastBackupAt);
+  return changes > 0 ? `${ago} · ${changesText(changes)}` : ago;
+}
+
 /** This device holds the only copy, so ask for a backup once there's something worth keeping. */
 export function backupAttention(data: HomeData, now: number, backupDismissedAt?: string): AttentionItem | null {
   const nudge = backupNudge(data, now, backupDismissedAt);
@@ -81,7 +88,7 @@ export function backupAttention(data: HomeData, now: number, backupDismissedAt?:
     id: 'backup',
     kind: 'backup',
     title: 'Save a backup',
-    detail: nudge.kind === 'stale' ? `Last saved ${formatRelativeTime(nudge.lastBackupAt, now).toLowerCase()}` : 'Your data is only on this device',
+    detail: nudge.kind === 'stale' ? staleDetail(data, nudge.lastBackupAt, now) : 'Your data is only on this device',
     href: '/settings',
   };
 }
