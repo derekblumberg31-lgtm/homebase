@@ -3061,18 +3061,6 @@ select.input {
   margin-top: var(--space-6);
 }
 
-.health-count {
-  font-size: var(--text-headline);
-  font-weight: 600;
-  line-height: var(--lh-headline);
-  font-variant-numeric: tabular-nums;
-}
-
-.health-time {
-  color: var(--text-2);
-  font-size: var(--text-footnote);
-}
-
 .progress {
   grid-column: 1 / -1;
   height: 4px;

@@ -28,10 +28,6 @@ export function StarterChecklist() {
   return (
     <section className="health" aria-label="Starter checklist">
       <div className="health-meter">
-        <p className="health-count">
-          {check.done} of {check.total} done
-        </p>
-        {!check.complete && <p className="health-time">About {check.minutesLeft} min left</p>}
         <div className="progress" role="progressbar" aria-valuemin={0} aria-valuemax={check.total} aria-valuenow={check.done} aria-label="Home Health Check progress">
           <span style={{ width: `${check.score}%` }} />
         </div>
