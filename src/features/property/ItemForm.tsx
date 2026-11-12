@@ -7,6 +7,7 @@ import { compressPhoto } from '../../lib/images';
 import { FormGroup, SelectField, TextArea, TextField } from '../../ui/controls';
 import { Section } from '../../ui/layout';
 import { Sheet, useToast } from '../../ui/overlays';
+import { LabelScanButton } from './LabelScan';
 import { ITEM_KIND_LABEL } from './labels';
 
 const MAX_PHOTOS = 6;
@@ -95,6 +96,16 @@ export function ItemForm({ item, draft, onClose, onSave }: { item?: Item; draft?
       </FormGroup>
 
       <Section title="Details" foot="Model and serial numbers are usually on a sticker inside the door or on the back.">
+        <LabelScanButton
+          current={{ brand, model, serial }}
+          canKeepPhoto={photos.length < MAX_PHOTOS}
+          onApply={(v, photo) => {
+            setBrand(v.brand);
+            setModel(v.model);
+            setSerial(v.serial);
+            if (photo) setPhotos((p) => (p.length < MAX_PHOTOS ? [...p, photo] : p));
+          }}
+        />
         <FormGroup>
           <TextField label="Brand" optional value={brand} onChange={(e) => setBrand(e.target.value)} />
           <TextField label="Model number" optional value={model} onChange={(e) => setModel(e.target.value)} />

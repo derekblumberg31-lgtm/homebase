@@ -4677,3 +4677,14 @@ a.feed-row:focus-visible {
   color: var(--text-2);
   font-weight: 600;
 }
+
+/* ---------- label scan ---------- */
+.label-scan-photo {
+  display: block;
+  max-width: 100%;
+  max-height: 200px;
+  margin: 12px 0;
+  border-radius: var(--r-sm);
+  background: var(--fill);
+  object-fit: contain;
+}

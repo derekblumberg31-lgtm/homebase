@@ -130,7 +130,7 @@ window.__ENGINE_BASE__ = ENGINE_BASE;
 
 const SCRIPTS = ['engine-config.js', 'vendor/tesseract.min.js', 'identify.js', 'vision.js', 'match.js', 'ocr.js', 'engine-export.js'];
 
-function addScript(src: string, async = false): Promise<void> {
+export function addEngineScript(src: string, async = false): Promise<void> {
   return new Promise((resolve, reject) => {
     const existing = document.querySelector<HTMLScriptElement>(`script[data-engine="${src}"]`);
     if (existing) {
@@ -154,8 +154,8 @@ export function loadEngine(): Promise<EngineGlobals> {
   if (window.__KeyEngine) return Promise.resolve(window.__KeyEngine);
   if (!loading) {
     loading = (async () => {
-      void addScript('vendor/opencv.js', true);
-      for (const src of SCRIPTS) await addScript(src);
+      void addEngineScript('vendor/opencv.js', true);
+      for (const src of SCRIPTS) await addEngineScript(src);
       const engine = window.__KeyEngine;
       if (!engine) throw new Error('The key tools didn’t start. Reload and try again.');
       await engine.Identify.load();

@@ -3,7 +3,7 @@ import { useData, useStore } from '../../data/DataProvider';
 import { uid } from '../../data/ids';
 import type { HomeRecord, RecordKind } from '../../data/types';
 import { isRealDate } from '../../lib/dates';
-import { formatBytes } from '../../lib/images';
+import { formatBytes, photoForStorage } from '../../lib/images';
 import { FormGroup, SelectField, TextArea, TextField } from '../../ui/controls';
 import { Group, Row, Section } from '../../ui/layout';
 import { Sheet, useToast } from '../../ui/overlays';
@@ -73,7 +73,7 @@ export function RecordForm({ record, draft, onClose, onSaved }: { record?: HomeR
         continue;
       }
       try {
-        const stored = await store.saveFile(file);
+        const stored = await store.saveFile(await photoForStorage(file));
         setFiles((f) => [...f, { id: stored.id, name: stored.name, size: stored.size }]);
       } catch {
         toast(`${file.name} couldn’t be saved. The device may be out of space.`, { tone: 'error' });
@@ -207,7 +207,7 @@ export function RecordForm({ record, draft, onClose, onSaved }: { record?: HomeR
         </Section>
       )}
 
-      <Section title="Files" foot="Photos and PDFs are stored on this device and included in backups.">
+      <Section title="Files" foot="Photos and PDFs are stored on this device and included in backups. Large photos are made smaller to keep backups quick.">
         {(existing.length > 0 || files.length > 0) && (
           <Group>
             {existing.map((id, i) => (

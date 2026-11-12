@@ -13,6 +13,7 @@ import { TaskRow } from '../tasks/components';
 import { withInfo } from '../tasks/taskMath';
 import { useTaskActions } from '../tasks/useTaskActions';
 import { SYSTEM_LABEL, SYSTEM_LIFESPAN } from './labels';
+import { LabelScanButton } from './LabelScan';
 
 const MAX_PHOTOS = 6;
 
@@ -343,6 +344,16 @@ export function SystemSheet({ system, draftKind, onClose, onSave }: { system?: H
       </FormGroup>
 
       <Section title="From the label" foot={KIND_HINT[kind] ?? 'The brand, model and serial number are usually on a sticker on the unit.'}>
+        <LabelScanButton
+          current={{ brand, model, serial }}
+          canKeepPhoto={photos.length < MAX_PHOTOS}
+          onApply={(v, photo) => {
+            setBrand(v.brand);
+            setModel(v.model);
+            setSerial(v.serial);
+            if (photo) setPhotos((p) => (p.length < MAX_PHOTOS ? [...p, photo] : p));
+          }}
+        />
         <FormGroup>
           <TextField label="Brand" optional value={brand} onChange={(e) => setBrand(e.target.value)} />
           <TextField label="Model number" optional value={model} onChange={(e) => setModel(e.target.value)} />
