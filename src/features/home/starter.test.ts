@@ -12,7 +12,7 @@ import { rescheduleTask, snoozeTask, completeTask } from '../tasks/actions';
 import { inferTask, guessForJob } from '../tasks/infer';
 import { getTaskInfo, lastDoneKnown } from '../tasks/taskMath';
 import { guessFields } from '../tasks/infer';
-import { savedLocation, starterCheckFor } from './starter';
+import { healthDoneText, healthPageSummary, healthRowText, savedLocation, starterCheckFor, STARTER_STEPS } from './starter';
 import { markNotApplicable, markTested, reopenStep, saveLocation } from './starterActions';
 
 const home = (over: Partial<HomeData> = {}): HomeData => ({ ...emptyData(), ...over });
@@ -235,5 +235,27 @@ describe('backup compatibility', () => {
     expect(back.settings.healthSteps?.['water-shutoff']?.note).toBe('Basement');
     expect(back.systems[0]).toMatchObject({ serial: 'SN1', warrantyExpires: '2027-01-01' });
     expect(back.tasks[0]).toMatchObject({ nextDue: '2026-12-01', systemId: 's' });
+  });
+});
+
+describe('Health Check progress figures agree', () => {
+  const withDone = (n: number) =>
+    home({ settings: { ...emptyData().settings, healthSteps: Object.fromEntries(STARTER_STEPS.slice(0, n).map((s) => [s.id, { state: 'done', at: '2026-11-01' }])) } as HomeData['settings'] });
+
+  it.each([0, 3, 8])('shows the same "N of 8 done" on the Home row and the page at %i done', (n) => {
+    const check = starterCheckFor(withDone(n));
+    expect(check.done).toBe(n);
+    const figure = `${n} of 8 done`;
+    expect(healthDoneText(check)).toBe(figure);
+    expect(healthRowText(check).startsWith(figure)).toBe(true);
+    expect(healthPageSummary(check).startsWith(figure)).toBe(true);
+    for (const text of [healthRowText(check), healthPageSummary(check)]) expect(text).not.toMatch(/%|set up/);
+  });
+
+  it('drops the minutes at 8 of 8 and pluralises steps left', () => {
+    expect(healthRowText(starterCheckFor(withDone(8)))).toBe('8 of 8 done');
+    expect(healthRowText(starterCheckFor(withDone(3)))).toMatch(/^3 of 8 done · about \d+ min$/);
+    expect(healthPageSummary(starterCheckFor(withDone(7)))).toMatch(/1 step left/);
+    expect(healthPageSummary(starterCheckFor(withDone(3)))).toMatch(/5 steps left/);
   });
 });

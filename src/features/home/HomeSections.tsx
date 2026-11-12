@@ -13,7 +13,6 @@ import {
   DoorOpen,
   Download,
   FileText,
-  HeartPulse,
   House,
   Key,
   MoreHorizontal,
@@ -29,7 +28,7 @@ import { Menu } from '../../ui/menu';
 import { useToast } from '../../ui/overlays';
 import { TaskForm } from '../tasks/TaskForm';
 import { getTaskInfo } from '../tasks/taskMath';
-import type { Alert, AttentionItem, HealthCheck, HomeStatus, SeasonalTip, SnapshotFact, TimelineMonth } from './insights';
+import type { Alert, AttentionItem, HomeStatus, SeasonalTip, SnapshotFact, TimelineMonth } from './insights';
 import { completeTip, hideTip, planDraftFor, planTip, resetTip, snoozeTip, wakeSnoozedTips } from './tipActions';
 
 // ---------- Home status sentence and alert rows ----------
@@ -136,7 +135,6 @@ const FACT_ICON: Record<SnapshotFact['id'], ComponentType<IconProps>> = {
   rooms: DoorOpen,
   hvac: Thermometer,
   next: Calendar,
-  health: HeartPulse,
 };
 
 export function HomeOverview({ headline, place, facts, alerts }: { headline: string; place?: string; facts: SnapshotFact[]; alerts: Alert[] }) {
@@ -190,70 +188,6 @@ export function HomeOverview({ headline, place, facts, alerts }: { headline: str
           </ul>
         </div>
       )}
-    </section>
-  );
-}
-
-// ---------- Home Health Check ----------
-
-export function HealthModule({ health }: { health: HealthCheck }) {
-  const [showAll, setShowAll] = useState(false);
-  const next = health.next[0];
-  const steps = showAll ? health.steps : health.next;
-  const complete = health.done === health.total;
-
-  return (
-    <section className="module" id="home-record" aria-labelledby="record-title" tabIndex={-1}>
-      <header className="module-head">
-        <h2 id="record-title" className="module-title">
-          Complete your home’s record
-        </h2>
-        <span className="module-aside">
-          {health.done} of {health.total} steps
-        </span>
-      </header>
-
-      <div className="health-meter">
-        <span className="health-score">{health.score}%</span>
-        <div className="progress" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={health.score} aria-label="Home record complete">
-          <span style={{ width: `${health.score}%` }} />
-        </div>
-      </div>
-      <p className="module-lead">
-        {complete ? 'Your home’s record is complete. Homebase has what it needs to remind you at the right time.' : 'Beyond the safety basics: each of these helps Homebase remind you about the right things at the right time.'}
-      </p>
-
-      {steps.length > 0 && (
-        <ol className="steps">
-          {steps.map((step) => (
-            <li key={step.title} className={step.ok ? 'is-done' : undefined}>
-              <Link to={step.href} className="step">
-                <span className="step-mark" aria-hidden="true">
-                  {step.ok && <Check size={13} strokeWidth={2.4} />}
-                </span>
-                <span className="step-text">
-                  <span className="step-title">
-                    {step.title}
-                    {step.ok && <span className="visually-hidden"> (done)</span>}
-                  </span>
-                  {!step.ok && <span className="step-why">{step.why}</span>}
-                </span>
-              </Link>
-            </li>
-          ))}
-        </ol>
-      )}
-
-      <div className="module-foot">
-        {next && (
-          <Link className="button is-outline" to={next.href}>
-            Continue setup
-          </Link>
-        )}
-        <button type="button" className="text-button" aria-expanded={showAll} onClick={() => setShowAll((v) => !v)}>
-          {showAll ? 'Show fewer' : `See all ${health.total} steps`}
-        </button>
-      </div>
     </section>
   );
 }
@@ -451,7 +385,7 @@ const ACTIVITY_ICON: Partial<Record<ActivityKind, ComponentType<IconProps>>> = {
 
 const MONTH_MS = 30 * 24 * 60 * 60 * 1000;
 
-export function ActivityFeed({ now, health, limit = 5 }: { now: number; health: HealthCheck; limit?: number }) {
+export function ActivityFeed({ now, limit = 5 }: { now: number; limit?: number }) {
   const data = useData();
   const since = new Date(now - MONTH_MS).toISOString();
   const doneCount = data.serviceEvents.filter((e) => e.createdAt >= since).length;
@@ -479,10 +413,6 @@ export function ActivityFeed({ now, health, limit = 5 }: { now: number; health: 
         <div>
           <dt>Things added</dt>
           <dd>{addedCount}</dd>
-        </div>
-        <div>
-          <dt>Setup</dt>
-          <dd>{health.score}%</dd>
         </div>
       </dl>
       <p className="tally-note">Last 30 days</p>

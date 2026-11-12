@@ -220,6 +220,23 @@ export function starterCheckFor(data: HomeData): StarterCheck {
   };
 }
 
+/** "3 of 8 done": the one progress figure shown for the Home Health Check, everywhere. */
+export function healthDoneText(check: StarterCheck): string {
+  return `${check.done} of ${check.total} done`;
+}
+
+/** The Home row under Home: the same figure, plus the time left while steps remain. */
+export function healthRowText(check: StarterCheck): string {
+  return check.complete ? healthDoneText(check) : `${healthDoneText(check)} · about ${check.minutesLeft} min`;
+}
+
+/** The Health Check page subtitle: the same figure, then how many steps are left. */
+export function healthPageSummary(check: StarterCheck): string {
+  if (check.complete) return `${healthDoneText(check)}. Your starter checklist is done.`;
+  const left = check.steps.filter((s) => s.status === 'todo').length;
+  return `${healthDoneText(check)}. ${left} ${left === 1 ? 'step' : 'steps'} left, about ${check.minutesLeft} minutes. High-priority safety steps come first.`;
+}
+
 /** Where the homeowner said a shutoff or panel is, for the Assistant. */
 export function savedLocation(data: HomeData, id: StarterStepId): string | undefined {
   const note = data.settings.healthSteps?.[id]?.note;

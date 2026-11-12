@@ -6,7 +6,7 @@ import { firstNameOf } from '../../session/session';
 import { LocalGuideProvider } from '../assistant/provider';
 import { taskCategory, taskMetaParts } from '../tasks/meta';
 import { getTaskInfo } from '../tasks/taskMath';
-import { alertsFor, comingUpSub, arrangeAttention, attentionFor, endingSoon, healthCheckFor, homeStatusFor, seasonalTipsFor, snapshotFor, timelineFor } from './insights';
+import { alertsFor, comingUpSub, arrangeAttention, attentionFor, endingSoon, homeStatusFor, seasonalTipsFor, snapshotFor, timelineFor } from './insights';
 import { completeTip, hideTip, planDraftFor, planTip, snoozeTip } from './tipActions';
 import { buildStarterTask, chooseStarter, starterJobsFor, starterSubLine, toggleStarter } from './firstJobs';
 import { addStarterJobs } from './firstJobActions';
@@ -163,19 +163,18 @@ describe('seasonal recommendations', () => {
 });
 
 describe('Home overview', () => {
-  it('summarises the home in five facts', () => {
+  it('summarises the home in four facts', () => {
     const data = home({
       property: { id: 'property', nickname: 'Maple Street', yearBuilt: 1998, updatedAt: '' },
       systems: [{ id: 's', kind: 'heating', name: 'Furnace', installYear: 2010, createdAt: '', updatedAt: '' }],
       tasks: [task({})],
     });
-    const facts = snapshotFor(data, NOW, healthCheckFor(data, NOW));
+    const facts = snapshotFor(data, NOW);
     expect(facts.map((f) => [f.id, f.value])).toEqual([
       ['age', '28 years'],
       ['rooms', '0'],
       ['hvac', 'Plan a replacement'],
       ['next', 'Oct 30'],
-      ['health', '38%'],
     ]);
   });
 
@@ -187,19 +186,6 @@ describe('Home overview', () => {
     const months = timelineFor(data, NOW);
     expect(months.map((m) => m.label)).toEqual(['Overdue', 'November', 'December']);
     expect(months[2].entries[0]).toMatchObject({ kind: 'warranty', title: 'Water heater warranty ends' });
-  });
-
-  it('gives no Health Check credit for "0 overdue" when there are no tasks', () => {
-    const health = healthCheckFor(home(), NOW);
-    expect(health.done).toBe(0);
-    expect(health.score).toBe(0);
-    expect(health.steps.find((s) => s.title === 'Keep your tasks on schedule')?.ok).toBe(false);
-  });
-
-  it('credits the schedule step once tasks exist and none is overdue', () => {
-    const step = (data: HomeData) => healthCheckFor(data, NOW).steps.find((s) => s.title === 'Keep your tasks on schedule' || s.title.startsWith('Catch up'));
-    expect(step(home({ tasks: [task({ lastDoneAt: '2026-10-20' })] }))).toMatchObject({ title: 'Keep your tasks on schedule', ok: true });
-    expect(step(home({ tasks: [task({ lastDoneAt: '2026-01-01' })] }))).toMatchObject({ title: 'Catch up on 1 overdue task', ok: false });
   });
 });
 

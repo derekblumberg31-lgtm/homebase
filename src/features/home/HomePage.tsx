@@ -13,8 +13,8 @@ import { TaskRow } from '../tasks/components';
 import { compareUrgency, withInfo } from '../tasks/taskMath';
 import { useTaskActions } from '../tasks/useTaskActions';
 import { HomeAlertRow, HomeAlertRows, HomeStatusLine } from './HomeSections';
-import { arrangeAttention, attentionFor, comingUpSub, healthCheckFor, homeStatusFor, seasonalTipsFor, timelineFor, type AttentionItem } from './insights';
-import { starterCheckFor } from './starter';
+import { arrangeAttention, attentionFor, comingUpSub, homeStatusFor, seasonalTipsFor, timelineFor, type AttentionItem } from './insights';
+import { healthRowText, starterCheckFor } from './starter';
 import { StarterJobs } from './StarterJobs';
 import { useAlertDismissals } from './useAlertDismissals';
 import { useInstallRow } from './useInstallRow';
@@ -56,7 +56,6 @@ export function HomePage() {
   }, [data, now, backupDismissedAt, safetyRow]);
   const { rows, more, counted } = useMemo(() => arrangeAttention(attention, dismissed), [attention, dismissed]);
   const status = useMemo(() => homeStatusFor(data, now, counted), [data, now, counted]);
-  const health = useMemo(() => healthCheckFor(data, now), [data, now]);
   const starter = useMemo(() => starterCheckFor(data), [data]);
   const season = useMemo(() => seasonalTipsFor(data, now).tips.filter((t) => !t.status).length, [data, now]);
   const comingUp = useMemo(() => timelineFor(data, now).reduce((sum, m) => sum + m.entries.length, 0), [data, now]);
@@ -150,13 +149,7 @@ export function HomePage() {
 
       <div className="section home-more">
         <Group>
-          <Row title="Home Health Check" sub={
-              !starter.complete
-                ? `${starter.done} of ${starter.total} done · about ${starter.minutesLeft} min`
-                : health.done === health.total
-                  ? 'Your home’s record is complete'
-                  : `${health.score}% set up · ${health.total - health.done} steps left`
-            } to="/home/health" />
+          <Row title="Home Health Check" sub={healthRowText(starter)} to="/home/health" />
           <Row title="This season" sub={season ? `${season} seasonal ${season === 1 ? 'job' : 'jobs'} to plan` : 'All planned or done'} to="/home/season" />
           <Row title="Coming up" sub={comingUpSub(comingUp, ending)} to="/home/coming-up" wrap />
           <Row title="Activity" sub={data.activity.length ? 'What’s been done and added' : 'Fills in as you mark jobs done'} to="/home/activity" />

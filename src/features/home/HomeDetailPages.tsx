@@ -1,10 +1,10 @@
 import { useMemo } from 'react';
 import { useData, useNow } from '../../data/DataProvider';
 import { Page } from '../../ui/layout';
-import { ActivityFeed, HealthModule, HomeOverview, MaintenanceTimeline, SeasonalSection } from './HomeSections';
+import { ActivityFeed, HomeOverview, MaintenanceTimeline, SeasonalSection } from './HomeSections';
 import { StarterChecklist } from './HealthCheck';
-import { starterCheckFor } from './starter';
-import { alertsFor, currentSeason, healthCheckFor, seasonalTipsFor, snapshotFor, timelineFor } from './insights';
+import { healthPageSummary, starterCheckFor } from './starter';
+import { alertsFor, currentSeason, seasonalTipsFor, snapshotFor, timelineFor } from './insights';
 
 const back = { to: '/home', label: 'Home' };
 
@@ -15,20 +15,18 @@ export function HomeHealthPage() {
   const data = useData();
   const now = useNow();
   const starter = useMemo(() => starterCheckFor(data), [data]);
-  const health = useMemo(() => healthCheckFor(data, now), [data, now]);
-  const facts = useMemo(() => snapshotFor(data, now, health), [data, now, health]);
+  const facts = useMemo(() => snapshotFor(data, now), [data, now]);
   const alerts = useMemo(() => alertsFor(data, now).filter((a) => a.tone !== 'overdue'), [data, now]);
   const place = [data.property?.nickname, data.property?.type ? PROPERTY_TYPE[data.property.type] : null].filter(Boolean).join(' · ');
   return (
     <Page
       title="Home Health Check"
-      subtitle={starter.complete ? 'Your starter checklist is done.' : `${starter.total - starter.done} steps left, about ${starter.minutesLeft} minutes. High-priority safety steps come first.`}
+      subtitle={healthPageSummary(starter)}
       back={back}
     >
       <StarterChecklist />
       <h2 className="page-subhead">Your home at a glance</h2>
-      <HomeOverview headline={health.done === health.total ? 'Your home’s record is complete' : `${health.score}% set up`} place={place || undefined} facts={facts} alerts={alerts} />
-      <HealthModule health={health} />
+      <HomeOverview headline="Your home" place={place || undefined} facts={facts} alerts={alerts} />
     </Page>
   );
 }
@@ -61,12 +59,10 @@ export function HomeComingUpPage() {
 }
 
 export function HomeActivityPage() {
-  const data = useData();
   const now = useNow();
-  const health = useMemo(() => healthCheckFor(data, now), [data, now]);
   return (
     <Page title="Activity" subtitle="What’s been done and added around the home." back={back}>
-      <ActivityFeed now={now} health={health} limit={30} />
+      <ActivityFeed now={now} limit={30} />
     </Page>
   );
 }

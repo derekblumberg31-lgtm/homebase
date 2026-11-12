@@ -36,21 +36,6 @@ export interface SeasonalTip extends Recommendation {
   status?: TipState;
 }
 
-export interface HealthStep {
-  title: string;
-  why: string;
-  href: string;
-  ok: boolean;
-}
-
-export interface HealthCheck {
-  score: number;
-  done: number;
-  total: number;
-  steps: HealthStep[];
-  next: HealthStep[];
-}
-
 /** Id prefix of a system's warranty row, so it is counted as a warranty and not as an aging system. */
 const SYSTEM_WARRANTY_PREFIX = 'system-warranty-';
 
@@ -325,34 +310,10 @@ export function recommendationsFor(data: HomeData, now: number): Recommendation[
   return seasonalTipsFor(data, now).tips.filter((t) => !t.status);
 }
 
-export function healthCheckFor(data: HomeData, now: number): HealthCheck {
-  const overdue = withInfo(data.tasks.filter((t) => t.status === 'open'), now).filter((i) => i.info.status === 'overdue').length;
-  const appliances = data.items.filter((i) => i.kind === 'appliance');
-  // "0 overdue" is only progress once there are tasks to be on schedule with.
-  const overdueStep: HealthStep =
-    data.tasks.length === 0
-      ? { ok: false, title: 'Keep your tasks on schedule', why: 'Add a task first. This step is done while nothing is overdue.', href: '/tasks?new=1' }
-      : overdue === 0
-        ? { ok: true, title: 'Keep your tasks on schedule', why: 'Mark them done, or move the date if they can wait.', href: '/tasks' }
-        : { ok: false, title: `Catch up on ${overdue} overdue ${overdue === 1 ? 'task' : 'tasks'}`, why: 'Mark them done, or move the date if they can wait.', href: '/tasks' };
-  const steps: HealthStep[] = [
-    { ok: Boolean(data.property?.yearBuilt), title: 'Add the year your home was built', why: 'Older homes need different checks, like wiring and pipe inspections.', href: '/property/details' },
-    { ok: data.rooms.length > 0, title: 'Add your rooms', why: 'Tasks and belongings can then be filed by room.', href: '/property' },
-    { ok: data.systems.some((s) => s.installYear), title: 'Add your heating, cooling or water heater', why: 'With an install year, Homebase warns you before one reaches the end of its usual life.', href: '/property/systems' },
-    { ok: data.tasks.length >= 3, title: 'Plan at least three upkeep tasks', why: 'Start with filters, smoke alarms and gutters.', href: '/tasks?new=1' },
-    overdueStep,
-    { ok: appliances.length > 0, title: 'List your main appliances', why: 'Model and serial numbers save time on repairs and warranty claims.', href: '/property/inventory' },
-    { ok: data.records.some((r) => r.kind === 'warranty'), title: 'Save a warranty in the Warranty Vault', why: 'You’ll get a reminder two months before it ends.', href: '/records?new=warranty' },
-    { ok: data.items.some((i) => i.kind === 'key'), title: 'Save your house keys', why: 'A photo tells a locksmith exactly which blank to cut.', href: '/property/identify-key' },
-  ];
-  const done = steps.filter((c) => c.ok).length;
-  return { score: Math.round((done / steps.length) * 100), done, total: steps.length, steps, next: steps.filter((c) => !c.ok).slice(0, 3) };
-}
-
 // ---------- Home snapshot ----------
 
 export interface SnapshotFact {
-  id: 'age' | 'rooms' | 'hvac' | 'next' | 'health';
+  id: 'age' | 'rooms' | 'hvac' | 'next';
   label: string;
   value: string;
   detail: string;
@@ -362,7 +323,7 @@ export interface SnapshotFact {
 
 const HVAC_KINDS = new Set(['heating', 'cooling']);
 
-export function snapshotFor(data: HomeData, now: number, health: HealthCheck): SnapshotFact[] {
+export function snapshotFor(data: HomeData, now: number): SnapshotFact[] {
   const year = new Date(now).getFullYear();
   const built = data.property?.yearBuilt;
   const open = withInfo(data.tasks.filter((t) => t.status === 'open'), now).sort(compareUrgency);
@@ -394,7 +355,6 @@ export function snapshotFor(data: HomeData, now: number, health: HealthCheck): S
     next
       ? { id: 'next', label: 'Next maintenance', value: next.info.status === 'overdue' || next.info.daysLeft <= 1 ? countdownText(next.info) : formatDateShort(next.info.dueDate, now), detail: next.task.name, href: `/tasks/${next.task.id}`, tone: next.info.status === 'overdue' ? 'overdue' : undefined }
       : { id: 'next', label: 'Next maintenance', value: 'Nothing planned', detail: 'Add your first task', href: '/tasks?new=1', tone: 'muted' },
-    { id: 'health', label: 'Home record', value: `${health.score}%`, detail: `${health.done} of ${health.total} steps`, href: '#home-record', tone: health.score >= 75 ? 'good' : undefined },
   ];
 }
 
