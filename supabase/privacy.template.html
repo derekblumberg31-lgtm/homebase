@@ -16,7 +16,6 @@
   ul { padding-left: 1.2rem; }
   .meta { color: var(--text-2); font-size: 0.9rem; }
   a { color: var(--accent); }
-  .todo { border: 1px dashed var(--line); padding: 10px 12px; border-radius: 8px; }
 </style>
 </head>
 <body>
@@ -33,17 +32,20 @@
   <li><strong>What is stored:</strong> your whole home, including tasks, systems, items, records, notes, photos and attached files. That can include things like shut-off locations and anything you type into a note.</li>
   <li><strong>Where:</strong> with Supabase, our service provider, and the cloud host it uses, in the region chosen when the project was created.</li>
   <li><strong>Who can read it:</strong> only your sign-in can read it through the app. The copy is not end-to-end encrypted, so it could be accessed by whoever runs the Homebase service, for example through the project’s dashboard.</li>
-  <li><strong>What we collect about you:</strong> your email address. If you sign in with Google, Google also shares your name and profile picture; Homebase doesn’t need them and doesn’t store or show them. Homebase asks Google for your email and basic profile only (the openid, email and profile scopes), and nothing from your Google Calendar or other Google services.</li>
+  <li><strong>What we collect about you:</strong> your email address. If you sign in with Google, Google also sends your name and profile picture. They are kept with your account record by Supabase; Homebase doesn’t use or show them. Homebase asks Google for your email and basic profile only (the openid, email and profile scopes), and nothing from your Google Calendar or other Google services.</li>
+  <li><strong>What is saved with each backup:</strong> a short label for the device that saved it (such as “iPhone” or “Mac”) and a random device id, so your other devices can say where a change came from.</li>
+  <li><strong>What the sign-in service records:</strong> Supabase keeps sign-in records for your account, such as the times you signed in, your IP address and your browser, in its authentication logs.</li>
 </ul>
 
 <h2>Calendar link</h2>
 <p>If you make a calendar link, Homebase stores a list of your open job names, their dates and repeat rules so calendar apps can read it. It leaves out addresses, costs, notes, locations, systems and contacts. Anyone who has the link can see those job names and dates, so don’t share it. You can get a new link at any time, and the old one stops working at once.</p>
+<p>Calendar apps such as Google Calendar and Apple Calendar fetch the link from their own servers and keep a copy there. A new link stops them from getting updates, but it doesn’t remove a copy they already hold; remove the subscription in that app too. The link’s address, including its secret, also appears in the request logs that Supabase keeps for the project, so the person who runs the service can see it.</p>
 
 <h2>Deleting your information</h2>
 <p>You can delete your account and the copy of your home stored in it yourself: in Settings, choose “Delete my account and cloud copy”. Your home on your device isn’t touched. Signing out keeps your home on the device and stops syncing. “Erase everything on this device” signs you out first and doesn’t delete your account’s copy.</p>
 
 <h2>Contact</h2>
-<p class="todo">[Owner: add the contact address for privacy, deletion and support requests here before publishing this page.]</p>
+<p>For privacy questions, or to ask for your information to be deleted: <strong>{{CONTACT}}</strong></p>
 </main>
 </body>
 </html>

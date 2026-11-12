@@ -1,11 +1,24 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { BACKUP_VERSION, buildBackup } from '../data/backup';
-import type { HomeStore } from '../data/store';
 import type { Task } from '../data/types';
 import { freshStore } from '../test/freshStore';
 import { canonicalHash } from './docHash';
-import type { CloudRemote, CommitArgs, RemoteHeadRow } from './remote';
-import { MAX_SYNC_BYTES, NEWER_VERSION_MESSAGE, NOT_SAVED_MESSAGE, SyncEngine, type SyncStateStore } from './syncEngine';
+import { RemoteObjectMissing, type CloudRemote, type CommitArgs, type RemoteHeadRow } from './remote';
+import { syncCoversBackup } from './copy';
+import { createDatabase } from '../data/db';
+import { HomeStore } from '../data/store';
+import {
+  CHANGED_MESSAGE,
+  forgetSyncBeforeErase,
+  MAX_SYNC_BYTES,
+  MISSING_FILE_MESSAGE,
+  NEWER_VERSION_MESSAGE,
+  NOT_SAVED_MESSAGE,
+  SyncEngine,
+  type ChannelLike,
+  type LockApi,
+  type SyncStateStore,
+} from './syncEngine';
 
 const USER = 'user-1';
 
@@ -38,18 +51,31 @@ class FakeRemote implements CloudRemote {
   offline = false;
   /** Runs just before a commit, so a test can play "another device committed first". */
   beforeCommit?: () => void;
+  /** Runs while a download is under way, so a test can play "the person edited meanwhile". */
+  onDownload?: () => Promise<void>;
+  /** The commit lands in the account, then the reply is lost. */
+  lostReply = false;
+  /** The commit never reaches the account, and the reply is an error. */
+  commitFails = false;
+  /** Reading the head fails after this many more successful reads. */
+  headFailsAfter: number | null = null;
 
   private guard() {
     if (this.offline) throw new Error('offline');
   }
   async head() {
     this.guard();
+    if (this.headFailsAfter !== null) {
+      if (this.headFailsAfter <= 0) throw new Error('offline');
+      this.headFailsAfter -= 1;
+    }
     return this.row;
   }
   async download(path: string) {
     this.guard();
+    await this.onDownload?.();
     const text = this.objects.get(path);
-    if (text === undefined) throw new Error('missing');
+    if (text === undefined) throw new RemoteObjectMissing(path);
     return text;
   }
   async upload(path: string, text: string) {
@@ -61,9 +87,11 @@ class FakeRemote implements CloudRemote {
     this.guard();
     this.commits.push(args);
     this.beforeCommit?.();
+    if (this.commitFails) throw new Error('network');
     const current = this.row?.revision ?? 0;
     if (current !== args.expected) return null;
     this.row = { revision: current + 1, objectPath: args.newPath, backupVersion: args.backupVersion, sizeBytes: args.sizeBytes, deviceId: args.deviceId, deviceLabel: args.deviceLabel, updatedAt: new Date().toISOString() };
+    if (this.lostReply) throw new Error('the reply never arrived');
     return current + 1;
   }
   async remove(paths: string[]) {
@@ -217,10 +245,116 @@ describe('pulling', () => {
     expect(state.value?.revision).toBe(2);
     expect(e.getState().canUndo).toBe(true);
 
+    const cloudRow = remote.row;
     expect(await e.undoPull()).toBe(true);
     expect(store.getSnapshot()).toEqual(beforeData);
     expect(await canonicalHash(store.getSnapshot(), await store.allFiles())).toBe(beforeHash);
+    // Nothing reached the account: it still holds the other device's copy, and sync waits for a choice.
+    expect(remote.row).toBe(cloudRow);
+    expect(remote.objects.has(cloudRow!.objectPath)).toBe(true);
+    expect(remote.commits).toHaveLength(1);
+    expect(e.getState().status).toBe('conflict');
+    expect(e.getState().canUndo).toBe(false);
     e.stop();
+  });
+
+  it('after Undo, no check or sync pushes over the account, and either choice saves a file first', async () => {
+    const e = await synced();
+    const iphoneDoc = await backupOf(['A', 'Added on the iPhone']);
+    await remote.setCloud(iphoneDoc);
+    await e.check();
+    expect(await e.undoPull()).toBe(true);
+    const iphoneRow = remote.row;
+    const replace = vi.spyOn(store, 'replaceAll');
+
+    await e.check();
+    await e.check({ pushNow: true });
+    await e.syncNow();
+    expect(remote.commits).toHaveLength(1);
+    expect(remote.row).toBe(iphoneRow);
+    expect(remote.removed).not.toContain(iphoneRow!.objectPath);
+    expect(replace).not.toHaveBeenCalled();
+    expect(e.getState().status).toBe('conflict');
+    expect(e.getState().conflict).toMatchObject({ reason: 'diverged', remoteCounts: { tasks: 2 }, localCounts: { tasks: 1 } });
+
+    // Keeping this device's copy saves the other device's copy as a file before replacing it in the account.
+    expect(await e.resolve('local')).toEqual({ ok: true });
+    expect(await deliver.mock.calls[0][0].text()).toContain('Added on the iPhone');
+    expect(remote.row?.revision).toBe(3);
+    e.stop();
+  });
+
+  it('after Undo, taking the cloud copy again brings the other device’s changes back', async () => {
+    const e = await synced();
+    await remote.setCloud(await backupOf(['A', 'Added on the iPhone']));
+    await e.check();
+    await e.undoPull();
+    expect(await e.resolve('cloud')).toEqual({ ok: true });
+    expect(store.getSnapshot().tasks.map((t) => t.name).sort()).toEqual(['A', 'Added on the iPhone']);
+    expect(remote.commits).toHaveLength(1);
+    e.stop();
+  });
+
+  it('Undo does nothing once this device has changed since the pull', async () => {
+    const e = await synced();
+    await remote.setCloud(await backupOf(['A', 'Added on the iPhone']));
+    await e.check();
+    await store.put('tasks', task('t9', 'Typed after the pull'));
+    expect(await e.undoPull()).toBe(false);
+    expect(store.getSnapshot().tasks.map((t) => t.name)).toContain('Typed after the pull');
+    expect(e.getState().canUndo).toBe(false);
+    e.stop();
+  });
+
+  it('an edit made while the cloud copy downloads is never overwritten', async () => {
+    const e = await synced();
+    await remote.setCloud(await backupOf(['A', 'Added on the iPhone']));
+    remote.onDownload = async () => {
+      remote.onDownload = undefined;
+      await store.put('tasks', task('t9', 'Typed during the download'));
+    };
+    const replace = vi.spyOn(store, 'replaceAll');
+    await e.check();
+    expect(replace).not.toHaveBeenCalled();
+    expect(e.getState().status).toBe('conflict');
+    expect(e.getState().conflict?.reason).toBe('diverged');
+    expect(store.getSnapshot().tasks.map((t) => t.name)).toContain('Typed during the download');
+    expect(state.value?.revision).toBe(1);
+    expect(deliver).not.toHaveBeenCalled();
+    e.stop();
+  });
+
+  it('"Use the cloud copy" refuses when the home changed while the file was being saved', async () => {
+    const e = await synced();
+    await store.put('tasks', task('t8', 'Edited here'));
+    await remote.setCloud(await backupOf(['A', 'Edited there']));
+    await e.check();
+    expect(e.getState().status).toBe('conflict');
+    deliver.mockImplementationOnce(async () => {
+      await store.put('tasks', task('t7', 'Typed while the share sheet was open'));
+      return 'saved';
+    });
+    expect(await e.resolve('cloud')).toEqual({ ok: false, message: CHANGED_MESSAGE });
+    expect(store.getSnapshot().tasks.map((t) => t.name)).toContain('Typed while the share sheet was open');
+    expect(e.getState().status).toBe('conflict');
+    e.stop();
+  });
+
+  it('"Bring it here" checks again that the device is still empty', async () => {
+    await remote.setCloud(await backupOf(['From the cloud']));
+    const e = engine();
+    await e.check();
+    expect(e.getState().status).toBe('needs-confirm');
+    // The person says "Not now", adds two jobs, then opens Settings and taps "Bring it here".
+    await store.put('tasks', task('t1', 'Added after the question'));
+    await store.put('tasks', task('t2', 'Another one'));
+    const replace = vi.spyOn(store, 'replaceAll');
+    expect(await e.confirmPull()).toBe(false);
+    expect(replace).not.toHaveBeenCalled();
+    expect(store.getSnapshot().tasks.map((t) => t.name).sort()).toEqual(['Added after the question', 'Another one']);
+    expect(e.getState().status).toBe('conflict');
+    expect(e.getState().conflict?.reason).toBe('first-link');
+    expect(deliver).not.toHaveBeenCalled();
   });
 
   it('rejects a cloud copy from a newer Homebase and leaves this device alone', async () => {
@@ -401,5 +535,272 @@ describe('limits and failures', () => {
     const e = engine();
     await e.check({ pushNow: true });
     expect(remote.commits[0].expected).toBe(0);
+  });
+});
+
+describe('a commit whose reply is lost', () => {
+  it('never removes the object the account now points to, and counts as saved', async () => {
+    await seed(store, ['A']);
+    const e = engine();
+    remote.lostReply = true;
+    await e.check({ pushNow: true });
+    const head = remote.row!;
+    expect(head.objectPath).toBe(`${USER}/1-abcd1234.json`);
+    expect(remote.objects.has(head.objectPath)).toBe(true);
+    expect(remote.removed).not.toContain(head.objectPath);
+    // This device learned of its own commit from the account, so it is in sync and the next device can download it.
+    expect(e.getState().status).toBe('in-sync');
+    expect(state.value?.revision).toBe(1);
+    const other = await remote.download(head.objectPath);
+    expect(other).toContain('"A"');
+  });
+
+  it('with the account unreadable afterwards, it leaves the uploaded object alone', async () => {
+    await seed(store, ['A']);
+    const e = engine();
+    remote.lostReply = true;
+    remote.headFailsAfter = 1; // the check reads the head once, then the account stops answering
+    await e.check({ pushNow: true });
+    expect(remote.objects.has(`${USER}/1-abcd1234.json`)).toBe(true);
+    expect(remote.removed).toHaveLength(0);
+    expect(e.getState().status).toBe('offline');
+    // Back online: the account's head is the object this device uploaded, so this device recognises its own save.
+    remote.headFailsAfter = null;
+    remote.lostReply = false;
+    await e.check({ pushNow: true });
+    expect(remote.objects.has(remote.row!.objectPath)).toBe(true);
+    expect(e.getState().status).toBe('in-sync');
+    expect(state.value?.revision).toBe(1);
+    expect(remote.commits).toHaveLength(1);
+  });
+
+  it('removes its upload only when the account provably points somewhere else', async () => {
+    await seed(store, ['A']);
+    const e = engine();
+    await e.check({ pushNow: true });
+    await store.put('tasks', task('t9', 'B'));
+    remote.commitFails = true;
+    remote.beforeCommit = () => {
+      remote.beforeCommit = undefined;
+      void remote.setCloud('{}'); // another device committed, and this device's commit never arrived
+    };
+    await e.check({ pushNow: true });
+    expect(remote.removed).toContain(`${USER}/2-abcd1234.json`);
+    expect(remote.row?.objectPath).toBe(`${USER}/2-other.json`);
+    expect(remote.objects.has(remote.row!.objectPath)).toBe(true);
+  });
+
+  it('a commit that fails with no head to compare keeps the upload', async () => {
+    await seed(store, ['A']);
+    const e = engine();
+    remote.commitFails = true;
+    await e.check({ pushNow: true });
+    expect(remote.row).toBeNull();
+    expect(remote.removed).toHaveLength(0);
+    expect(e.getState().status).toBe('offline');
+  });
+});
+
+describe('a cloud object that is missing', () => {
+  async function missing() {
+    await seed(store, ['A']);
+    const e = engine();
+    await e.check({ pushNow: true });
+    return e;
+  }
+
+  it('is a recoverable state, not "can’t reach your account"', async () => {
+    const e = await missing();
+    // Another device saved revision 2, and the file its head points to is gone.
+    await remote.setCloud(await backupOf(['A', 'B']));
+    remote.objects.delete(remote.row!.objectPath);
+    await store.put('tasks', task('t9', 'Local edit'));
+    await e.check({ pushNow: true });
+    expect(e.getState().status).toBe('cloud-reset');
+    expect(e.getState().message).toBe(MISSING_FILE_MESSAGE);
+    expect(syncCoversBackup(e.getState())).toBe(false);
+    // "Save it" puts this device's home in the account again.
+    expect(await e.confirmCloudReset()).toBe(true);
+    expect(remote.row?.revision).toBe(3);
+    expect(remote.objects.has(remote.row!.objectPath)).toBe(true);
+    expect(e.getState().status).toBe('in-sync');
+  });
+
+  it('a clean device that finds the file missing offers the same recovery', async () => {
+    const e = await missing();
+    await remote.setCloud(await backupOf(['A', 'B']));
+    remote.objects.delete(remote.row!.objectPath);
+    await e.check();
+    expect(e.getState().status).toBe('cloud-reset');
+    expect(e.getState().status).not.toBe('offline');
+    expect(store.getSnapshot().tasks).toHaveLength(1);
+  });
+});
+
+describe('the backup nudge while sync is unhealthy', () => {
+  const recent = new Date().toISOString();
+  it('stays when sync is stuck, even if a sync was recent', () => {
+    for (const status of ['conflict', 'needs-confirm', 'cloud-reset', 'too-big', 'newer-version', 'damaged'] as const) {
+      expect(syncCoversBackup({ status, lastSyncedAt: recent }), status).toBe(false);
+    }
+  });
+  it('is covered when in sync, or briefly waiting after a recent sync', () => {
+    expect(syncCoversBackup({ status: 'in-sync', lastSyncedAt: recent })).toBe(true);
+    expect(syncCoversBackup({ status: 'pending', lastSyncedAt: recent })).toBe(true);
+    expect(syncCoversBackup({ status: 'offline', lastSyncedAt: recent })).toBe(true);
+    expect(syncCoversBackup({ status: 'offline', lastSyncedAt: new Date(Date.now() - 3 * 86_400_000).toISOString() })).toBe(false);
+    expect(syncCoversBackup({ status: 'idle' })).toBe(false);
+  });
+});
+
+describe('erase', () => {
+  async function erasedWithEngineMissing(clearState: boolean) {
+    await seed(store, ['A']);
+    const first = engine();
+    await first.check({ pushNow: true });
+    first.stop(); // the engine isn't there when Erase runs (still being built, or its client failed to load)
+    if (clearState) forgetSyncBeforeErase(null, state);
+    await store.eraseAll();
+    const next = engine(); // the next launch
+    await next.check({ pushNow: true });
+    await next.syncNow();
+    return next;
+  }
+
+  it('forgets the sync state even with no engine, so the next launch pushes nothing', async () => {
+    const next = await erasedWithEngineMissing(true);
+    expect(state.value).toBeNull();
+    expect(remote.commits).toHaveLength(1);
+    expect(remote.row?.revision).toBe(1);
+    expect(next.getState().status).toBe('needs-confirm');
+  });
+
+  it('even if the sync state survived (storage lost), an empty home is never pushed over the account', async () => {
+    const next = await erasedWithEngineMissing(false);
+    expect(state.value?.revision).toBe(1);
+    expect(remote.commits).toHaveLength(1);
+    expect(remote.row?.revision).toBe(1);
+    expect(remote.objects.has(remote.row!.objectPath)).toBe(true);
+    expect(next.getState().status).toBe('needs-confirm');
+    expect(store.getSnapshot().tasks).toHaveLength(0);
+  });
+});
+
+/** A browser's lock manager, enough for one name at a time. */
+class FakeLocks implements LockApi {
+  private held = new Set<string>();
+  private waiting = new Map<string, Array<() => void>>();
+  request(name: string, options: { signal?: AbortSignal }, callback: () => Promise<unknown>) {
+    return new Promise<unknown>((resolve, reject) => {
+      const run = () => {
+        this.held.add(name);
+        callback()
+          .then(resolve, reject)
+          .finally(() => {
+            this.held.delete(name);
+            this.waiting.get(name)?.shift()?.();
+          });
+      };
+      if (!this.held.has(name)) return run();
+      const queue = this.waiting.get(name) ?? [];
+      const entry = () => run();
+      queue.push(entry);
+      this.waiting.set(name, queue);
+      options.signal?.addEventListener('abort', () => {
+        const at = queue.indexOf(entry);
+        if (at >= 0) queue.splice(at, 1);
+        reject(new DOMException('aborted', 'AbortError'));
+      });
+    });
+  }
+}
+
+/** Channels that deliver to every other channel of the same hub, like tabs of one browser. */
+class FakeHub {
+  channels = new Set<ChannelLike>();
+  create(): ChannelLike {
+    const hub = this;
+    const channel: ChannelLike = {
+      onmessage: null,
+      postMessage(message) {
+        for (const other of hub.channels) if (other !== channel) queueMicrotask(() => other.onmessage?.({ data: message }));
+      },
+      close() {
+        hub.channels.delete(channel);
+      },
+    };
+    this.channels.add(channel);
+    return channel;
+  }
+}
+
+describe('two tabs on one device', () => {
+  beforeEach(() => {
+    vi.stubGlobal('document', { addEventListener: () => {}, removeEventListener: () => {}, visibilityState: 'visible' });
+    vi.stubGlobal('window', { addEventListener: () => {}, removeEventListener: () => {} });
+  });
+  afterEach(() => vi.unstubAllGlobals());
+
+  it('only one tab syncs, and the other takes over when it closes', async () => {
+    await seed(store, ['A']);
+    const locks = new FakeLocks();
+    const a = engine({ locks, createChannel: () => null });
+    const b = engine({ locks, createChannel: () => null });
+    a.start();
+    b.start();
+    await a.syncNow();
+    expect(a.getState().status).toBe('in-sync');
+    expect(remote.commits).toHaveLength(1);
+
+    // The follower never touches the account, even when asked to.
+    await store.put('tasks', task('t9', 'Edited'));
+    await b.check({ pushNow: true });
+    await b.syncNow();
+    expect(remote.commits).toHaveLength(1);
+
+    // The leader's tab closes; the follower takes over and saves the edit.
+    a.stop();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    await b.syncNow();
+    expect(remote.commits).toHaveLength(2);
+    expect(b.getState().status).toBe('in-sync');
+    b.stop();
+  });
+
+  it('a tab that was behind reads the other tab’s writes and does not push its stale copy', async () => {
+    const name = `homebase-two-tabs-${Date.now()}`;
+    const storeA = new HomeStore(await createDatabase(name));
+    const storeB = new HomeStore(await createDatabase(name));
+    await storeA.load();
+    await storeB.load();
+    await seed(storeA, ['Shared']);
+    await storeB.load();
+
+    const hub = new FakeHub();
+    const make = (s: HomeStore) => new SyncEngine({ store: s, remote, userId: USER, deviceId: 'dev-a', deviceLabel: 'Mac', deliverFile: deliver, syncState: state, random: () => `r${remote.commits.length}xxxxxx`.slice(0, 8), locks: null, createChannel: () => hub.create() });
+    const a = make(storeA);
+    const b = make(storeB);
+    a.start();
+    b.start();
+    await a.syncNow();
+    expect(remote.row?.revision).toBe(1);
+    await b.check();
+    expect(b.getState().status).toBe('in-sync');
+
+    // Tab A edits and saves. Tab B still holds the old snapshot in memory.
+    await storeA.put('tasks', task('t9', 'Edited in tab A'));
+    await a.syncNow();
+    expect(remote.row?.revision).toBe(2);
+    const savedPath = remote.row!.objectPath;
+
+    // Tab B is switched away from and saves what it has. It must have read tab A's edit first.
+    await b.check({ pushNow: true });
+    await b.check({ pushNow: true });
+    expect(remote.commits).toHaveLength(2);
+    expect(remote.row?.objectPath).toBe(savedPath);
+    expect(remote.objects.has(savedPath)).toBe(true);
+    expect(storeB.getSnapshot().tasks.map((t) => t.name)).toContain('Edited in tab A');
+    a.stop();
+    b.stop();
   });
 });

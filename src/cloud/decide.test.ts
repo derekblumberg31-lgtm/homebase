@@ -54,9 +54,24 @@ describe('decide: never replaces local data that has unsynced changes', () => {
             const input: DecideInput = { remote: r, base: b, localHash, localEmpty };
             if (!isDirty(input)) continue;
             checked += 1;
-            expect(REPLACING_ACTIONS, JSON.stringify(input)).not.toContain(decide(input).kind);
+            const kind = decide(input).kind;
+            // An empty device has nothing to lose, so it may be asked ("pull-confirm"); it is never silently replaced.
+            if (localEmpty && kind === 'pull-confirm') continue;
+            expect(REPLACING_ACTIONS, JSON.stringify(input)).not.toContain(kind);
           }
     expect(checked).toBeGreaterThan(20);
+  });
+
+  it('never pushes an empty home over an account that has one: it asks first', () => {
+    for (const r of remotes)
+      for (const b of bases)
+        for (const localHash of hashes) {
+          const action = decide({ remote: r, base: b, localHash, localEmpty: true });
+          if (r && action.kind === 'push') throw new Error(`pushed an empty home over revision ${r.revision}`);
+        }
+    // Synced at revision 3, then the local data vanished (storage loss, or an erase that missed the sync state).
+    expect(decide({ remote: remote(3), base: base(3), localHash: 'empty', localEmpty: true })).toEqual({ kind: 'pull-confirm' });
+    expect(decide({ remote: remote(5), base: base(3), localHash: 'empty', localEmpty: true })).toEqual({ kind: 'pull-confirm' });
   });
 
   it('a pull only ever happens when this device matches a revision already in the account', () => {
@@ -69,10 +84,7 @@ describe('decide: never replaces local data that has unsynced changes', () => {
               expect(b).not.toBeNull();
               expect(localHash).toBe(b!.hash);
             }
-            if (action.kind === 'pull-confirm') {
-              expect(b).toBeNull();
-              expect(localEmpty).toBe(true);
-            }
+            if (action.kind === 'pull-confirm') expect(localEmpty).toBe(true);
           }
   });
 });

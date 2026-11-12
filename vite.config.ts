@@ -1,15 +1,34 @@
 /// <reference types="vitest/config" />
-import { defineConfig } from 'vite';
+import { defineConfig, type Plugin } from 'vite';
 import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
+import { readFileSync } from 'node:fs';
+import { renderPrivacyPage } from './src/cloud/privacyPage';
 
 // GitHub Pages serves the app from /homebase/; Netlify and local dev serve it from the root.
 const base = process.env.BASE_PATH ?? '/';
+
+/**
+ * Publishes /privacy.html only when the build has a Supabase project and VITE_PRIVACY_CONTACT, so the
+ * page never goes live describing a sign-in that isn't there, or with an empty contact line.
+ */
+function privacyPage(): Plugin {
+  return {
+    name: 'homebase-privacy-page',
+    apply: 'build',
+    generateBundle() {
+      const template = readFileSync(new URL('./supabase/privacy.template.html', import.meta.url), 'utf8');
+      const page = renderPrivacyPage(template, { supabaseUrl: process.env.VITE_SUPABASE_URL, contact: process.env.VITE_PRIVACY_CONTACT });
+      if (page) this.emitFile({ type: 'asset', fileName: 'privacy.html', source: page });
+    },
+  };
+}
 
 export default defineConfig({
   base,
   plugins: [
     react(),
+    privacyPage(),
     VitePWA({
       registerType: 'autoUpdate',
       injectRegister: null,

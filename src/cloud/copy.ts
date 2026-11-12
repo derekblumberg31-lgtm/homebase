@@ -78,6 +78,7 @@ export function statusDetail(state: Pick<SyncState, 'status' | 'sizeMB' | 'messa
       return tooBigMessage(state.sizeMB ?? 45);
     case 'newer-version':
     case 'damaged':
+    case 'cloud-reset':
       return state.message;
     default:
       return undefined;
@@ -87,7 +88,12 @@ export function statusDetail(state: Pick<SyncState, 'status' | 'sizeMB' | 'messa
 /** A recent successful sync counts as a backup, so Home stops asking for a file. */
 export function syncCoversBackup(state: Pick<SyncState, 'status' | 'lastSyncedAt'>, now = Date.now()): boolean {
   if (state.status === 'in-sync') return true;
-  return Boolean(state.lastSyncedAt) && now - new Date(state.lastSyncedAt!).getTime() < 14 * DAY_MS;
+  // When sync is stuck, the account's copy isn't being kept up, so the nudge for a file stays.
+  if (state.status === 'conflict' || state.status === 'needs-confirm' || state.status === 'cloud-reset' || state.status === 'too-big' || state.status === 'newer-version' || state.status === 'damaged') return false;
+  if (!state.lastSyncedAt) return false;
+  // A short outage is ordinary; a long one isn't a backup.
+  const window = state.status === 'offline' ? 2 * DAY_MS : 14 * DAY_MS;
+  return now - new Date(state.lastSyncedAt).getTime() < window;
 }
 
 /** "your iPhone", or "another device" when the other copy didn't say what it was. */

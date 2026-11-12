@@ -29,6 +29,12 @@ export interface CloudRemote {
   /** The new revision, or null when someone else committed first. */
   commit(args: CommitArgs): Promise<number | null>;
   remove(paths: string[]): Promise<void>;
+  /**
+   * Best-effort cleanup of leftovers: removes every stored backup whose revision number is at or below
+   * `revision`, except `keepPath`. Safe against another device's upload in progress, because that one
+   * is named for a revision above the committed one.
+   */
+  prune?(keepPath: string, revision: number): Promise<void>;
   /** Removes every stored backup, then the account itself. */
   deleteAccount(): Promise<void>;
   /** Whether a calendar link has been made for this account. */
@@ -40,6 +46,29 @@ export interface CloudRemote {
 }
 
 const BUCKET = 'backups';
+
+/** The account points at a file that Storage no longer has. Not a network problem. */
+export class RemoteObjectMissing extends Error {
+  constructor(path: string) {
+    super(`The cloud file ${path} is missing.`);
+    this.name = 'RemoteObjectMissing';
+  }
+}
+
+/** Storage reports a missing object as a 400 or 404 whose message says "not found". */
+function isMissingObject(error: unknown): boolean {
+  if (typeof error !== 'object' || error === null) return false;
+  const e = error as { status?: unknown; statusCode?: unknown; message?: unknown };
+  const code = String(e.statusCode ?? e.status ?? '');
+  const message = typeof e.message === 'string' ? e.message : '';
+  return code === '404' || /not.?found/i.test(message);
+}
+
+/** The revision a backup file name starts with (`<n>-<random>.json`), or null. */
+export function revisionOfPath(path: string): number | null {
+  const match = /(?:^|\/)(\d+)-[^/]*\.json$/.exec(path);
+  return match ? Number(match[1]) : null;
+}
 
 interface HeadDbRow {
   revision: number | string;
@@ -74,7 +103,7 @@ export class SupabaseRemote implements CloudRemote {
 
   async download(path: string): Promise<string> {
     const { data, error } = await this.client.storage.from(BUCKET).download(path);
-    if (error) throw error;
+    if (error) throw isMissingObject(error) ? new RemoteObjectMissing(path) : error;
     return data.text();
   }
 
@@ -103,6 +132,15 @@ export class SupabaseRemote implements CloudRemote {
     if (paths.length === 0) return;
     const { error } = await this.client.storage.from(BUCKET).remove(paths);
     if (error) throw error;
+  }
+
+  async prune(keepPath: string, revision: number): Promise<void> {
+    const { data, error } = await this.client.storage.from(BUCKET).list(this.userId, { limit: 100 });
+    if (error) throw error;
+    const stale = (data ?? [])
+      .map((entry) => `${this.userId}/${entry.name}`)
+      .filter((path) => path !== keepPath && (revisionOfPath(path) ?? Infinity) <= revision);
+    await this.remove(stale);
   }
 
   async hasCalendarFeed(): Promise<boolean> {

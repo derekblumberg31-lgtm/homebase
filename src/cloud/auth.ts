@@ -1,5 +1,6 @@
+import type { SupabaseClient } from '@supabase/supabase-js';
 import type { CloudUser } from './cloudContext';
-import { getClient } from './client';
+import { clearStoredSession, getClient, resetClient } from './client';
 
 /** Sends a 6-digit code by email. Creates the account the first time. */
 export async function sendCode(email: string): Promise<void> {
@@ -22,9 +23,29 @@ export async function signInWithGoogle(): Promise<void> {
   if (error) throw error;
 }
 
-export async function signOut(): Promise<void> {
-  const client = await getClient();
-  await client.auth.signOut();
+/**
+ * Signs out on the server and here. When the server can't be reached the library keeps the stored
+ * session, which would sign the person back in at the next launch, so it is cleared here by hand.
+ * `serverReached: false` means other devices' sessions were not ended.
+ */
+export async function signOutWith(getIt: () => Promise<SupabaseClient>, forget: () => void, reset: () => void): Promise<{ serverReached: boolean }> {
+  let serverReached = false;
+  try {
+    const client = await getIt();
+    const { error } = await client.auth.signOut();
+    serverReached = !error;
+  } catch {
+    serverReached = false;
+  }
+  if (!serverReached) {
+    forget();
+    reset();
+  }
+  return { serverReached };
+}
+
+export function signOut(): Promise<{ serverReached: boolean }> {
+  return signOutWith(getClient, clearStoredSession, resetClient);
 }
 
 export async function currentUser(): Promise<CloudUser | null> {

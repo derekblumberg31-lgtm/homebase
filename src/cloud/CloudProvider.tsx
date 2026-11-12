@@ -4,15 +4,17 @@ import { deliverBackup, deviceLabel, readDeviceEnv } from '../lib/dataSafety';
 import { browserDeliverCaps } from '../features/settings/importing';
 import { useToast } from '../ui/overlays';
 import * as auth from './auth';
-import { CloudContext, type CloudApi, type CloudUser, type FeedState } from './cloudContext';
+import { CloudContext, sameUser, type CloudApi, type CloudUser, type FeedState } from './cloudContext';
 import { cloudConfig } from './config';
 import { buildFeedIcs, feedUrl, sameFeed } from './feed';
-import { getClient, hasStoredSession } from './client';
+import { getClient, hadStartupCode, hasStoredSession } from './client';
 import { ConflictSheet, DecisionSheet } from './ConflictSheet';
 import { fromDevice, syncCoversBackup } from './copy';
 import { getDeviceId, deviceSyncState } from './deviceState';
 import { SupabaseRemote, type CloudRemote } from './remote';
-import { SyncEngine, type SyncState } from './syncEngine';
+import { forgetSyncBeforeErase, SyncEngine, type SyncState } from './syncEngine';
+
+const SIGN_OUT_OFFLINE_MESSAGE = 'Signed out on this device. We couldn’t reach the server, so your other devices stay signed in until they’re online.';
 import type { HomeData } from '../data/store';
 
 const NO_ENGINE: SyncState = { status: 'idle', canUndo: false };
@@ -34,6 +36,8 @@ async function deliverFile(file: File): Promise<'saved' | 'cancelled' | 'failed'
 export function CloudProvider({ children }: { children: ReactNode }) {
   const store = useStore();
   const toast = useToast();
+  const toastRef = useRef(toast);
+  toastRef.current = toast;
   const [phase, setPhase] = useState<'loading' | 'signed-out' | 'signed-in'>(() => (hasStoredSession() ? 'loading' : 'signed-out'));
   const [user, setUser] = useState<CloudUser | null>(null);
   const [engine, setEngine] = useState<SyncEngine | null>(null);
@@ -48,15 +52,16 @@ export function CloudProvider({ children }: { children: ReactNode }) {
   const sync = useSyncExternalStore(engine ? engine.subscribe : noopSubscribe, engine ? engine.getState : () => NO_ENGINE);
 
   const applyUser = useCallback((next: CloudUser | null) => {
-    setUser(next);
+    setUser((previous) => sameUser(previous, next));
     setPhase(next ? 'signed-in' : 'signed-out');
   }, []);
 
   // Listening for sign-in and sign-out needs the library, so it starts only once the library is loaded for another reason.
+  const unwatch = useRef<(() => void) | null>(null);
   const watch = useCallback(async () => {
     if (watching.current) return;
     watching.current = true;
-    await auth.onAuthChange(applyUser);
+    unwatch.current = await auth.onAuthChange(applyUser);
   }, [applyUser]);
 
   useEffect(() => {
@@ -68,7 +73,8 @@ export function CloudProvider({ children }: { children: ReactNode }) {
         if (!live) return;
         applyUser(current);
         // Google returns with ?code=; the library has used it by now, so the address can be tidy again.
-        if (new URLSearchParams(location.search).has('code')) history.replaceState(history.state, '', location.pathname + location.hash);
+        // (Read from the load-time capture: the router may have dropped the query already.)
+        if (hadStartupCode() && new URLSearchParams(location.search).has('code')) history.replaceState(history.state, '', location.pathname + location.hash);
         await watch();
       } catch {
         if (live) setPhase('signed-out');
@@ -93,9 +99,11 @@ export function CloudProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  // One engine per signed-in person.
+  // One engine per signed-in person: the effect depends on the id, not on the user object, so token
+  // refreshes and repeated sign-in events never build a second engine.
+  const userId = user?.id ?? null;
   useEffect(() => {
-    if (!user) {
+    if (!userId) {
       feedReady.current = false;
       lastIcs.current = null;
       setFeed({ phase: 'unknown' });
@@ -109,7 +117,7 @@ export function CloudProvider({ children }: { children: ReactNode }) {
     (async () => {
       const client = await getClient();
       if (!live) return;
-      const remote = new SupabaseRemote(client, user.id);
+      const remote = new SupabaseRemote(client, userId);
       remoteRef.current = remote;
       remote
         .hasCalendarFeed()
@@ -122,7 +130,7 @@ export function CloudProvider({ children }: { children: ReactNode }) {
       made = new SyncEngine({
         store,
         remote,
-        userId: user.id,
+        userId,
         deviceId: getDeviceId(),
         deviceLabel: deviceLabel(readDeviceEnv()),
         deliverFile,
@@ -132,7 +140,8 @@ export function CloudProvider({ children }: { children: ReactNode }) {
             void pushFeed(event.data);
             return;
           }
-          toast(`Updated with changes from ${fromDevice(event.deviceLabel)}`, event.canUndo ? { action: { label: 'Undo', run: () => void engineRef.current?.undoPull() } } : undefined);
+          // Undo asks the engine that did the pull, not whichever engine is current by the time it is tapped.
+          toastRef.current(`Updated with changes from ${fromDevice(event.deviceLabel)}`, event.canUndo ? { action: { label: 'Undo', run: () => void made?.undoPull() } } : undefined);
         },
       });
       engineRef.current = made;
@@ -143,7 +152,7 @@ export function CloudProvider({ children }: { children: ReactNode }) {
       live = false;
       made?.stop();
     };
-  }, [user, store, toast, pushFeed]);
+  }, [userId, store, pushFeed]);
 
   // A choice that is needed opens its sheet once. "Decide later" and "Not now" close it; Settings reopens it.
   const lastStatus = useRef(sync.status);
@@ -188,7 +197,14 @@ export function CloudProvider({ children }: { children: ReactNode }) {
       signOut: async () => {
         engineRef.current?.detach();
         try {
-          await auth.signOut();
+          // The local session is cleared even when the server can't be reached; the person is told when that happens.
+          const { serverReached } = await auth.signOut();
+          if (!serverReached) {
+            unwatch.current?.();
+            unwatch.current = null;
+            watching.current = false;
+            toastRef.current(SIGN_OUT_OFFLINE_MESSAGE);
+          }
         } finally {
           applyUser(null);
         }
@@ -199,23 +215,33 @@ export function CloudProvider({ children }: { children: ReactNode }) {
         const config = cloudConfig();
         if (!remote || !config) throw new Error('Not signed in.');
         const secret = await remote.resetCalendarToken();
+        // The new link must serve a real calendar, so a failed first save is an error, not a silent empty link.
+        const ics = buildFeedIcs(store.getSnapshot());
+        await remote.putCalendarFeed(ics);
         feedReady.current = true;
-        lastIcs.current = null;
-        await pushFeed(store.getSnapshot());
+        lastIcs.current = ics;
         setFeed({ phase: 'ready', url: feedUrl(config.url, secret) });
       },
       deleteAccount: async () => {
         const remote = remoteRef.current;
         if (!remote) throw new Error('Not signed in.');
-        await remote.deleteAccount();
-        engineRef.current?.detach();
+        // Sync stops while the account is removed, so a push can't land a file after the clean-up.
+        const engine = engineRef.current;
+        engine?.stop();
+        try {
+          await remote.deleteAccount();
+        } catch (error) {
+          engine?.start();
+          throw error;
+        }
+        engine?.detach();
         await auth.signOut().catch(() => undefined);
         applyUser(null);
       },
       beforeErase: async () => {
-        if (!engineRef.current) return;
-        engineRef.current.detach();
-        await auth.signOut().catch(() => undefined);
+        // Always forget what was synced, with or without a running engine, so an empty home is never pushed.
+        forgetSyncBeforeErase(engineRef.current, deviceSyncState);
+        if (user || hasStoredSession()) await auth.signOut().catch(() => undefined);
         applyUser(null);
       },
     }),

@@ -4,7 +4,7 @@ import type { StoredFile } from '../data/types';
 import { toDateInput } from '../lib/dates';
 import { canonicalHash } from './docHash';
 import { decide, type RemoteHead, type SyncBase } from './decide';
-import type { CloudRemote, RemoteHeadRow } from './remote';
+import { RemoteObjectMissing, type CloudRemote, type RemoteHeadRow } from './remote';
 
 /**
  * Runs the sync: asks `decide` what to do, then pushes or pulls. Local data is the source of truth.
@@ -47,7 +47,7 @@ export interface SyncState {
   /** Who saved the account's copy, for the "bring it here" and "reset" sheets. */
   remote?: RemoteHead;
   sizeMB?: number;
-  /** Shown for 'newer-version' and 'damaged'. */
+  /** Shown for 'newer-version', 'damaged' and a 'cloud-reset' caused by a missing file. */
   message?: string;
   canUndo: boolean;
 }
@@ -61,6 +61,18 @@ export interface SyncStateStore {
   read(): { userId: string; revision: number; hash: string; syncedAt: string } | null;
   write(state: { userId: string; revision: number; hash: string; syncedAt: string }): void;
   clear(): void;
+}
+
+/** The part of the Web Locks API the engine uses. */
+export interface LockApi {
+  request(name: string, options: { signal?: AbortSignal }, callback: () => Promise<unknown>): Promise<unknown>;
+}
+
+/** The part of BroadcastChannel the engine uses. */
+export interface ChannelLike {
+  postMessage(message: unknown): void;
+  close(): void;
+  onmessage: ((event: unknown) => void) | null;
 }
 
 export interface EngineDeps {
@@ -77,13 +89,21 @@ export interface EngineDeps {
   maxBytes?: number;
   now?: () => number;
   random?: () => string;
+  /** Web Locks, so one tab per account syncs. Default: the browser's; null turns it off. */
+  locks?: LockApi | null;
+  /** Tells other tabs of this browser that the stored data changed. Default: BroadcastChannel; null turns it off. */
+  createChannel?: () => ChannelLike | null;
 }
 
 export const MAX_SYNC_BYTES = 45 * 1024 * 1024;
 export const PUSH_DELAY_MS = 60_000;
 export const CHECK_INTERVAL_MS = 15 * 60_000;
 export const NOT_SAVED_MESSAGE = 'Nothing changed. The backup file wasn’t saved.';
+export const CHANGED_MESSAGE = 'Your home changed while the file was being saved, so nothing was replaced. Try again.';
 export const NEWER_VERSION_MESSAGE = 'The cloud copy came from a newer Homebase. Reload Homebase to update it, then sync again.';
+export const MISSING_FILE_MESSAGE = 'The cloud copy’s file is missing. Saving this device’s home again will fix it.';
+/** Written in place of a fingerprint after Undo, so the engine sees this device as holding changes the account hasn't. */
+const UNDONE_HASH = 'undone-pull';
 
 export type ResolveResult = { ok: true } | { ok: false; message: string };
 
@@ -99,6 +119,23 @@ class CloudDocError extends Error {
 interface CloudDoc {
   data: HomeData;
   files: StoredFile[];
+}
+
+interface FetchedDoc {
+  text: string;
+  doc: CloudDoc;
+}
+
+/** What must still be true on this device just before its data is replaced. */
+type PullGuard = { hash: string } | { empty: true } | null;
+
+interface UndoPoint {
+  data: HomeData;
+  files: StoredFile[];
+  /** The revision this device had synced before the pull. */
+  priorRevision: number;
+  pulledHead: RemoteHeadRow;
+  pulled: FetchedDoc;
 }
 
 /** The account's document, checked the same way a restored file is. Throws CloudDocError. */
@@ -123,21 +160,57 @@ export function isEmptyHome(data: HomeData): boolean {
 
 const counts = (data: HomeData, files: StoredFile[]): Counts => ({ tasks: data.tasks.length, systems: data.systems.length, records: data.records.length, files: files.length });
 
+const headInfo = (head: RemoteHeadRow): RemoteHead => ({ revision: head.revision, deviceLabel: head.deviceLabel, updatedAt: head.updatedAt });
+
 const randomId = () => Math.random().toString(36).slice(2, 10).padEnd(8, '0');
+
+function browserLocks(): LockApi | null {
+  try {
+    return typeof navigator !== 'undefined' && navigator.locks ? (navigator.locks as unknown as LockApi) : null;
+  } catch {
+    return null;
+  }
+}
+
+function browserChannel(): ChannelLike | null {
+  try {
+    return typeof BroadcastChannel !== 'undefined' ? (new BroadcastChannel('homebase-data') as unknown as ChannelLike) : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Forgets what was synced before "Erase everything". It works with or without a running engine, so an
+ * erased, empty home can never be mistaken for changes to push over the account's copy.
+ */
+export function forgetSyncBeforeErase(engine: { detach(): void } | null | undefined, syncState: Pick<SyncStateStore, 'clear'>): void {
+  engine?.detach();
+  syncState.clear();
+}
 
 export class SyncEngine {
   private state: SyncState = { status: 'idle', canUndo: false };
   private listeners = new Set<() => void>();
   private queue: Promise<unknown> = Promise.resolve();
   private head: RemoteHeadRow | null = null;
-  private conflictDoc: { text: string; doc: CloudDoc } | null = null;
-  private undoPoint: { data: HomeData; files: StoredFile[] } | null = null;
+  private conflictDoc: FetchedDoc | null = null;
+  private undoPoint: UndoPoint | null = null;
   private pushTimer: ReturnType<typeof setTimeout> | null = null;
   private checkTimer: ReturnType<typeof setInterval> | null = null;
   private unsubscribeStore: (() => void) | null = null;
   private applying = false;
   private stopped = false;
   private teardown: Array<() => void> = [];
+  /** Only the tab holding the account's lock syncs. Without start() (tests) the engine leads. */
+  private leader = true;
+  /** Another tab of this browser has been heard from, so the stored data is re-read before acting. */
+  private peerSeen = false;
+  private channel: ChannelLike | null = null;
+  /** A file uploaded and committed with no answer seen; the head is looked at before anything is decided about it. */
+  private uncertain: { path: string; hash: string } | null = null;
+  private releaseLock: (() => void) | null = null;
+  private lockAbort: AbortController | null = null;
 
   constructor(private deps: EngineDeps) {
     const base = deps.syncState.read();
@@ -169,12 +242,17 @@ export class SyncEngine {
 
   // ---------- running ----------
 
-  /** Checks the account on start, on coming back to the tab, on going online, and every 15 minutes while visible. */
+  /**
+   * Checks the account on start, on coming back to the tab, on going online, and every 15 minutes while
+   * visible. When Web Locks exist, only one tab per account does this; the others wait and take over
+   * if that tab closes.
+   */
   start() {
     this.stopped = false;
     this.unsubscribeStore = this.deps.store.subscribe(() => {
       if (this.applying || this.stopped) return;
-      this.schedulePush();
+      this.channel?.postMessage('changed');
+      if (this.leader) this.schedulePush();
     });
     const onVisible = () => {
       if (document.visibilityState === 'visible') void this.check();
@@ -187,7 +265,37 @@ export class SyncEngine {
     this.checkTimer = setInterval(() => {
       if (document.visibilityState === 'visible') void this.check();
     }, CHECK_INTERVAL_MS);
-    void this.check();
+
+    this.channel = (this.deps.createChannel ?? browserChannel)();
+    if (this.channel) {
+      this.channel.onmessage = () => void this.onOtherTab();
+    }
+
+    const locks = this.deps.locks === undefined ? browserLocks() : this.deps.locks;
+    if (locks) {
+      this.leader = false;
+      this.lockAbort = new AbortController();
+      const lead = () =>
+        new Promise<void>((release) => {
+          if (this.stopped) {
+            release();
+            return;
+          }
+          this.releaseLock = release;
+          this.leader = true;
+          void this.check();
+        });
+      locks.request(`homebase-sync-${this.deps.userId}`, { signal: this.lockAbort.signal }, lead).catch(() => {
+        // Aborted by stop(), or the browser refused: without a lock this tab leads, as it would without the API.
+        if (!this.stopped) {
+          this.leader = true;
+          void this.check();
+        }
+      });
+    } else {
+      this.leader = true;
+      void this.check();
+    }
   }
 
   stop() {
@@ -198,6 +306,15 @@ export class SyncEngine {
     this.checkTimer = null;
     this.unsubscribeStore?.();
     this.unsubscribeStore = null;
+    this.lockAbort?.abort();
+    this.lockAbort = null;
+    this.releaseLock?.();
+    this.releaseLock = null;
+    if (this.channel) {
+      this.channel.onmessage = null;
+      this.channel.close();
+      this.channel = null;
+    }
     for (const off of this.teardown.splice(0)) off();
   }
 
@@ -205,7 +322,28 @@ export class SyncEngine {
   detach() {
     this.stop();
     this.deps.syncState.clear();
+    this.undoPoint = null;
     this.set({ status: 'idle', lastSyncedAt: undefined, conflict: undefined, canUndo: false });
+  }
+
+  /** Another tab changed the stored data: read it again, and push it when this is the syncing tab. */
+  private onOtherTab(): Promise<void> {
+    this.peerSeen = true;
+    return this.enqueue(async () => {
+      if (this.stopped) return;
+      await this.reloadStore();
+      if (this.leader && !this.stopped) this.schedulePush();
+    }).catch(() => undefined);
+  }
+
+  /** Reads the stored data again. The store's change notice is not a local edit, so it is not pushed as one. */
+  private async reloadStore() {
+    this.applying = true;
+    try {
+      await this.deps.store.load();
+    } finally {
+      this.applying = false;
+    }
   }
 
   /** Pushes 60 seconds after the last change. Each change starts the wait again. */
@@ -224,7 +362,10 @@ export class SyncEngine {
   }
 
   check(options: { pushNow?: boolean } = {}): Promise<void> {
-    return this.enqueue(() => (this.stopped ? Promise.resolve() : this.runCheck(Boolean(options.pushNow))));
+    return this.enqueue(() => (this.stopped ? Promise.resolve() : this.runCheck(Boolean(options.pushNow)))).catch(() => {
+      // For example, no crypto.subtle on a plain-http address. Nothing was changed.
+      if (!this.stopped) this.set({ status: 'offline' });
+    });
   }
 
   // ---------- the check ----------
@@ -236,6 +377,7 @@ export class SyncEngine {
   }
 
   private async runCheck(pushNow: boolean): Promise<void> {
+    if (!this.leader || this.stopped) return;
     if (this.state.status === 'idle') this.set({ status: 'checking' });
     let head: RemoteHeadRow | null;
     try {
@@ -244,46 +386,59 @@ export class SyncEngine {
       this.set({ status: 'offline' });
       return;
     }
+    if (this.stopped) return;
     this.head = head;
-    const { data, files } = await this.local();
-    const localHash = await canonicalHash(data, files);
-    const base = this.readBase();
-    const action = decide({
-      remote: head ? { revision: head.revision, deviceLabel: head.deviceLabel, updatedAt: head.updatedAt } : null,
-      base: base ? { revision: base.revision, hash: base.hash } : null,
-      localHash,
-      localEmpty: isEmptyHome(data),
-    });
-    const remote: RemoteHead | undefined = head ? { revision: head.revision, deviceLabel: head.deviceLabel, updatedAt: head.updatedAt } : undefined;
+    await this.settleEarlierSave(head);
+    const remote: RemoteHead | undefined = head ? headInfo(head) : undefined;
 
-    switch (action.kind) {
-      case 'idle':
-        this.set({ status: 'idle', conflict: undefined, remote: undefined });
-        return;
-      case 'in-sync':
-        this.set({ status: 'in-sync', lastSyncedAt: base?.syncedAt, conflict: undefined, remote });
-        this.deps.onEvent?.({ kind: 'synced', data });
-        return;
-      case 'push':
-        if (!pushNow) {
-          this.set({ status: 'pending', conflict: undefined });
-          if (!this.pushTimer && !this.stopped) this.schedulePush();
+    let reloaded = false;
+    for (;;) {
+      const { data, files } = await this.local();
+      const localHash = await canonicalHash(data, files);
+      const base = this.readBase();
+      const action = decide({
+        remote: remote ?? null,
+        base: base ? { revision: base.revision, hash: base.hash } : null,
+        localHash,
+        localEmpty: isEmptyHome(data),
+      });
+      // With another tab around, its writes are read before this one decides to replace or overwrite anything.
+      if (this.peerSeen && !reloaded && action.kind !== 'idle' && action.kind !== 'in-sync') {
+        reloaded = true;
+        await this.reloadStore();
+        continue;
+      }
+      if (this.stopped) return;
+
+      switch (action.kind) {
+        case 'idle':
+          this.set({ status: 'idle', conflict: undefined, remote: undefined });
           return;
-        }
-        await this.push(action.expected, head, data, files, localHash);
-        return;
-      case 'pull':
-        await this.pull(head!, true);
-        return;
-      case 'pull-confirm':
-        this.set({ status: 'needs-confirm', remote, conflict: undefined });
-        return;
-      case 'cloud-reset':
-        this.set({ status: 'cloud-reset', remote, conflict: undefined });
-        return;
-      case 'conflict':
-        await this.openConflict(head!, action.reason, data, files);
-        return;
+        case 'in-sync':
+          this.set({ status: 'in-sync', lastSyncedAt: base?.syncedAt, conflict: undefined, remote, message: undefined });
+          this.deps.onEvent?.({ kind: 'synced', data });
+          return;
+        case 'push':
+          if (!pushNow) {
+            this.set({ status: 'pending', conflict: undefined });
+            if (!this.pushTimer && !this.stopped) this.schedulePush();
+            return;
+          }
+          await this.push(action.expected, head, data, files, localHash);
+          return;
+        case 'pull':
+          await this.pull(head!, true, base ? { hash: base.hash } : null);
+          return;
+        case 'pull-confirm':
+          this.set({ status: 'needs-confirm', remote, conflict: undefined });
+          return;
+        case 'cloud-reset':
+          this.set({ status: 'cloud-reset', remote, conflict: undefined, message: undefined });
+          return;
+        case 'conflict':
+          await this.openConflict(head!, action.reason, data, files);
+          return;
+      }
     }
   }
 
@@ -291,6 +446,7 @@ export class SyncEngine {
 
   private async push(expected: number, head: RemoteHeadRow | null, data: HomeData, files: StoredFile[], hash: string, recheck = true): Promise<boolean> {
     const { remote, userId, deviceId, deviceLabel } = this.deps;
+    if (this.stopped) return false;
     this.set({ status: 'syncing', conflict: undefined });
     let text: string;
     try {
@@ -305,12 +461,29 @@ export class SyncEngine {
       return false;
     }
     const path = `${userId}/${expected + 1}-${(this.deps.random ?? randomId)()}.json`;
-    let revision: number | null;
     try {
       await remote.upload(path, text);
+    } catch {
+      // The upload didn't finish, so nothing points at it.
+      await remote.remove([path]).catch(() => undefined);
+      this.set({ status: 'offline' });
+      return false;
+    }
+    if (this.stopped) {
+      await remote.remove([path]).catch(() => undefined);
+      return false;
+    }
+    let revision: number | null | undefined;
+    try {
       revision = await remote.commit({ expected, newPath: path, backupVersion: BACKUP_VERSION, sizeBytes, deviceId, deviceLabel });
     } catch {
-      await remote.remove([path]).catch(() => undefined);
+      // The reply may have been lost after the account committed. Ask the account instead of guessing,
+      // and never remove the file its head points to.
+      revision = await this.settleUncertainCommit(path);
+    }
+    if (revision === undefined) {
+      // Not known whether it landed. The next check looks at the account's head and recognises the file if it did.
+      this.uncertain = { path, hash };
       this.set({ status: 'offline' });
       return false;
     }
@@ -322,19 +495,67 @@ export class SyncEngine {
     }
     const syncedAt = new Date((this.deps.now ?? Date.now)()).toISOString();
     this.deps.syncState.write({ userId, revision, hash, syncedAt });
-    this.set({ status: 'in-sync', lastSyncedAt: syncedAt, conflict: undefined, remote: undefined });
-    if (head && head.revision === expected && head.objectPath) await remote.remove([head.objectPath]).catch(() => undefined);
+    this.undoPoint = null;
+    this.set({ status: 'in-sync', lastSyncedAt: syncedAt, conflict: undefined, remote: undefined, canUndo: false, message: undefined });
+    if (head && head.revision === expected && head.objectPath && head.objectPath !== path) await remote.remove([head.objectPath]).catch(() => undefined);
+    await remote.prune?.(path, revision).catch(() => undefined);
     this.deps.onEvent?.({ kind: 'synced', data });
     return true;
   }
 
+  /** A save whose outcome was unknown: if the head is that file it did land, so this device records it as synced. */
+  private async settleEarlierSave(head: RemoteHeadRow | null) {
+    const earlier = this.uncertain;
+    if (!earlier || !head) return;
+    this.uncertain = null;
+    if (head.objectPath === earlier.path) {
+      const syncedAt = new Date((this.deps.now ?? Date.now)()).toISOString();
+      this.deps.syncState.write({ userId: this.deps.userId, revision: head.revision, hash: earlier.hash, syncedAt });
+      this.set({ lastSyncedAt: syncedAt });
+    } else {
+      // The head points elsewhere, so the leftover file isn't referenced.
+      await this.deps.remote.remove([earlier.path]).catch(() => undefined);
+    }
+  }
+
+  /**
+   * After a commit that threw: the revision if the account's head is the file just uploaded (the commit
+   * did land), `null` if the head is provably elsewhere (the file is removed), or `undefined` when it
+   * can't be told (the file is left alone; a later push cleans up leftovers).
+   */
+  private async settleUncertainCommit(path: string): Promise<number | null | undefined> {
+    const { remote } = this.deps;
+    let current: RemoteHeadRow | null;
+    try {
+      current = await remote.head();
+    } catch {
+      return undefined;
+    }
+    if (current && current.objectPath === path) return current.revision;
+    // No head at all could still be a commit on its way, so only a head that points elsewhere clears the file.
+    if (current) {
+      await remote.remove([path]).catch(() => undefined);
+      return null;
+    }
+    return undefined;
+  }
+
   // ---------- pull ----------
 
-  private async fetchDoc(head: RemoteHeadRow): Promise<{ text: string; doc: CloudDoc } | 'offline' | 'blocked'> {
+  private async fetchDoc(head: RemoteHeadRow): Promise<FetchedDoc | 'offline' | 'blocked'> {
     let text: string;
     try {
       text = await this.deps.remote.download(head.objectPath);
-    } catch {
+    } catch (error) {
+      if (error instanceof RemoteObjectMissing) {
+        // The account points at a file that isn't there. That is not an outage: this device's home can be saved again.
+        if (isEmptyHome(this.deps.store.getSnapshot())) {
+          this.set({ status: 'damaged', message: 'The cloud copy’s file is missing, so nothing could be brought here.' });
+        } else {
+          this.set({ status: 'cloud-reset', remote: headInfo(head), conflict: undefined, message: MISSING_FILE_MESSAGE });
+        }
+        return 'blocked';
+      }
       this.set({ status: 'offline' });
       return 'offline';
     }
@@ -347,86 +568,150 @@ export class SyncEngine {
     }
   }
 
-  /** Replaces this device's data with the account's. Callers have already established that nothing here is unsynced, or that the person chose it. */
-  private async pull(head: RemoteHeadRow, canUndo: boolean): Promise<boolean> {
+  /**
+   * Replaces this device's data with the account's. `guard` is checked again right before the data is
+   * replaced, because the download can take seconds: if this device changed meanwhile, nothing is replaced.
+   */
+  private async pull(head: RemoteHeadRow, auto: boolean, guard: PullGuard): Promise<boolean> {
+    if (this.stopped) return false;
     this.set({ status: 'syncing' });
     const fetched = await this.fetchDoc(head);
     if (fetched === 'offline' || fetched === 'blocked') return false;
-    const before = canUndo ? await this.local() : null;
-    return this.applyDoc(head, fetched.doc, before, true);
+    const result = await this.applyDoc(head, fetched, { announce: auto, undo: auto, guard });
+    if (result === 'applied') return true;
+    if (result === 'changed') {
+      if (auto) {
+        const { data, files } = await this.local();
+        await this.openConflict(head, 'diverged', data, files, fetched);
+      } else {
+        await this.runCheck(false);
+      }
+    }
+    return false;
   }
 
-  private async applyDoc(head: RemoteHeadRow, doc: CloudDoc, before: { data: HomeData; files: StoredFile[] } | null, announce: boolean): Promise<boolean> {
+  private async applyDoc(head: RemoteHeadRow, fetched: FetchedDoc, opts: { announce: boolean; undo: boolean; guard: PullGuard }): Promise<'applied' | 'changed' | 'failed'> {
+    if (this.stopped) return 'failed';
+    const before = await this.local();
+    if (opts.guard) {
+      const beforeHash = await canonicalHash(before.data, before.files);
+      const holds = 'empty' in opts.guard ? isEmptyHome(before.data) : opts.guard.hash === beforeHash;
+      if (!holds) return 'changed';
+    }
+    // Nothing may have been written between reading and replacing.
+    if (this.stopped) return 'failed';
+    if (this.deps.store.getSnapshot() !== before.data) return 'changed';
+    const prior = this.readBase();
     this.applying = true;
     try {
-      await this.deps.store.replaceAll(doc.data, doc.files);
+      await this.deps.store.replaceAll(fetched.doc.data, fetched.doc.files);
     } catch {
       this.applying = false;
       this.set({ status: 'offline' });
-      return false;
+      return 'failed';
     }
     this.applying = false;
     const { data, files } = await this.local();
     const hash = await canonicalHash(data, files);
     const syncedAt = new Date((this.deps.now ?? Date.now)()).toISOString();
     this.deps.syncState.write({ userId: this.deps.userId, revision: head.revision, hash, syncedAt });
-    this.undoPoint = before;
-    this.set({ status: 'in-sync', lastSyncedAt: syncedAt, conflict: undefined, remote: undefined, canUndo: before !== null, message: undefined });
-    if (announce) this.deps.onEvent?.({ kind: 'pulled', deviceLabel: head.deviceLabel, canUndo: before !== null });
+    this.undoPoint = opts.undo ? { data: before.data, files: before.files, priorRevision: prior?.revision ?? 0, pulledHead: head, pulled: fetched } : null;
+    this.conflictDoc = null;
+    this.channel?.postMessage('changed');
+    this.set({ status: 'in-sync', lastSyncedAt: syncedAt, conflict: undefined, remote: undefined, canUndo: this.undoPoint !== null, message: undefined });
+    if (opts.announce) this.deps.onEvent?.({ kind: 'pulled', deviceLabel: head.deviceLabel, canUndo: this.undoPoint !== null });
     this.deps.onEvent?.({ kind: 'synced', data });
-    return true;
+    return 'applied';
   }
 
-  /** Puts back what was on this device before the last automatic pull. The next push then saves it to the account. */
+  /**
+   * Puts back what was on this device before the last automatic pull, then pauses on the usual "choose
+   * which copy to keep" step with the pulled copy as the account's side. Nothing is pushed or removed
+   * here: the account still holds the other device's changes until the person decides, and the chosen
+   * resolution saves the copy being replaced as a file first. Only works while this device still matches
+   * the pulled copy, so Undo never throws away edits made since.
+   */
   undoPull(): Promise<boolean> {
     return this.enqueue(async () => {
       const point = this.undoPoint;
-      if (!point) return false;
+      if (!point || this.stopped) return false;
+      const { data, files } = await this.local();
+      const base = this.readBase();
+      if (!base || base.revision !== point.pulledHead.revision || base.hash !== (await canonicalHash(data, files))) {
+        this.undoPoint = null;
+        this.set({ canUndo: false });
+        return false;
+      }
       this.undoPoint = null;
+      if (this.pushTimer) clearTimeout(this.pushTimer);
+      this.pushTimer = null;
       this.applying = true;
       try {
         await this.deps.store.replaceAll(point.data, point.files);
       } catch {
         this.applying = false;
+        this.set({ canUndo: false });
         return false;
       }
       this.applying = false;
-      this.set({ canUndo: false, status: 'pending' });
-      if (!this.stopped) this.schedulePush();
+      this.deps.syncState.write({ userId: this.deps.userId, revision: point.priorRevision, hash: UNDONE_HASH, syncedAt: base.syncedAt });
+      const restored = await this.local();
+      this.head = point.pulledHead;
+      this.conflictDoc = point.pulled;
+      this.channel?.postMessage('changed');
+      this.set({
+        status: 'conflict',
+        canUndo: false,
+        remote: undefined,
+        conflict: {
+          reason: 'diverged',
+          remote: headInfo(point.pulledHead),
+          remoteCounts: counts(point.pulled.doc.data, point.pulled.doc.files),
+          localCounts: counts(restored.data, restored.files),
+        },
+      });
       return true;
     });
   }
 
   // ---------- the person's choices ----------
 
-  /** "Bring it here", on a device with nothing in it. */
+  /** "Bring it here", on a device with nothing in it. Checks again that it is still empty. */
   confirmPull(): Promise<boolean> {
-    return this.enqueue(async () => (this.head && this.state.status === 'needs-confirm' ? this.pull(this.head, false) : false));
+    return this.enqueue(async () => {
+      if (this.stopped || !this.head || this.state.status !== 'needs-confirm') return false;
+      if (!isEmptyHome(this.deps.store.getSnapshot())) {
+        // The device was filled since the question was asked; that is now a choice between two homes.
+        await this.runCheck(false);
+        return false;
+      }
+      return this.pull(this.head, false, { empty: true });
+    });
   }
 
-  /** "Save it", after the account's copy was deleted or reset elsewhere. */
+  /** "Save it", after the account's copy was deleted, reset or lost its file. */
   confirmCloudReset(): Promise<boolean> {
     return this.enqueue(async () => {
-      if (this.state.status !== 'cloud-reset') return false;
+      if (this.stopped || this.state.status !== 'cloud-reset') return false;
       const { data, files } = await this.local();
       return this.push(this.head?.revision ?? 0, this.head, data, files, await canonicalHash(data, files));
     });
   }
 
-  private async openConflict(head: RemoteHeadRow, reason: ConflictInfo['reason'], data: HomeData, files: StoredFile[]) {
+  private async openConflict(head: RemoteHeadRow, reason: ConflictInfo['reason'], data: HomeData, files: StoredFile[], already?: FetchedDoc) {
     const kept = this.state.conflict;
-    if (kept && kept.remote.revision === head.revision && this.conflictDoc) {
+    if (!already && kept && kept.remote.revision === head.revision && this.conflictDoc) {
       this.set({ status: 'conflict', conflict: { ...kept, localCounts: counts(data, files) } });
       return;
     }
-    const fetched = await this.fetchDoc(head);
+    const fetched = already ?? (await this.fetchDoc(head));
     if (fetched === 'offline' || fetched === 'blocked') return;
     this.conflictDoc = fetched;
     this.set({
       status: 'conflict',
       conflict: {
         reason,
-        remote: { revision: head.revision, deviceLabel: head.deviceLabel, updatedAt: head.updatedAt },
+        remote: headInfo(head),
         remoteCounts: counts(fetched.doc.data, fetched.doc.files),
         localCounts: counts(data, files),
       },
@@ -442,8 +727,9 @@ export class SyncEngine {
       const conflict = this.state.conflict;
       const pending = this.conflictDoc;
       const head = this.head;
-      if (this.state.status !== 'conflict' || !conflict || !pending || !head) return { ok: false, message: 'Nothing to choose right now.' };
+      if (this.stopped || this.state.status !== 'conflict' || !conflict || !pending || !head) return { ok: false, message: 'Nothing to choose right now.' };
       const { data, files } = await this.local();
+      const hash = await canonicalHash(data, files);
       const name = `homebase-before-sync-${toDateInput()}.json`;
       let outcome: 'saved' | 'cancelled' | 'failed';
       try {
@@ -455,11 +741,11 @@ export class SyncEngine {
       if (outcome !== 'saved') return { ok: false, message: NOT_SAVED_MESSAGE };
 
       if (choice === 'cloud') {
-        const done = await this.applyDoc(head, pending.doc, null, false);
-        this.conflictDoc = null;
-        return done ? { ok: true } : { ok: false, message: NOT_SAVED_MESSAGE };
+        // The file holds the copy as it was; if it changed while the file was being saved, that change is not in the file.
+        const done = await this.applyDoc(head, pending, { announce: false, undo: false, guard: { hash } });
+        if (done === 'changed') return { ok: false, message: CHANGED_MESSAGE };
+        return done === 'applied' ? { ok: true } : { ok: false, message: NOT_SAVED_MESSAGE };
       }
-      const hash = await canonicalHash(data, files);
       await this.push(conflict.remote.revision, head, data, files, hash);
       this.conflictDoc = null;
       return { ok: true };

@@ -38,7 +38,10 @@ export function isDirty(input: Pick<DecideInput, 'base' | 'localHash' | 'localEm
   return input.base ? input.localHash !== input.base.hash : !input.localEmpty;
 }
 
-/** Actions that overwrite this device's data. */
+/**
+ * Actions that overwrite this device's data. `pull-confirm` only ever asks, and is returned for an
+ * empty device (nothing there to lose); `pull` is returned only when the device is clean.
+ */
 export const REPLACING_ACTIONS: ReadonlyArray<SyncAction['kind']> = ['pull', 'pull-confirm'];
 
 export function decide(input: DecideInput): SyncAction {
@@ -49,6 +52,10 @@ export function decide(input: DecideInput): SyncAction {
     return input.localEmpty ? { kind: 'pull-confirm' } : { kind: 'conflict', reason: 'first-link' };
   }
   if (!remote || remote.revision < base.revision) return { kind: 'cloud-reset' };
+  // An empty home is never pushed over (or conflicted with) the account's copy without the person
+  // choosing it. It happens after storage loss or an erase that missed the sync state; the person is
+  // offered the account's home, and nothing is replaced until they agree.
+  if (dirty && input.localEmpty) return { kind: 'pull-confirm' };
   if (remote.revision === base.revision) return dirty ? { kind: 'push', expected: base.revision } : { kind: 'in-sync' };
   return dirty ? { kind: 'conflict', reason: 'diverged' } : { kind: 'pull' };
 }

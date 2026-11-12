@@ -7,6 +7,11 @@ export interface CloudUser {
   email: string;
 }
 
+/** The same person keeps the same object, so a token refresh or a focus event doesn't look like a new sign-in. */
+export function sameUser(previous: CloudUser | null, next: CloudUser | null): CloudUser | null {
+  return previous && next && previous.id === next.id && previous.email === next.email ? previous : next;
+}
+
 /** What screens can ask of cloud sync. The context is null in a build with no Supabase project. */
 export interface CloudApi {
   /** 'loading' only while a stored session is being picked up. */
