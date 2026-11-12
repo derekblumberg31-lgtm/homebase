@@ -779,7 +779,7 @@ img {
   align-items: baseline;
   justify-content: space-between;
   gap: var(--space-3);
-  padding: 0;
+  padding: 0 0 var(--space-2);
   /* Above the rows it overlaps; only its links catch the pointer. */
   position: relative;
   z-index: 3;
@@ -792,9 +792,8 @@ img {
 }
 
 /* The first row's own padding already gives air, so a label reads as belonging to the rows below it. */
-.section-head + .group,
-.section-head + ul {
-  margin-top: calc(-1 * var(--space-2));
+.section-head + :is(.group, ul):has(> :first-child:is(.row, .row-wrap, .swipe-shell, li)) {
+  margin-top: calc(-2 * var(--space-2));
 }
 
 .section-title {
@@ -4132,7 +4131,7 @@ a.feed-row:focus-visible {
 
 /* A callout with no status is plain information, so it stays open like the rest of read-only content. */
 .callout:not(.is-warn, .is-danger, .is-good) {
-  padding: var(--space-3) 0 0;
+  padding: var(--space-1) 0 0;
   border-radius: 0;
   background: none;
   color: var(--text-2);
