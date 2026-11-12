@@ -1658,6 +1658,7 @@ select.input {
   background: var(--toast-bg);
   color: var(--toast-text);
   font-size: var(--text-subhead);
+  text-wrap: balance;
   box-shadow: var(--shadow-float);
   pointer-events: auto;
   animation: toast-in var(--dur-base) var(--ease-out);
