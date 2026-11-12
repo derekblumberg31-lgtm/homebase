@@ -146,7 +146,7 @@ export function Chips<T extends string | number>({
     radios[index]?.focus();
   }
   return (
-    <div ref={group} className="chips" role={single ? 'radiogroup' : 'group'} aria-label={label} aria-describedby={describedBy} data-invalid={invalid || undefined} onKeyDown={onKeyDown}>
+    <div ref={group} className={single ? 'chips is-choice' : 'chips'} role={single ? 'radiogroup' : 'group'} aria-label={label} aria-describedby={describedBy} data-invalid={invalid || undefined} onKeyDown={onKeyDown}>
       {options.map((option, i) =>
         single ? (
           <button key={String(option.value)} type="button" role="radio" className="chip" aria-checked={value === option.value} tabIndex={i === radioTabIndex(selected) ? 0 : -1} onClick={() => onChange(option.value)}>

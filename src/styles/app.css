@@ -1327,6 +1327,21 @@ select.input {
   margin-top: var(--space-2);
 }
 
+.chips.is-choice {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.chips.is-choice .chip:last-child:nth-child(odd) {
+  grid-column: 1 / -1;
+}
+
+@media (min-width: 768px) {
+  .chips.is-choice {
+    display: flex;
+  }
+}
+
 .chip {
   min-width: 44px;
   min-height: 44px;
