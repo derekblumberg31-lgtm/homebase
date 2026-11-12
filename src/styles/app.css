@@ -1955,6 +1955,21 @@ select.input {
   min-height: 42px;
 }
 
+/* An overdue countdown ("2 months over") is the widest thing in a row. If the full title will not fit beside it, the
+   countdown drops to its own line so the title keeps the width. */
+.task-row .row-line:has(.countdown.is-overdue) {
+  flex-wrap: wrap;
+  row-gap: 2px;
+}
+
+.task-row .row-line:has(.countdown.is-overdue) .row-main {
+  flex: 1 1 auto;
+}
+
+.task-row .row-line:has(.countdown.is-overdue) .countdown {
+  margin-left: auto;
+}
+
 /* A long title wraps to two lines, then ends in an ellipsis. */
 .task-row .row-title {
   display: -webkit-box;
