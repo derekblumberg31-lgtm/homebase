@@ -1,21 +1,23 @@
 ---
 name: Homebase
-description: A calm homeowner assistant set in the grouped lists of an iPhone, with one muted brick accent.
+description: A calm homeowner assistant on limestone and spruce, with open lists and one deep green accent.
 colors:
-  brick: "#9e4f34"
-  brick-dark: "#d6957c"
-  done-green: "#4f7353"
-  due-amber: "#8a6420"
-  ink: "#29271f"
-  ink-secondary: "#4c4a44"
-  ink-tertiary: "#5a5750"
-  warm-ground: "#faf9f5"
-  page-white: "#ffffff"
-  pressed-paper: "#f5f4ee"
-  fill: "#efede5"
-  fill-strong: "#e6e3d9"
-  dark-ground: "#262624"
-  dark-surface: "#2f2e2b"
+  spruce: "#2e5e4e"
+  spruce-deep: "#234a3d"
+  spruce-dark: "#8fc4ad"
+  clay: "#a1452b"
+  clay-dark: "#e39a7f"
+  due-amber: "#835710"
+  ink: "#1d2420"
+  ink-secondary: "#4a544e"
+  ink-tertiary: "#5d6761"
+  limestone: "#f3f4ef"
+  field-surface: "#fbfbf8"
+  pressed-stone: "#e9ebe4"
+  fill: "#e5e8e0"
+  fill-strong: "#d8dcd2"
+  dark-ground: "#171b19"
+  dark-surface: "#1e2321"
 typography:
   display:
     fontSize: "3rem"
@@ -62,7 +64,7 @@ rounded:
   xs: "6px"
   sm: "10px"
   sm-inner: "8px"
-  md: "12px"
+  md: "14px"
   lg: "14px"
   xl: "20px"
   sheet: "24px"
@@ -76,10 +78,11 @@ spacing:
   6: "24px"
   8: "32px"
   10: "40px"
+  12: "48px"
 components:
   button-primary:
-    backgroundColor: "{colors.ink}"
-    textColor: "{colors.warm-ground}"
+    backgroundColor: "{colors.spruce}"
+    textColor: "#ffffff"
     rounded: "{rounded.lg}"
     height: "48px"
   button-secondary:
@@ -88,37 +91,37 @@ components:
     rounded: "{rounded.lg}"
     height: "48px"
   round-button:
-    backgroundColor: "{colors.fill}"
-    textColor: "{colors.ink-secondary}"
+    backgroundColor: "transparent"
+    textColor: "{colors.ink}"
     rounded: "{rounded.round}"
     size: "44px"
-  task-group:
-    backgroundColor: "{colors.page-white}"
-    rounded: "{rounded.md}"
+  open-list:
+    backgroundColor: "transparent"
+    rounded: "0"
   form-chip:
-    backgroundColor: "{colors.fill}"
-    textColor: "{colors.ink-secondary}"
+    backgroundColor: "transparent"
+    textColor: "{colors.ink}"
     rounded: "{rounded.sm}"
     height: "44px"
   form-chip-active:
-    backgroundColor: "{colors.ink}"
-    textColor: "{colors.warm-ground}"
+    backgroundColor: "rgba(46, 94, 78, 0.1)"
+    textColor: "{colors.spruce}"
   segmented:
     backgroundColor: "{colors.fill}"
     rounded: "{rounded.sm}"
     height: "48px"
   tab-item-active:
-    textColor: "{colors.brick}"
+    textColor: "{colors.spruce}"
   sheet:
-    backgroundColor: "{colors.warm-ground}"
+    backgroundColor: "{colors.limestone}"
     rounded: "{rounded.sheet}"
   alert:
-    backgroundColor: "{colors.page-white}"
+    backgroundColor: "{colors.field-surface}"
     rounded: "{rounded.xl}"
     width: "300px"
   toast:
     backgroundColor: "{colors.ink}"
-    textColor: "{colors.warm-ground}"
+    textColor: "{colors.limestone}"
     rounded: "{rounded.lg}"
 ---
 
@@ -126,59 +129,59 @@ components:
 
 ## Overview
 
-**Creative North Star: "The Calm House Binder"**
+**Creative North Star: "Spruce and Limestone"**
 
-Homebase is the binder every homeowner means to keep: what needs doing, what they own, where the paperwork is, and what to do when something breaks. It is laid out the way iOS lays out Settings:
+Homebase is the binder every homeowner means to keep: what needs doing, what they own, where the paperwork is, and what to do when something breaks. It reads as type and space rather than a stack of boxes:
 - a plain large title
-- inset grouped lists of white rows on a warm grey ground
-- hairline separators
+- lists that sit open on a pale stone ground, split by hairlines
+- one deep spruce accent
 - sheets that rise from below
 
 Two signatures carry over from the apps it replaces:
-- From Replacely: the largest-unit countdown ("3 months", "Today", "4 days over") and the day strip, shown on the single most urgent task.
+- From Replacely: the largest-unit countdown ("3 months", "Today", "4 days over") and the day strip. On Home the most urgent job is an unboxed hero with its countdown at 48px.
 - From KeyFinder: the rimmed code tag that names a key's blank, and the cut-profile chart.
 
-Density is low and the voice is soft. Everything is the system font, sentence case, with hierarchy from size and a narrow range of weights. There is one accent, a muted brick (#9e4f34 light, #d6957c dark), spent on small marks and on anything overdue. Buttons are ink, not brick. Neutrals are warm. Dark mode is one warm charcoal ground with a stepped surface, never black.
+Density is low and the voice is soft. Everything is the system font, sentence case, with hierarchy from size and a narrow range of weights. Three hues cover the whole app: spruce for "act here, you are here, done", clay for overdue, destructive and emergency, and amber for due soon or "check this". Dark mode is a deep green-charcoal ground with a sage accent, never black.
 
 **Key characteristics:**
-- Grouped-list structure everywhere: 12px corners, no outline, 0.5px separators inset 16px.
+- Open lists: rows sit on the ground and bleed to the page edge for their press tint. Surfaces remain only for fields and things that float.
 - System font only, with tabular figures for every number.
-- One brick accent. Green only for done, amber only for due soon or caution.
-- Flat at rest. Three named shadows, only for what floats: menus, toasts and the launcher; sheets; alerts.
+- One focal point per screen: the Home hero, the large title, or the single filled spruce button.
+- Flat at rest. Only menus, toasts, sheets, alerts and the launcher carry a shadow.
 - Quiet motion: ease-out entries under 250ms, scale on press, a drawer curve for sheets. Reduced motion swaps movement for short fades.
 
 ## Colors
 
-The palette is warm and quiet, defined in `src/styles/app.css` (`:root` and `[data-theme='dark']`). The front matter above lists the values in use.
-- **Light:** ivory ground #faf9f5, white surfaces, soft ink #29271f.
-- **Dark:** charcoal #262624, surfaces #2f2e2b, warm off-white ink #f3f1ea.
-- **Primary buttons are ink** (`--button-bg`), not colour.
-- **Terracotta** is the accent (`--accent`): #9e4f34 in light, #d6957c in dark. Pressed and hover (`--accent-deep`) is #86402a in light. It is muted and kept for things that need you: overdue text, the overdue squares of the day strip, small markers (the high-priority dot, the launcher dot), the active tab and the focus outline.
-- **Brick is never a fill.** Primary buttons, the selected chip and the ticked starter circle are filled with ink (`--button-bg`, #29271f light, #f3f1ea dark) with `--button-text` on top.
-- **Badges are neutral grey.**
+The palette is defined in `src/styles/app.css` (`:root` and `[data-theme='dark']`). The front matter above lists the values in use.
+- **Light:** limestone ground #f3f4ef, field surface #fbfbf8, green-black ink #1d2420.
+- **Dark:** ground #171b19, surface #1e2321, ink #e8ece6.
+- **Spruce** is the accent (`--accent`): #2e5e4e in light, #8fc4ad in dark. Pressed and hover (`--accent-deep`) is #234a3d in light. It is the primary button, the active tab, links, focus, the ticked check, progress and the selected chip. Done and the old dusty blue are folded into it (`--green`, `--cool` are aliases).
+- **Clay** (`--red`, alias `--overdue`): #a1452b in light, #e39a7f in dark. Only for overdue, destructive and emergency.
+- **Amber** (`--amber`): #835710 in light, #d9b16e in dark. Due soon or "check this".
+- **Ink** (`--ink-bg`, `--ink-text`) fills Call 911 and toasts.
+- **Control borders** (`--control-line`) are 3:1 or better. Hairline dividers (`--line`) are decorative.
+- **Badges** are ink on the ground.
 
 The rules:
 
-- **The One Brick Rule.** Brick marks something overdue, a small marker or a link-style action. It is never a large fill. If a screen shows brick on more than a handful of elements, something is decorating.
-- **The Status Hue Rule.** Green means done, amber means due soon or "check this" (for example a restricted key), and brick means overdue. None is used for category colour.
-- **The No Pure Extremes Rule.** Text is warm ink, never #000. The page is warm paper, never #fff.
+- **The Spruce Rule.** One spruce fill per view: the primary button, with the ticked check as the only other filled spruce. Everything else spruce is text, an outline, a tint or an icon. On an emergency answer the only filled object is Call 911, in ink.
+- **The Clay Rule.** Clay is only for overdue, destructive and emergency. Overdue never relies on colour: the word "over", filled day squares and the Tasks badge say it too.
+- **Open by default.** A block is a surface only if you type into it or it floats. Read-only content (key and value facts, notes, empty states, Health Check steps) is open.
+- **The Status Hue Rule.** Spruce means done or here, amber means due soon, clay means overdue. None is used for category colour.
+- **The No Pure Extremes Rule.** Text is green-black ink, never #000. The page is limestone, never #fff.
+- **`--text-3` never sits on `--fill-strong`;** `--red` is never text on `--fill-strong` in light.
 - **Code tags** have a neutral `--line` rim, and an accent rim when a match is confirmed. They never get a coloured fill.
-- **The Cool Information Rule.** Dusty blue (`--cool`: #3b687a light, #8fb6c5 dark) is the one cool accent. It's for information, never for actions:
-  - snapshot icons
-  - the health progress bar and completed steps
-  - timeline markers
-  - activity and menu icons
-- **One dark ground.** Charcoal #262624 with surfaces #2f2e2b and warm off-white ink #f3f1ea. A toast in dark is a stepped fill, not a bright pill.
+- **One dark ground.** Green-charcoal #171b19 with surfaces #1e2321. A toast in dark is a stepped fill, not a bright pill.
 
 ## Typography
 
 One family, the system font: `system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif`. Sizes are rem, so they follow the reader's own text size. Weights are 400, 500, 600 and 700.
 
-Page titles go through one token, `--font-title` (see Pending owner decisions).
+Page titles go through one token, `--font-title` (the system font, weight 700).
 
 | Role | Spec | Used for |
 |---|---|---|
-| Display | 600, 3rem, tabular | Countdown on task detail only |
+| Display | 600, 3rem, tabular | Home hero countdown and task detail countdown |
 | Large | 700, 2.125rem | Page titles, onboarding titles |
 | Title | 600, 1.375rem | Empty-state titles, Assistant answer title, starter heading, detail page title |
 | Headline | 600, 1.0625rem | Sheet title, answer section heads, emphasised rows |
@@ -186,36 +189,35 @@ Page titles go through one token, `--font-title` (see Pending owner decisions).
 | Subhead | 400, 0.9375rem; 600 for section heads and buttons | Row subtitles, page subtitle |
 | Footnote | 400, 0.8125rem | Hints, captions, footers |
 | Caption | 600, 0.6875rem | Tab labels only |
-| Countdown | 600, 1.25rem, tabular; 1.75rem on the most urgent row | Right side of a task row |
+| Countdown | 600, 1.25rem, tabular | Right side of a task row |
 
 - **The Sentence Case Rule.** Nothing is uppercased or letter-spaced into a label.
-- **The One Big Line Rule.** Each screen has one large line: the page title, or the countdown on task detail, where the title steps down to the title size.
+- **The One Big Line Rule.** Each screen has one large line: the page title, or the countdown on Home and task detail, where the title steps down to the title size.
 
 ## Layout
 
 - **Phone (below 768px):**
-  - The page column has a 16px gutter.
-  - A bottom tab bar shows five areas (Home, Property, Tasks, Assistant, Records). The active tab's icon and label are brick.
+  - The page column has a 20px gutter (32px from 768px) and `--page-max` 680px.
+  - A bottom tab bar shows five areas (Home, Property, Tasks, Assistant, Records). The tab bar is solid (no blur). The active tab's icon and label are spruce, with a 4px dot under the label.
   - Count badges: overdue tasks on Tasks, warranties ending soon on Records.
   - Settings opens from the round profile button beside the title. Home's header also has a round + for quick add.
 - **Header:** the back link and the actions share a 44px row above the title, which gets the full width. From 768px the actions sit beside the title.
 - **Tablet (768–1099px):** an 88px icon rail with small labels, a round fill + button, and Settings below a rule. Badges become dots. Every page title starts at the same left edge.
 - **Desktop (1100px and up):**
   - A 244px sidebar: brand (the name only), an Add row, the five areas, and Settings set apart at the bottom.
-  - The active item has a stepped fill, and its icon is brick.
-  - Pages are max 760px, or 1120px for `Page wide`.
+  - The rail and sidebar share the page ground with a 0.5px right border. The active item is spruce with a 3x20 spruce bar at its leading edge.
+  - Pages are max 680px, or 1040px for `Page wide`. From 1100px Home becomes two columns: the jobs on the left, the More list at 320px on the right.
 - **Home** is for a few seconds in front of the thing that needs doing:
   - one status line saying whether anything is overdue
-  - the next three jobs, swipe to mark done
-  - alert rows for what needs a look: a warranty ending, a system to check, a backup that is due, and the install row. Each is one row with an amber icon, a title of up to two lines, a detail line and a chevron, with its own 44px hide button at the right. Hiding one offers Undo and leaves the item in its own list.
+  - the next three jobs: the first is an unboxed hero with its countdown at 48px and the check on the trailing edge; swipe to mark done
+  - alert rows under a "Needs a look" label: a warranty ending, a system to check, a backup that is due, and the install row. Each is one row with an amber icon, a title of up to two lines, a detail line and a chevron, with its own 44px hide button at the right. Hiding one offers Undo and leaves the item in its own list.
   - on a new home with no jobs, the starter block (below) in place of the list
-  - an Ask Homebase row
-  - a short list linking to Home Health Check (with the snapshot), This season, Coming up and Activity, each on its own page one tap away
+  - a "More" list: an Ask Homebase row, then links to Home Health Check (with the snapshot), This season, Coming up and Activity, each on its own page one tap away
 - **Launcher lane:** the launcher sits 72px above the bottom edge, clear of Netlify's own corner badge on the hosted site.
 - **Launcher lane:** from 768px the main column keeps a 72px lane on the right for the Ask Homebase launcher, so it never covers content.
 - **Starter block** (`features/home/StarterJobs.tsx`): the first thing on an empty Home.
   - A heading, one sentence saying nothing is saved until the jobs are added, and five tick rows at least 56px tall.
-  - Ticking a row opens its "last done" choices under it: radios you move through with the arrow keys, with "Not sure" chosen by default. The tick fills with ink, not brick.
+  - Ticking a row opens its "last done" choices under it: radios you move through with the arrow keys, with "Not sure" chosen by default. The tick fills spruce with a white check.
   - One Add button, and quiet links to add your own or leave it. Nothing is saved before Add.
 - **Sheets:**
   - Bottom-anchored on phones, with drag to dismiss.
@@ -226,12 +228,12 @@ Page titles go through one token, `--font-title` (see Pending owner decisions).
 
 | Surface | Shadow |
 |---|---|
-| Groups and modules | a 0.5px hairline and `0 1px 2px` (none in dark; the surface step carries it) |
+| Lists, groups and modules | none: lists are open. Form groups carry a 0.5px ring (`--field-ring`, none in dark) |
 | Menus, toasts, launcher | `--shadow-float`: `0 1px 2px` and `0 12px 32px` (in dark, plus a 0.5px white hairline) |
 | Sheets | `--shadow-sheet`: `0 -8px 40px` |
 | Alerts | `--shadow-alert`: `0 24px 64px` |
 
-Only surfaces that float over the page and can be dismissed get more than the group shadow.
+Only menus, toasts, sheets, alerts, the launcher and the assistant panel carry a shadow.
 
 ## Components
 
@@ -244,13 +246,13 @@ All of these live in `src/ui/` and `src/features/*/components`.
 - **Notice:** an amber or neutral inline note, used for cautions such as "Do not duplicate".
 - **Sheet / Confirm / Toast** (`overlays.tsx`):
   - Sheets trap focus, close on Escape and give focus back on close.
-  - Confirm is the native-style alert, with Cancel focused by default and destructive actions in brick text, never a brick fill.
+  - Confirm is the native-style alert, with Cancel focused by default and the default action in spruce text and destructive actions in clay text, never a clay fill.
   - Toasts stack, at most a few at once, from a region named "Messages" that is always in the page. Two hidden live regions (polite and assertive) carry the announcement, so a toast is not read twice. A toast with Undo, and an error, lives six seconds; a plain one about three. Hovering or focusing the stack pauses the timers. Errors are announced assertively. Each toast leaves in 150ms; under reduced motion it fades.
 - **Controls** (`controls.tsx`): TextField, TextArea, SelectField, FormGroup, SearchField, Segmented, Switch, Chips.
 - **TaskRow, Countdown, DayStrip** (`features/tasks/components.tsx`):
   - Task rows swipe left for Done. The round check at the left does the same with a tap, in a 50px-wide target.
   - A task title wraps to two lines, then ends in an ellipsis. The check stays at the first line and the row grows by one line.
-  - The day strip appears only on the most urgent task and on task detail: up to 14 squares of 7px. Squares for days past due are brick.
+  - The day strip appears only on the most urgent task and on task detail: up to 14 squares of 9px. Squares for days past due are clay.
 - **CodeTag, ReplacementCard, ProfileChart** (`features/property/keys`): KeyFinder's key visuals, drawn with Homebase tokens.
 - **HomeOverview, StarterChecklist, MaintenanceTimeline, SeasonalSection, ActivityFeed** (`features/home/HomeSections.tsx`): each Home section has its own form, not the same card:
   - overview: key and value rows, then what needs attention
@@ -264,7 +266,7 @@ All of these live in `src/ui/` and `src/features/*/components`.
 - **QuickAdd** (`app/QuickAdd.tsx`): task, maintenance reminder, record, receipt or household note. Each opens the area's own form through its `?new=` link.
 - **AssistantLauncher** (`app/AssistantLauncher.tsx`):
   - A 50px docked button with an "Ask Homebase" tooltip.
-  - A brick dot and two slow pulses only when there's a new suggestion; it never loops.
+  - A spruce dot and two slow pulses only when there's a new suggestion; it never loops.
   - It opens a 400px panel with the shared `AssistantChat`.
 - **Chat** (`features/assistant`), a native tool rather than a chat clone:
   - An empty chat is a left-aligned "What's going on?" over a group of four common problems, each a row with a chevron.
@@ -287,7 +289,6 @@ Following Apple's *Designing Fluid Interfaces* (`ui/physics.ts`):
 - **Menus and the Ask Homebase panel** grow from their trigger (`transform-origin` on the button side), not from their centre.
 - **Preferences:**
   - Reduced motion swaps slides and scales for fades.
-  - Reduced transparency makes the tab bar solid.
   - High contrast strengthens lines and secondary text.
 - **Tracking follows size:** large titles at -0.02em, body at -0.01em, small text at 0.
 
@@ -305,7 +306,7 @@ Every list has four states:
 - 13px minimum text, except tab labels.
 - 44px minimum hit areas for buttons, rows, the check, hide buttons and links, even where the drawn shape is smaller.
 - Radio groups (the "last done" choices) work like native ones: arrows move and select, wrapping at the ends, and Tab enters on the selected choice or the first.
-- A visible 2px accent focus outline.
+- A visible 2px spruce focus outline.
 - A skip link to main content.
 - Reduced motion turns off sheet slides, scales and press-scales, and keeps short fades.
 
@@ -313,7 +314,7 @@ Every list has four states:
 
 **Do:**
 - Build screens from Page → Section → Group → Row.
-- Keep brick for overdue and small markers. Buttons are ink.
+- Keep clay for overdue, destructive and emergency. The one filled button is spruce.
 - Show countdowns in the largest whole unit.
 - Give every new list an empty, loading and error state.
 
@@ -322,10 +323,3 @@ Every list has four states:
 - Add a second typeface, uppercase labels, coloured side stripes, gradients or saturated colour.
 - Add decorative icon tiles beside rows or extra badges. The only badges are the overdue count on Tasks and the ending-soon count on Records.
 - Use bounce or overshoot easing, or give in-page rows more than the group shadow.
-
-## Pending owner decisions
-
-Two choices reverse an earlier deliberate look and are shipped as separate, revertible commits at the end of the branch. Nothing else depends on them, and each changes token values only.
-
-- **Page titles.** Today they are set in the serif `--font-title` at weight 500. The proposed change sets `--font-title` to the system font at weight 700 with tighter tracking, which is the iPhone-native large title.
-- **Neutrals.** Today's neutrals (`#faf9f5` light ground, `#262624` dark ground) are close to another well-known product's. The proposed values: light `--bg #f4f3ef`, `--surface-2 #f8f7f4`, `--sidebar-bg #efeee9`, `--fill #ebe9e4`, `--fill-strong #e0ded8`, `--text #2b2926`, `--text-2 #57534d`, `--text-3 #6b665f`; dark `--bg #1b1a18`, `--surface #252321`, `--surface-2 #2c2a27`, `--sidebar-bg #161513`, `--fill #312f2c`, `--fill-strong #3b3935`, `--text #f1ece4`, `--text-2 #c9c3b9`, `--text-3 #a8a298`.
