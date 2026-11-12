@@ -1,12 +1,14 @@
 import { useState, type ReactNode } from 'react';
 import { useStore } from '../../data/DataProvider';
 import { TextField } from '../../ui/controls';
-import { AlertTriangle, Camera, Check, CircleCheck, Clock, FileText, NotePad, Phone, Receipt, Wrench } from '../../ui/Icons';
+import { AlertTriangle, Camera, Check, ChevronRight, CircleCheck, Clock, FileText, MoreHorizontal, NotePad, Phone, Receipt, Wrench } from '../../ui/Icons';
 import { Sheet, useToast } from '../../ui/overlays';
 import { damageReportHref } from '../records/damageReport';
 import { TRADE_LABEL } from './guides';
 import { createFollowUp, createRepairTask, createShoppingList, resolveIssue, saveIssueNote, type Issue } from './issueActions';
 import type { Answer } from './provider';
+
+const VISIBLE_ACTIONS = 4;
 
 export interface IssueState {
   /** Picked option index per question id. */
@@ -33,6 +35,7 @@ export function IssueAnswer({ answer, state, onChange, go }: Props) {
   const toast = useToast();
   const { guide, question, context } = answer.issue;
   const [resolving, setResolving] = useState(false);
+  const [expanded, setExpanded] = useState(false);
   // Gas, carbon monoxide and fire: getting out and calling for help is the whole answer.
   const critical = Boolean(guide.urgentWhen) && !guide.questions?.length;
 
@@ -58,15 +61,109 @@ export function IssueAnswer({ answer, state, onChange, go }: Props) {
   const done = (id: string) => state.done[id];
   const contractorHref = `/records?new=contractor${guide.trade ? `&vendor=${encodeURIComponent(TRADE_LABEL[guide.trade])}` : ''}`;
 
+  // One list of rows, four at a time: a wall of equal buttons hides which one matters.
+  const actions: ReactNode[] = [];
+  if (guide.repairName) {
+    actions.push(
+      <ActionRow
+        key="repair"
+        icon={<Wrench size={18} />}
+        label={needsPro ? 'Create urgent repair task' : 'Create repair task'}
+        done={done('repair')}
+        go={go}
+        onClick={() =>
+          act('repair', async () => {
+            const task = await createRepairTask(store, issue, emergency);
+            return { label: `${task.name} added`, href: `/tasks/${task.id}` };
+          })
+        }
+      />,
+    );
+  }
+  actions.push(
+    <ActionRow
+      key="note"
+      icon={<NotePad size={18} />}
+      label="Save a note"
+      done={done('note')}
+      go={go}
+      onClick={() =>
+        act('note', async () => {
+          const r = await saveIssueNote(store, issue);
+          return { label: 'Note saved in Records', href: `/records/${r.id}` };
+        })
+      }
+    />,
+  );
+  if (context.warranty) {
+    actions.push(<ActionRow key="warranty" icon={<FileText size={18} />} label={context.warranty.found ? context.warranty.label : 'Find related warranty'} go={go} onClick={() => go(context.warranty!.href)} />);
+  }
+  if (context.contractor) {
+    const contractor = context.contractor;
+    actions.push(
+      contractor.phone ? (
+        <ActionRow key="contractor" icon={<Phone size={18} />} label={`Call ${contractor.title}`} href={`tel:${contractor.phone.replace(/[^\d+]/g, '')}`} go={go} />
+      ) : (
+        <ActionRow key="contractor" icon={<Phone size={18} />} label={`Open ${contractor.title}`} go={go} onClick={() => go(`/records/${contractor.id}`)} />
+      ),
+    );
+  } else if (guide.trade) {
+    actions.push(<ActionRow key="contractor" icon={<Phone size={18} />} label={`Save your ${tradeWord(guide.trade)}`} go={go} onClick={() => go(contractorHref)} />);
+  }
+  if (guide.shopping) {
+    actions.push(
+      <ActionRow
+        key="shopping"
+        icon={<Receipt size={18} />}
+        label="Create a shopping list"
+        done={done('shopping')}
+        go={go}
+        onClick={() =>
+          act('shopping', async () => {
+            const r = await createShoppingList(store, issue);
+            return { label: 'Shopping list saved in Records', href: `/records/${r.id}` };
+          })
+        }
+      />,
+    );
+  }
+  if (guide.damage) {
+    actions.push(<ActionRow key="damage" icon={<Camera size={18} />} label="Document damage" go={go} onClick={() => go(damageReportHref(guide.title.toLowerCase()))} />);
+  }
+  if (guide.followUpDays) {
+    actions.push(
+      <ActionRow
+        key="followup"
+        icon={<Clock size={18} />}
+        label={`Remind me in ${guide.followUpDays} ${guide.followUpDays === 1 ? 'day' : 'days'}`}
+        done={done('followup')}
+        go={go}
+        onClick={() =>
+          act('followup', async () => {
+            const task = await createFollowUp(store, issue);
+            return { label: `Reminder added: ${task.name}`, href: `/tasks/${task.id}` };
+          })
+        }
+      />,
+    );
+  }
+  for (const a of guide.actions?.filter((a) => a.tel) ?? []) {
+    actions.push(<ActionRow key={a.label} icon={<Phone size={18} />} label={a.label} href={`tel:${a.tel}`} go={go} />);
+  }
+  for (const a of guide.actions?.filter((a) => !a.tel && (a.task || a.href)) ?? []) {
+    actions.push(<ActionRow key={a.label} icon={<ChevronRight size={18} />} label={a.label} go={go} onClick={() => go(a.href ?? `/tasks?new=1&kind=${a.task!.kind}&name=${encodeURIComponent(a.task!.name)}`)} />);
+  }
+
   return (
-    <div className="issue">
+    <div className={`issue ${critical ? 'is-emergency' : ''}`}>
       <h3>{guide.title}</h3>
       <p>{guide.summary}</p>
+      {critical && <CriticalCall guide={guide} />}
 
       {guide.emergency && (
         <div className={`callout is-danger ${emergency ? 'is-active' : ''}`} role={emergency ? 'alert' : undefined}>
           <p className="callout-head">
-            <AlertTriangle size={17} /> Get help now if
+            <AlertTriangle size={18} /> Get help now if
           </p>
           <p>{guide.emergency}</p>
         </div>
@@ -84,20 +181,20 @@ export function IssueAnswer({ answer, state, onChange, go }: Props) {
 
       {context.facts.length > 0 && (
         <IssueBlock title="From your home">
-          <ul className="facts">
+          <div className="group facts">
             {context.facts.map((f) => (
-              <li key={f.label} className={f.warn ? 'is-warn' : undefined}>
-                <span className="fact-label">{f.label}</span>{' '}
+              <div key={f.label} className={`row kv-row ${f.warn ? 'is-warn' : ''}`}>
+                <span className="row-title">{f.label}</span>
                 {f.href ? (
-                  <button type="button" className="text-button" onClick={() => go(f.href!)}>
+                  <button type="button" className="text-button row-value" onClick={() => go(f.href!)}>
                     {f.text}
                   </button>
                 ) : (
-                  <span>{f.text}</span>
+                  <span className="row-value">{f.text}</span>
                 )}
-              </li>
+              </div>
             ))}
-          </ul>
+          </div>
         </IssueBlock>
       )}
 
@@ -128,18 +225,6 @@ export function IssueAnswer({ answer, state, onChange, go }: Props) {
         </IssueBlock>
       )}
 
-      {critical && (
-        <div className="critical-call">
-          {guide.actions
-            ?.filter((a) => a.tel)
-            .map((a) => (
-              <a key={a.label} className="button is-block is-call" href={`tel:${a.tel}`}>
-                <Phone size={18} /> {a.label}
-              </a>
-            ))}
-        </div>
-      )}
-
       <IssueBlock title={critical ? 'Do this now' : 'Safe for you to try'}>
         <ol>
           {guide.steps.map((s) => (
@@ -166,108 +251,18 @@ export function IssueAnswer({ answer, state, onChange, go }: Props) {
       ) : (
       <div className="issue-actions" role="group" aria-label="What to do with this">
         <p className="issue-actions-title">{needsPro ? 'Your answers suggest calling a professional. Next steps:' : 'Next steps'}</p>
-        <div className="issue-action-grid">
-          {guide.repairName && (
-            <ActionButton
-              icon={<Wrench size={17} />}
-              label={needsPro ? 'Create urgent repair task' : 'Create repair task'}
-              done={done('repair')}
-              go={go}
-              onClick={() =>
-                act('repair', async () => {
-                  const task = await createRepairTask(store, issue, emergency);
-                  return { label: `${task.name} added`, href: `/tasks/${task.id}` };
-                })
-              }
-            />
-          )}
-          <ActionButton
-            icon={<NotePad size={17} />}
-            label="Save a note"
-            done={done('note')}
-            go={go}
-            onClick={() =>
-              act('note', async () => {
-                const r = await saveIssueNote(store, issue);
-                return { label: 'Note saved in Records', href: `/records/${r.id}` };
-              })
-            }
-          />
-          {context.warranty && (
-            <button type="button" className="issue-action" onClick={() => go(context.warranty!.href)}>
-              <FileText size={17} />
-              {context.warranty.found ? context.warranty.label : 'Find related warranty'}
+        <div className="group issue-action-group">
+          {(expanded ? actions : actions.slice(0, VISIBLE_ACTIONS)).map((node) => node)}
+          {actions.length > VISIBLE_ACTIONS && !expanded && (
+            <button type="button" className="row issue-action" onClick={() => setExpanded(true)}>
+              <span className="row-lead">
+                <MoreHorizontal size={18} />
+              </span>
+              <span className="row-main">
+                <span className="row-title">More</span>
+              </span>
             </button>
           )}
-          {context.contractor ? (
-            context.contractor.phone ? (
-              <a className="issue-action" href={`tel:${context.contractor.phone.replace(/[^\d+]/g, '')}`}>
-                <Phone size={17} /> Call {context.contractor.title}
-              </a>
-            ) : (
-              <button type="button" className="issue-action" onClick={() => go(`/records/${context.contractor!.id}`)}>
-                <Phone size={17} /> Open {context.contractor.title}
-              </button>
-            )
-          ) : (
-            guide.trade && (
-              <button type="button" className="issue-action" onClick={() => go(contractorHref)}>
-                <Phone size={17} /> Save your {tradeWord(guide.trade)}
-              </button>
-            )
-          )}
-          {guide.shopping && (
-            <ActionButton
-              icon={<Receipt size={17} />}
-              label="Create a shopping list"
-              done={done('shopping')}
-              go={go}
-              onClick={() =>
-                act('shopping', async () => {
-                  const r = await createShoppingList(store, issue);
-                  return { label: 'Shopping list saved in Records', href: `/records/${r.id}` };
-                })
-              }
-            />
-          )}
-          {guide.damage && (
-            <button type="button" className="issue-action" onClick={() => go(damageReportHref(guide.title.toLowerCase()))}>
-              <Camera size={17} /> Document damage
-            </button>
-          )}
-          {guide.followUpDays && (
-            <ActionButton
-              icon={<Clock size={17} />}
-              label={`Remind me in ${guide.followUpDays} ${guide.followUpDays === 1 ? 'day' : 'days'}`}
-              done={done('followup')}
-              go={go}
-              onClick={() =>
-                act('followup', async () => {
-                  const task = await createFollowUp(store, issue);
-                  return { label: `Reminder added: ${task.name}`, href: `/tasks/${task.id}` };
-                })
-              }
-            />
-          )}
-          {guide.actions
-            ?.filter((a) => a.tel)
-            .map((a) => (
-              <a key={a.label} className="issue-action is-call" href={`tel:${a.tel}`}>
-                <Phone size={17} /> {a.label}
-              </a>
-            ))}
-          {guide.actions
-            ?.filter((a) => !a.tel && (a.task || a.href))
-            .map((a) => (
-              <button
-                key={a.label}
-                type="button"
-                className="issue-action"
-                onClick={() => go(a.href ?? `/tasks?new=1&kind=${a.task!.kind}&name=${encodeURIComponent(a.task!.name)}`)}
-              >
-                {a.label}
-              </button>
-            ))}
         </div>
         <div className="issue-resolve">
           {done('resolved') ? (
@@ -318,18 +313,40 @@ function IssueBlock({ title, children }: { title: string; children: ReactNode })
   );
 }
 
-function ActionButton({ icon, label, done, onClick, go }: { icon: ReactNode; label: string; done?: { label: string; href: string }; onClick: () => void; go: (href: string) => void }) {
-  if (done) {
+function ActionRow({ icon, label, done, onClick, href, go }: { icon: ReactNode; label: string; done?: { label: string; href: string }; onClick?: () => void; href?: string; go: (href: string) => void }) {
+  const body = (
+    <>
+      <span className="row-lead">{done ? <CircleCheck size={18} /> : icon}</span>
+      <span className="row-main">
+        <span className="row-title">{done ? `${done.label}. Open` : label}</span>
+      </span>
+    </>
+  );
+  if (href && !done) {
     return (
-      <button type="button" className="issue-action is-done" onClick={() => go(done.href)}>
-        <CircleCheck size={17} /> {done.label}. Open
-      </button>
+      <a className="row issue-action" href={href}>
+        {body}
+      </a>
     );
   }
   return (
-    <button type="button" className="issue-action" onClick={onClick}>
-      {icon} {label}
+    <button type="button" className={`row issue-action ${done ? 'is-done' : ''}`} onClick={done ? () => go(done.href) : onClick}>
+      {body}
     </button>
+  );
+}
+
+function CriticalCall({ guide }: { guide: Props['answer']['issue']['guide'] }) {
+  return (
+    <div className="critical-call">
+      {guide.actions
+        ?.filter((a) => a.tel)
+        .map((a) => (
+          <a key={a.label} className="button is-block is-call" href={`tel:${a.tel}`}>
+            <Phone size={18} /> {a.label}
+          </a>
+        ))}
+    </div>
   );
 }
 

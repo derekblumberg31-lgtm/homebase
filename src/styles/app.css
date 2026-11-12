@@ -1998,45 +1998,44 @@ select.input {
 .chat {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  margin-top: 18px;
+  gap: var(--space-3);
+  margin-top: var(--space-6);
 }
 
 .bubble {
   max-width: 88%;
-  padding: 12px 14px;
-  border-radius: 16px;
-  font-size: var(--text-subhead);
+  padding: var(--space-3) 14px;
+  border-radius: var(--r-lg);
+  font-size: var(--text-body);
   line-height: 1.5;
 }
 
 .bubble.is-user {
   align-self: flex-end;
-  border-bottom-right-radius: 6px;
-  background: var(--accent);
-  color: var(--on-accent);
+  background: var(--fill);
+  color: var(--text);
 }
 
 .bubble.is-assistant {
   align-self: flex-start;
-  border-bottom-left-radius: 6px;
-  background: var(--surface);
-  box-shadow: var(--shadow-1);
+  max-width: 100%;
+  padding: 2px 2px var(--space-1);
+  border-radius: 0;
 }
 
 .bubble h3 {
-  font-size: var(--text-subhead);
+  font-size: var(--text-headline);
   font-weight: 600;
 }
 
 .bubble ol,
 .bubble ul {
-  margin: 8px 0 0;
+  margin: var(--space-2) 0 0;
   padding-left: 20px;
 }
 
 .bubble li + li {
-  margin-top: 4px;
+  margin-top: var(--space-1);
 }
 
 .bubble .bubble-note {
@@ -2045,55 +2044,75 @@ select.input {
   font-size: var(--text-footnote);
 }
 
+/* Links under a plain answer read as text, each in its own 44px target. */
 .bubble .bubble-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px 14px;
-  margin-top: 10px;
+  gap: 0 var(--space-4);
+  margin-top: var(--space-1);
 }
 
 .bubble .bubble-actions button,
 .bubble .bubble-actions a {
-  color: var(--accent);
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  color: var(--text);
   font-size: var(--text-subhead);
-  font-weight: 500;
+  font-weight: 600;
+  text-decoration: underline;
+  text-decoration-color: var(--line-strong);
+  text-underline-offset: 3px;
 }
 
 .composer {
   position: sticky;
   bottom: calc(76px + env(safe-area-inset-bottom));
   display: flex;
-  gap: 8px;
-  margin-top: 18px;
-  padding: 8px 0;
+  align-items: flex-end;
+  gap: var(--space-2);
+  margin-top: var(--space-6);
+  padding: 10px 0 var(--space-3);
   background: var(--bg);
 }
 
 @media (min-width: 768px) {
   .composer {
     bottom: 0;
-    padding-bottom: 24px;
+    padding-bottom: var(--space-6);
   }
 }
 
 .composer .input {
   flex: 1;
-  min-height: 46px;
-  padding: 0 14px;
-  border-radius: 14px;
+  min-height: 56px;
+  padding: 0 64px 0 18px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-lg);
   background: var(--surface);
-  box-shadow: var(--shadow-1);
+  box-shadow: none;
+  font-size: var(--text-body);
 }
 
 .composer .input:focus {
-  box-shadow: 0 0 0 2px var(--accent);
+  border-color: var(--text-3);
+  box-shadow: none;
 }
 
 .composer .round-button {
-  width: 46px;
-  height: 46px;
-  background: var(--accent);
-  color: var(--on-accent);
+  position: absolute;
+  right: 6px;
+  bottom: 18px;
+  width: 44px;
+  height: 44px;
+  background: var(--button-bg);
+  color: var(--button-text);
+}
+
+.composer .round-button:disabled {
+  background: var(--fill-strong);
+  color: var(--text-2);
+  opacity: 1;
 }
 
 /* ---------- onboarding ---------- */
@@ -2676,13 +2695,13 @@ select.input {
 /* 44px hit areas. The visual size stays; an invisible box grows to at least 44 x 44, centred on
    the control. :where() keeps specificity at zero so existing position rules win. */
 :where(.chip, .segmented button, .button.is-small, .icon-button, .round-button, .search-field button,
-  .toast button, .bubble .bubble-actions button, .bubble .bubble-actions a, .switch,
+  .toast button, .switch,
   .section-aside a, .section-aside button) {
   position: relative;
 }
 
 :is(.chip, .segmented button, .button.is-small, .icon-button, .round-button, .search-field button,
-  .toast button, .bubble .bubble-actions button, .bubble .bubble-actions a, .switch,
+  .toast button, .switch,
   .section-aside a, .section-aside button)::before {
   content: '';
   position: absolute;
@@ -3546,10 +3565,6 @@ a.feed-row:focus-visible {
   font-size: var(--text-subhead);
 }
 
-.bubble.is-assistant {
-  border: 1px solid var(--line);
-}
-
 /* ---------- records ---------- */
 
 .records-tools {
@@ -3955,167 +3970,36 @@ a.feed-row:focus-visible {
   opacity: 0.8;
 }
 
-/* ---------- Assistant: a conversation, not a widget ---------- */
-
-.bubble {
-  font-size: var(--text-subhead);
-  line-height: 1.6;
-}
-
-.bubble.is-user {
-  border: 0;
-  border-radius: 18px;
-  background: var(--fill);
-  color: var(--text);
-}
-
-.bubble.is-assistant {
-  max-width: 100%;
-  padding: 2px 2px 4px;
-  border: 0;
-  border-radius: 0;
-  background: transparent;
-  box-shadow: none;
-  font-size: var(--text-body);
-  line-height: 1.6;
-}
-
-.bubble.is-assistant h3 {
-  font-size: var(--text-body);
-  font-weight: 600;
-}
-
-.bubble .bubble-note,
-.bubble .bubble-actions,
-.bubble-nudge,
-.bubble-safety {
-  font-family: var(--font);
-}
-
-.bubble .bubble-actions button,
-.bubble .bubble-actions a {
-  min-height: 34px;
-  padding: 0 12px;
-  border: 1px solid var(--line-strong);
-  border-radius: 999px;
-  color: var(--text);
-  font-size: var(--text-subhead);
-  line-height: 1.4;
-}
-
-.bubble .bubble-actions button:hover,
-.bubble .bubble-actions a:hover {
-  background: var(--fill);
-}
-
-.bubble-safety {
-  background: var(--amber-soft);
-}
-
-.composer {
-  align-items: flex-end;
-  padding: 10px 0 12px;
-}
-
-.composer .input {
-  min-height: 56px;
-  padding: 0 64px 0 18px;
-  border: 1px solid var(--line-strong);
-  border-radius: 20px;
-  background: var(--surface);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03), 0 6px 20px rgba(0, 0, 0, 0.04);
-  font-size: var(--text-subhead);
-}
-
-.composer .input:focus {
-  border-color: var(--text-3);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03), 0 6px 20px rgba(0, 0, 0, 0.05);
-  outline: none;
-}
-
-.composer {
-  position: sticky;
-}
-
-.composer .round-button {
-  position: absolute;
-  right: 10px;
-  bottom: 22px;
-  width: 36px;
-  height: 36px;
-  border-radius: 11px;
-}
-
-.composer .round-button:disabled {
-  background: var(--fill-strong);
-  color: var(--text-3);
-  opacity: 1;
-}
+/* ---------- Assistant: a short list of problems, then answers ---------- */
 
 .assistant-welcome {
   display: grid;
-  justify-items: center;
-  gap: 18px;
-  padding: 9vh 0 6px;
-  text-align: center;
-}
-
-.assistant-mark {
-  display: grid;
-  place-items: center;
-  width: 40px;
-  height: 40px;
-  border-radius: 12px;
-  background: var(--accent-soft);
-  color: var(--accent);
+  gap: var(--space-2);
+  padding: var(--space-2) 0 0;
 }
 
 .assistant-hello {
-  font-size: var(--text-large);
-  line-height: 1.2;
-}
-
-.assistant-welcome p {
-  max-width: 42ch;
-  color: var(--text-2);
-  font-size: var(--text-subhead);
-}
-
-.suggestions {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 8px;
-  margin-top: 4px;
-}
-
-.suggestions button {
-  min-height: 36px;
-  padding: 0 14px;
-  border: 1px solid var(--line-strong);
-  border-radius: 999px;
-  color: var(--text-2);
-  font-size: var(--text-subhead);
-  transition: background 0.15s var(--ease), color 0.15s var(--ease);
-}
-
-.suggestions button:hover {
-  background: var(--fill);
-  color: var(--text);
-}
-
-.assistant.is-compact .assistant-welcome {
-  padding: 18px 0 4px;
-  gap: 12px;
-}
-
-.assistant.is-compact .assistant-hello {
   font-size: var(--text-title);
+  font-weight: 600;
+  line-height: var(--lh-title);
+  letter-spacing: -0.016em;
+  text-wrap: balance;
+}
+
+.assistant-welcome > p {
+  max-width: 60ch;
+  color: var(--text-2);
+  font-size: var(--text-subhead);
+  text-wrap: pretty;
+}
+
+.assistant-welcome .suggestions {
+  margin-top: var(--space-3);
 }
 
 .assistant.is-compact .composer .round-button {
-  right: 22px;
-  bottom: 16px;
+  right: 20px;
+  bottom: 12px;
 }
 
 .assistant-panel {
@@ -4127,7 +4011,7 @@ a.feed-row:focus-visible {
 }
 
 .assistant-panel-head h2 {
-  font-size: var(--text-body);
+  font-size: var(--text-headline);
   font-weight: 600;
 }
 
@@ -4204,23 +4088,19 @@ a.feed-row:focus-visible {
   margin-top: 6px;
 }
 
+/* A tinted panel with a status icon. No coloured stripe down the side. */
 .callout {
-  padding: 12px 14px;
-  border: 1px solid var(--line-strong);
-  border-left-width: 4px;
-  border-radius: 10px;
+  padding: var(--space-3) var(--space-4);
+  border: 0;
+  border-radius: var(--r-md);
   font-size: var(--text-subhead);
 }
 
 .callout.is-warn {
-  border-color: var(--amber-line);
-  border-left-color: var(--amber);
   background: var(--amber-soft);
 }
 
 .callout.is-danger {
-  border-color: var(--red-line);
-  border-left-color: var(--red);
   background: var(--red-soft);
 }
 
@@ -4353,28 +4233,28 @@ a.feed-row:focus-visible {
   text-wrap: balance;
 }
 
+.issue.is-emergency h3 {
+  color: var(--accent);
+}
+
 .issue > p {
-  margin-top: 4px;
+  margin-top: var(--space-1);
 }
 
 .issue .callout {
-  margin-top: 12px;
+  margin-top: var(--space-3);
 }
 
 .callout-head {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--space-2);
   color: var(--red);
-  font-weight: 700;
-}
-
-.callout.is-danger.is-active {
-  box-shadow: 0 0 0 2px var(--red);
+  font-weight: 600;
 }
 
 .issue-block {
-  margin-top: 20px;
+  margin-top: var(--space-5);
 }
 
 .issue-block h4 {
@@ -4393,37 +4273,40 @@ a.feed-row:focus-visible {
 }
 
 .issue-block li + li {
-  margin-top: 4px;
+  margin-top: var(--space-1);
 }
 
-.facts {
-  list-style: none;
-  padding-left: 0 !important;
+.facts .row {
+  align-items: flex-start;
 }
 
-.facts li {
-  padding: 6px 10px;
-  border-left: 3px solid var(--line-strong);
-  background: var(--surface-2);
-  border-radius: 0 8px 8px 0;
+.facts .row-title {
+  flex: none;
+  max-width: 45%;
+  overflow: visible;
+  white-space: normal;
 }
 
-.facts li.is-warn {
-  border-left-color: var(--amber);
+.facts .row-value {
+  flex: 1;
+  min-width: 0;
+  white-space: normal;
+  text-align: right;
 }
 
-.fact-label {
-  font-weight: 600;
+.facts .row.is-warn .row-value {
+  color: var(--amber);
 }
 
-.facts .text-button {
+.facts .text-button.row-value {
+  display: block;
   min-height: 0;
-  display: inline;
-  text-align: left;
+  padding: 0;
+  font-weight: 400;
 }
 
 .issue-q {
-  margin: 0 0 12px;
+  margin: 0 0 var(--space-3);
   padding: 0;
   border: 0;
 }
@@ -4435,11 +4318,11 @@ a.feed-row:focus-visible {
 
 .issue-reply {
   display: flex;
-  gap: 8px;
+  gap: var(--space-2);
   align-items: flex-start;
-  margin-top: 8px;
-  padding: 8px 10px;
-  border-radius: 8px;
+  margin-top: var(--space-2);
+  padding: var(--space-2) 10px;
+  border-radius: var(--r-sm-inner);
   font-size: var(--text-subhead);
 }
 
@@ -4463,64 +4346,35 @@ a.feed-row:focus-visible {
 }
 
 .call-pro {
-  margin-top: 8px;
+  margin-top: var(--space-2);
   font-size: var(--text-subhead);
 }
 
 .call-pro.is-active {
-  padding: 8px 10px;
-  border-radius: 8px;
+  padding: var(--space-2) 10px;
+  border-radius: var(--r-sm-inner);
   background: var(--amber-soft);
   font-weight: 600;
 }
 
 .issue-actions {
-  margin-top: 18px;
-  padding-top: 14px;
-  border-top: 1px solid var(--line-strong);
+  margin-top: var(--space-8);
 }
 
 .issue-actions-title {
-  margin-bottom: 8px;
-  font-weight: 600;
-}
-
-.issue-action-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 8px;
-}
-
-.issue-action {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-height: 44px;
-  padding: 8px 12px;
-  border: 1px solid var(--line-strong);
-  border-radius: 10px;
-  background: var(--surface);
-  color: var(--text);
+  margin-bottom: var(--space-2);
+  padding: 0 var(--space-4);
+  color: var(--text-2);
   font-size: var(--text-subhead);
   font-weight: 600;
-  text-align: left;
 }
 
-.issue-action svg {
-  flex: none;
-  color: var(--text-2);
-}
-
-.issue-action.is-done {
-  background: var(--good-soft);
-}
-
-.issue-action.is-done svg {
+.issue-action.is-done .row-lead {
   color: var(--green);
 }
 
 .issue-resolve {
-  margin-top: 12px;
+  margin-top: var(--space-4);
 }
 
 .issue-done {
@@ -4531,23 +4385,10 @@ a.feed-row:focus-visible {
   font-weight: 600;
 }
 
-@media (hover: hover) {
-  .issue-action:hover {
-    background: var(--surface-2);
-  }
-}
-
-/* Problem answers are working instructions: the plain system face, a size that reads in a hurry. */
+/* Problem answers are working instructions: body size, in the plain system face. */
 .bubble.is-issue {
-  font-family: var(--font);
-  font-size: var(--text-subhead);
+  font-size: var(--text-body);
   line-height: 1.5;
-}
-
-.bubble.is-issue .chip,
-.bubble.is-issue button {
-  font-family: var(--font);
-  font-size: var(--text-subhead);
 }
 
 .side-link,
@@ -4565,18 +4406,8 @@ a.feed-row:focus-visible {
   min-height: 44px;
 }
 
-.issue-action.is-call {
-  border-color: var(--button-bg);
-  background: var(--button-bg);
-  color: var(--button-text);
-}
-
-.issue-action.is-call svg {
-  color: inherit;
-}
-
 .critical-call {
-  margin-top: 12px;
+  margin-top: var(--space-4);
 }
 
 .button.is-call {
@@ -4586,7 +4417,7 @@ a.feed-row:focus-visible {
 }
 
 .issue-later {
-  margin-top: 16px;
+  margin-top: var(--space-5);
   color: var(--text-2);
   font-size: var(--text-subhead);
 }

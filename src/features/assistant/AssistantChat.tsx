@@ -2,8 +2,8 @@ import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useData, useNow } from '../../data/DataProvider';
 import { uid } from '../../data/ids';
-import { useSession } from '../../session/session';
-import { House, Send } from '../../ui/Icons';
+import { Send } from '../../ui/Icons';
+import { Row } from '../../ui/layout';
 import { SUGGESTED_QUESTIONS } from './guides';
 import { LocalGuideProvider, type Answer, type AssistantProvider } from './provider';
 import { IssueAnswer, type IssueState } from './IssueAnswer';
@@ -35,7 +35,6 @@ interface AssistantChatProps {
 export function AssistantChat({ provider = LocalGuideProvider, compact = false, nudge, onNavigate, initialQuestion }: AssistantChatProps) {
   const data = useData();
   const now = useNow();
-  const session = useSession();
   const navigate = useNavigate();
   const [messages, setMessages] = useState<Message[]>(conversation);
   const [draft, setDraft] = useState('');
@@ -93,11 +92,8 @@ export function AssistantChat({ provider = LocalGuideProvider, compact = false, 
       <div className="chat" aria-live="polite">
         {messages.length === 0 && (
           <div className="assistant-welcome">
-            <span className="assistant-mark" aria-hidden="true">
-              <House size={22} />
-            </span>
-            <h2 className="assistant-hello">How can I help with your home{session.firstName ? `, ${session.firstName}` : ''}?</h2>
-            <p>I know your tasks, records and home details, and I have step-by-step help for leaks, heating, power and more.</p>
+            <h2 className="assistant-hello">What’s going on?</h2>
+            <p>Pick the closest one, or describe it below.</p>
             {nudge && (
               <p className="bubble-nudge">
                 {nudge.text}{' '}
@@ -106,11 +102,9 @@ export function AssistantChat({ provider = LocalGuideProvider, compact = false, 
                 </button>
               </p>
             )}
-            <div className="suggestions">
+            <div className="group suggestions">
               {suggestions.map((q) => (
-                <button key={q} type="button" onClick={() => void ask(q)}>
-                  {q}
-                </button>
+                <Row key={q} title={q} chevron onClick={() => void ask(q)} />
               ))}
             </div>
           </div>
@@ -188,7 +182,7 @@ export function AssistantChat({ provider = LocalGuideProvider, compact = false, 
           className="input"
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
-          placeholder="Ask about a fix, a plan or your home"
+          placeholder="Ask about a fix or a plan"
           autoComplete="off"
           data-autofocus={compact ? '' : undefined}
         />

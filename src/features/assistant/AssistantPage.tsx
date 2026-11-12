@@ -7,7 +7,7 @@ import type { AssistantProvider } from './provider';
 export function AssistantPage({ provider }: { provider?: AssistantProvider }) {
   const [params] = useSearchParams();
   return (
-    <Page title="Assistant" subtitle="Tell me what’s wrong. I’ll start with safety, ask a few questions, and help you turn it into a task or a record." profile>
+    <Page title="Assistant" subtitle="Steps for leaks, heat, power and more. Runs on this device." profile>
       <AssistantChat provider={provider} initialQuestion={params.get('q') ?? undefined} />
     </Page>
   );
