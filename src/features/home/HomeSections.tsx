@@ -10,20 +10,18 @@ import {
   ChevronRight,
   CircleCheck,
   Clock,
-  DoorOpen,
   Download,
   FileText,
-  House,
   Key,
   MoreHorizontal,
   Pencil,
   Plus,
-  Thermometer,
   Trash2,
   Upload,
   X,
   type IconProps,
 } from '../../ui/Icons';
+import { Group, Row, Section } from '../../ui/layout';
 import { Menu } from '../../ui/menu';
 import { useToast } from '../../ui/overlays';
 import { TaskForm } from '../tasks/TaskForm';
@@ -130,65 +128,37 @@ export function HomeAlertRows({
 
 // ---------- Home overview: the one primary panel ----------
 
-const FACT_ICON: Record<SnapshotFact['id'], ComponentType<IconProps>> = {
-  age: House,
-  rooms: DoorOpen,
-  hvac: Thermometer,
-  next: Calendar,
-};
-
-export function HomeOverview({ headline, place, facts, alerts }: { headline: string; place?: string; facts: SnapshotFact[]; alerts: Alert[] }) {
+/** The home at a glance: plain key and value rows, then what needs a look. No tiles, no icons. */
+export function HomeOverview({ facts, alerts }: { facts: SnapshotFact[]; alerts: Alert[] }) {
   return (
-    <section className="overview" aria-labelledby="overview-title">
-      <div className="overview-head">
-        <h2 id="overview-title" className="overview-title">
-          {headline}
-        </h2>
-        {place && <p className="overview-place">{place}</p>}
-      </div>
-
-      <dl className="snapshot" aria-label="Home snapshot">
-        {facts.map((fact) => {
-          const Icon = FACT_ICON[fact.id];
-          const body = (
-            <>
-              <dt>
-                <Icon size={16} />
-                {fact.label}
-              </dt>
-              <dd className={fact.tone ? `is-${fact.tone}` : undefined}>{fact.value}</dd>
-              <dd className="snapshot-detail">{fact.detail}</dd>
-            </>
-          );
-          return fact.href.startsWith('#') ? (
-            <a key={fact.id} className="snapshot-fact" href={fact.href}>
-              {body}
-            </a>
-          ) : (
-            <Link key={fact.id} className="snapshot-fact" to={fact.href}>
-              {body}
-            </Link>
-          );
-        })}
-      </dl>
-
+    <>
+      <Section title="Your home at a glance">
+        <Group>
+          {facts.map((fact) => {
+            const none = fact.id === 'rooms' && fact.value === '0';
+            return (
+              <Row
+                key={fact.id}
+                title={fact.label}
+                sub={none ? undefined : fact.detail}
+                value={<span className={fact.tone ? `kv-value is-${fact.tone}` : 'kv-value'}>{none ? 'None yet' : fact.value}</span>}
+                to={fact.href}
+                chevron
+              />
+            );
+          })}
+        </Group>
+      </Section>
       {alerts.length > 0 && (
-        <div className="overview-alerts">
-          <h3 className="overview-label">Needs attention</h3>
-          <ul>
+        <Section title="Needs attention">
+          <Group>
             {alerts.map((alert) => (
-              <li key={alert.id}>
-                <Link to={alert.href} className={`attention is-${alert.tone}`}>
-                  <AlertTriangle size={16} />
-                  <span className="attention-title">{alert.title}</span>
-                  <span className="attention-detail">{alert.detail}</span>
-                </Link>
-              </li>
+              <Row key={alert.id} title={alert.title} sub={alert.detail} lead={<AlertTriangle size={18} className="home-alert-icon" />} to={alert.href} wrap />
             ))}
-          </ul>
-        </div>
+          </Group>
+        </Section>
       )}
-    </section>
+    </>
   );
 }
 

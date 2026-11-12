@@ -42,9 +42,24 @@
   --shadow-1: none;
   --shadow-raised: 0 1px 2px rgba(41, 39, 31, 0.03), 0 6px 24px rgba(41, 39, 31, 0.05);
   --shadow-2: 0 2px 6px rgba(41, 39, 31, 0.05), 0 18px 48px rgba(41, 39, 31, 0.12);
-  --radius: 14px;
-  --radius-lg: 18px;
-  --radius-sheet: 22px;
+  --r-xs: 6px;
+  --r-sm: 10px;
+  --r-sm-inner: 8px;
+  --r-md: 12px;
+  --r-lg: 14px;
+  --r-xl: 20px;
+  --r-sheet: 24px;
+  --radius: var(--r-md);
+  --radius-lg: var(--r-lg);
+  --radius-sheet: var(--r-sheet);
+  --dur-press: 100ms;
+  --dur-fast: 160ms;
+  --dur-base: 220ms;
+  --dur-sheet: 380ms;
+  --dur-exit: 150ms;
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
   --page-max: 760px;
   --sidebar: 232px;
   --ease: cubic-bezier(0.22, 0.8, 0.24, 1);
@@ -2583,10 +2598,6 @@ select.input {
   gap: 2px;
 }
 
-.health {
-  padding: 16px;
-}
-
 .bubble-safety {
   margin-top: 10px;
   padding: 10px 12px;
@@ -2848,212 +2859,6 @@ select.input {
   color: var(--accent);
 }
 
-/* ---------- Home overview ---------- */
-
-.overview {
-  margin-top: 22px;
-  padding: 20px 20px 6px;
-  border: 1px solid var(--line-strong);
-  border-radius: 14px;
-  background: var(--surface-raised);
-  box-shadow: var(--shadow-raised);
-}
-
-.overview-title {
-  font-family: var(--font-title);
-  font-size: var(--text-title);
-  font-weight: var(--title-weight);
-  line-height: var(--lh-title);
-  letter-spacing: var(--title-tracking);
-}
-
-.overview-place {
-  margin-top: 3px;
-  color: var(--text-2);
-  font-size: var(--text-subhead);
-}
-
-.snapshot {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  margin: 18px -20px 0;
-  border-top: 1px solid var(--line);
-}
-
-.snapshot-fact {
-  display: grid;
-  align-content: start;
-  gap: 3px;
-  min-width: 0;
-  padding: 14px 20px;
-  border-bottom: 1px solid var(--line);
-  color: inherit;
-  transition: background 0.15s var(--ease);
-}
-
-.snapshot-fact:nth-child(odd) {
-  border-right: 1px solid var(--line);
-}
-
-.snapshot-fact:last-child {
-  grid-column: 1 / -1;
-  border-right: 0;
-}
-
-.snapshot dt {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  color: var(--text-2);
-  font-size: var(--text-footnote);
-  font-weight: 500;
-}
-
-.snapshot dt svg {
-  flex: none;
-  color: var(--cool);
-}
-
-.snapshot dd {
-  margin: 0;
-  font-size: var(--text-body);
-  font-weight: 600;
-  letter-spacing: -0.01em;
-  font-variant-numeric: tabular-nums;
-}
-
-.snapshot dd.is-overdue {
-  color: var(--accent);
-}
-
-.snapshot dd.is-warn {
-  color: var(--amber);
-}
-
-.snapshot dd.is-good {
-  color: var(--cool);
-}
-
-.snapshot dd.is-muted {
-  color: var(--text-3);
-  font-weight: 500;
-}
-
-.snapshot .snapshot-detail {
-  color: var(--text-3);
-  font-size: var(--text-footnote);
-  font-weight: 400;
-  line-height: 1.4;
-}
-
-@media (hover: hover) {
-  .snapshot-fact:hover {
-    background: color-mix(in srgb, var(--fill) 55%, transparent);
-  }
-}
-
-.snapshot-fact:focus-visible {
-  outline-offset: -2px;
-}
-
-@media (min-width: 640px) {
-  .snapshot {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-
-  .snapshot-fact:nth-child(odd) {
-    border-right: 0;
-  }
-
-  .snapshot-fact:not(:nth-child(3n)) {
-    border-right: 1px solid var(--line);
-  }
-
-  .snapshot-fact:last-child {
-    grid-column: auto / span 2;
-    border-right: 0;
-  }
-}
-
-@media (min-width: 1000px) {
-  .snapshot {
-    grid-template-columns: repeat(5, minmax(0, 1fr));
-    border-bottom: 0;
-  }
-
-  .snapshot-fact,
-  .snapshot-fact:not(:nth-child(3n)) {
-    border-right: 1px solid var(--line);
-    border-bottom: 0;
-  }
-
-  .snapshot-fact:last-child {
-    grid-column: auto;
-    border-right: 0;
-  }
-}
-
-.overview-alerts {
-  margin: 0 -20px;
-  padding: 14px 20px 10px;
-  border-top: 1px solid var(--line);
-}
-
-.overview-alerts ul {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.overview-label {
-  margin-bottom: 4px;
-  color: var(--text-2);
-  font-size: var(--text-footnote);
-  font-weight: 600;
-}
-
-.attention {
-  display: grid;
-  grid-template-columns: 16px minmax(0, 1fr) auto;
-  align-items: baseline;
-  gap: 10px;
-  min-height: 40px;
-  padding: 9px 8px;
-  margin: 0 -8px;
-  border-radius: 8px;
-  color: inherit;
-}
-
-.attention svg {
-  align-self: center;
-  color: var(--amber);
-}
-
-.attention.is-overdue svg {
-  color: var(--accent);
-}
-
-.attention-title {
-  font-size: var(--text-subhead);
-  font-weight: 500;
-}
-
-.attention-detail {
-  color: var(--text-2);
-  font-size: var(--text-footnote);
-  text-align: right;
-}
-
-.attention.is-overdue .attention-detail {
-  color: var(--accent);
-}
-
-@media (hover: hover) {
-  .attention:hover {
-    background: var(--fill);
-  }
-}
-
 /* ---------- Home columns and modules ---------- */
 
 .home-columns {
@@ -3174,102 +2979,142 @@ select.input {
   width: auto;
 }
 
-/* ---------- Home Health Check ---------- */
+/* ---------- Home Health Check: a progress line, then two plain groups ---------- */
 
 .health-meter {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  margin: 2px 0 8px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: baseline;
+  gap: var(--space-2) var(--space-3);
+  margin-top: var(--space-6);
 }
 
-.health-score {
-  min-width: 3ch;
-  font-size: var(--text-large);
+.health-count {
+  font-size: var(--text-headline);
   font-weight: 600;
-  letter-spacing: -0.02em;
+  line-height: var(--lh-headline);
   font-variant-numeric: tabular-nums;
 }
 
+.health-time {
+  color: var(--text-2);
+  font-size: var(--text-footnote);
+}
+
 .progress {
-  flex: 1;
-  height: 6px;
+  grid-column: 1 / -1;
+  height: 4px;
   overflow: hidden;
-  border-radius: 3px;
+  border-radius: var(--r-xs);
   background: var(--fill);
 }
 
 .progress span {
   display: block;
   height: 100%;
-  border-radius: 3px;
+  border-radius: var(--r-xs);
   background: var(--cool);
-  transition: width 0.4s var(--ease);
+  transition: width var(--dur-base) var(--ease-out);
 }
 
-.steps {
-  margin: 12px -18px 0;
+.health-steps {
+  margin: 0;
   padding: 0;
   list-style: none;
-  border-top: 1px solid var(--line);
 }
 
-.steps li + li {
-  border-top: 1px solid var(--line);
+.health-step {
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
 }
 
-.step {
-  display: grid;
-  grid-template-columns: 20px minmax(0, 1fr);
-  gap: 12px;
-  padding: 11px 18px;
-  color: inherit;
-  transition: background 0.15s var(--ease);
+.health-mark-cell {
+  padding-top: 2px;
 }
 
-@media (hover: hover) {
-  .step:hover {
-    background: var(--surface-2);
-  }
-}
-
-.step:focus-visible {
-  outline-offset: -2px;
-}
-
-.step-mark {
+.health-mark {
   display: grid;
   place-items: center;
-  width: 18px;
-  height: 18px;
-  margin-top: 2px;
-  border: 1.5px solid var(--line-strong);
+  width: 22px;
+  height: 22px;
+  border: 1.5px solid var(--text-3);
   border-radius: 50%;
 }
 
-.is-done .step-mark {
-  border-color: transparent;
-  background: var(--cool-soft);
-  color: var(--cool);
+.health-step.is-done .health-mark {
+  border-color: var(--green);
+  background: var(--green);
+  color: var(--surface);
 }
 
-.step-text {
-  display: grid;
-  gap: 2px;
+.health-body {
+  flex: 1;
+  min-width: 0;
 }
 
-.step-title {
+.health-line {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.health-title {
+  font-size: var(--text-body);
+  font-weight: 600;
+  line-height: var(--lh-headline);
+}
+
+.health-step.is-done .health-title {
+  color: var(--text-2);
+}
+
+.health-minutes {
+  flex: none;
+  color: var(--text-2);
+  font-size: var(--text-footnote);
+  white-space: nowrap;
+}
+
+.health-why {
+  margin-top: var(--space-1);
+  color: var(--text-2);
+  font-size: var(--text-subhead);
+  line-height: var(--lh-subhead);
+  text-wrap: pretty;
+}
+
+.health-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0 var(--space-4);
+}
+
+.health-actions:empty {
+  display: none;
+}
+
+.health-actions .text-button {
+  gap: var(--space-1);
   font-size: var(--text-subhead);
 }
 
-.is-done .step-title {
-  color: var(--text-2);
+.text-button.is-strong {
+  font-weight: 600;
 }
 
-.step-why {
-  color: var(--text-2);
-  font-size: var(--text-footnote);
-  line-height: 1.45;
+.kv-value.is-overdue {
+  color: var(--red);
+}
+
+.kv-value.is-warn {
+  color: var(--amber);
+}
+
+.kv-value.is-muted {
+  color: var(--text-3);
 }
 
 .module-foot {
@@ -3843,17 +3688,13 @@ a.feed-row:focus-visible {
 .module-note,
 .field-hint,
 .menu-hint,
-.snapshot dt,
-.snapshot .snapshot-detail,
 .timeline-detail,
 .feed-time,
 .tally dt,
 .tally-note,
-.step-why,
 .tip-why,
 .local-note,
 .bubble-note,
-.overview-label,
 .timeline-label {
   letter-spacing: 0;
 }
@@ -4001,20 +3842,9 @@ a.feed-row:focus-visible {
   box-shadow: none;
 }
 
-.overview {
-  border-color: var(--line);
-  background: var(--surface);
-  box-shadow: none;
-}
-
-.snapshot dt svg,
 .menu-icon,
 .feed-icon {
   color: var(--text-3);
-}
-
-.progress span {
-  background: var(--text-2);
 }
 
 /* ---------- navigation: soft fill, no colour bars ---------- */
@@ -4350,134 +4180,6 @@ a.feed-row:focus-visible {
 }
 
 /* ---------- starter Home Health Check ---------- */
-
-.health .health-meter {
-  flex-wrap: wrap;
-  gap: 6px 14px;
-}
-
-.health .health-score {
-  font-size: var(--text-title);
-}
-
-.health-time {
-  width: 100%;
-  color: var(--text-2);
-  font-size: var(--text-subhead);
-}
-
-.health-tag {
-  display: inline-block;
-  margin-right: 6px;
-  padding: 1px 8px;
-  border-radius: 6px;
-  background: var(--fill);
-  color: var(--text);
-  font-size: var(--text-footnote);
-  font-weight: 700;
-}
-
-.health-steps {
-  display: grid;
-  gap: 10px;
-  margin: 12px 0 0;
-  padding: 0;
-  list-style: none;
-}
-
-.health-step {
-  display: grid;
-  grid-template-columns: 24px minmax(0, 1fr);
-  gap: 12px;
-  padding: 14px;
-  border: 1px solid var(--line-strong);
-  border-radius: 10px;
-}
-
-.health-step.is-high {
-  border-color: var(--text-2);
-}
-
-.health-step.is-done,
-.health-step.is-na {
-  background: var(--surface-2);
-}
-
-.health-mark {
-  display: grid;
-  place-items: center;
-  width: 24px;
-  height: 24px;
-  margin-top: 1px;
-  border: 2px solid var(--line-strong);
-  border-radius: 50%;
-}
-
-.health-step.is-done .health-mark {
-  border-color: var(--green);
-  background: var(--green);
-  color: #fff;
-}
-
-.health-title {
-  font-size: var(--text-body);
-  font-weight: 600;
-  line-height: 1.3;
-}
-
-.health-step.is-done .health-title {
-  color: var(--text-2);
-}
-
-.health-meta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin-top: 6px;
-}
-
-.pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 2px 8px;
-  border-radius: 6px;
-  background: var(--fill);
-  color: var(--text);
-  font-size: var(--text-footnote);
-  font-weight: 600;
-}
-
-.pill.is-good {
-  background: var(--good-soft);
-  color: var(--green);
-}
-
-.pill.is-plain {
-  background: transparent;
-  color: var(--text-2);
-  font-weight: 500;
-}
-
-.health-why {
-  margin-top: 6px;
-  color: var(--text-2);
-  font-size: var(--text-subhead);
-  line-height: 1.45;
-  text-wrap: pretty;
-}
-
-.health-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  align-items: center;
-  margin-top: 10px;
-}
-
-.health-actions:empty {
-  display: none;
-}
 
 /* Sheets with guidance */
 .sheet-lead {

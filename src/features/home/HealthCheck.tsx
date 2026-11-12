@@ -1,11 +1,12 @@
 import { useMemo, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useData, useStore } from '../../data/DataProvider';
 import { uid } from '../../data/ids';
 import type { Task } from '../../data/types';
 import { addDays, toDateInput } from '../../lib/dates';
 import { TextArea } from '../../ui/controls';
-import { Check, Clock } from '../../ui/Icons';
+import { Check } from '../../ui/Icons';
+import { Section } from '../../ui/layout';
 import { Sheet, useToast } from '../../ui/overlays';
 import { SystemSheet } from '../property/SystemsPage';
 import { RecordForm } from '../records/RecordForm';
@@ -13,59 +14,49 @@ import { starterCheckFor, type StarterStep } from './starter';
 import { markNotApplicable, markTested, reopenStep, saveLocation } from './starterActions';
 
 /**
- * The starter Home Health Check. Every step says why it matters, how long it takes, how urgent it
- * is, whether it's done, and has one clear button that does the job (or saves the result).
+ * The starter Home Health Check, as one list: a progress line, then the steps in two groups, safety
+ * first. Every step says why it matters and how long it takes, and has one plain text action.
  */
-export function StarterChecklist({ compact = false }: { compact?: boolean }) {
+export function StarterChecklist() {
   const data = useData();
   const check = useMemo(() => starterCheckFor(data), [data]);
   const [active, setActive] = useState<StarterStep | null>(null);
 
-  const open = check.steps.filter((s) => s.status === 'todo');
-  // On Home: the next three open steps, most urgent first. On its own page: all of them.
-  const shown = compact ? [...open].sort((a, b) => Number(b.priority === 'high') - Number(a.priority === 'high')).slice(0, 3) : check.steps;
+  const safety = check.steps.filter((step) => step.priority === 'high');
+  const then = check.steps.filter((step) => step.priority !== 'high');
 
   return (
-    <section className="module health" aria-labelledby={compact ? 'health-title' : undefined} aria-label={compact ? undefined : 'Starter checklist'}>
-      {compact && (
-        <header className="module-head">
-          <h2 id="health-title" className="module-title">
-            Home Health Check
-          </h2>
-          <Link className="module-aside is-link" to="/home/health">
-            All {check.steps.length} steps
-          </Link>
-        </header>
-      )}
+    <section className="health" aria-label="Starter checklist">
       <div className="health-meter">
-        <span className="health-score">
+        <p className="health-count">
           {check.done} of {check.total} done
-        </span>
+        </p>
+        {!check.complete && <p className="health-time">About {check.minutesLeft} min left</p>}
         <div className="progress" role="progressbar" aria-valuemin={0} aria-valuemax={check.total} aria-valuenow={check.done} aria-label="Home Health Check progress">
           <span style={{ width: `${check.score}%` }} />
         </div>
-        {!check.complete && <span className="health-time">About {check.minutesLeft} min left</span>}
       </div>
-      {compact && check.done === 0 && (
-        <p className="module-lead">
-          <span className="health-tag">Starter checklist</span> Eight things every home should have sorted before something goes wrong. Start with the first one; it takes about 10 minutes.
-        </p>
-      )}
-      {check.complete ? (
-        <p className="module-lead">Every step is done. Your shutoffs, alarms, systems and an emergency contact are on record.</p>
-      ) : (
-        <ol className="health-steps">
-          {shown.map((step) => (
-            <HealthStepCard key={step.id} step={step} onStart={() => setActive(step)} />
-          ))}
-        </ol>
-      )}
+      {check.complete && <p className="page-note">Every step is done. Your shutoffs, alarms, systems and an emergency contact are on record.</p>}
+      {[
+        { title: 'Safety first', steps: safety },
+        { title: 'Then', steps: then },
+      ]
+        .filter((group) => group.steps.length > 0)
+        .map((group) => (
+          <Section key={group.title} title={group.title}>
+            <ol className="group health-steps">
+              {group.steps.map((step) => (
+                <HealthStepRow key={step.id} step={step} onStart={() => setActive(step)} />
+              ))}
+            </ol>
+          </Section>
+        ))}
       {active && <StepSheet step={active} onClose={() => setActive(null)} />}
     </section>
   );
 }
 
-function HealthStepCard({ step, onStart }: { step: StarterStep; onStart: () => void }) {
+function HealthStepRow({ step, onStart }: { step: StarterStep; onStart: () => void }) {
   const store = useStore();
   const toast = useToast();
   const done = step.status === 'done';
@@ -81,39 +72,28 @@ function HealthStepCard({ step, onStart }: { step: StarterStep; onStart: () => v
   }
 
   return (
-    <li className={`health-step ${done ? 'is-done' : ''} ${na ? 'is-na' : ''} ${step.priority === 'high' && !done && !na ? 'is-high' : ''}`}>
-      <span className="health-mark" aria-hidden="true">
-        {done && <Check size={15} strokeWidth={2.6} />}
+    <li className={`row health-step ${done ? 'is-done' : ''} ${na ? 'is-na' : ''}`}>
+      <span className="row-lead health-mark-cell" aria-hidden="true">
+        <span className="health-mark">{done && <Check size={14} strokeWidth={2.6} />}</span>
       </span>
       <div className="health-body">
-        <h3 className="health-title">
-          {step.title}
-          <span className="visually-hidden">{done ? ' (done)' : na ? ' (doesn’t apply)' : ' (not done)'}</span>
-        </h3>
-        <p className="health-meta">
-          {done ? (
-            <span className="pill is-good">Done</span>
-          ) : na ? (
-            <span className="pill">Doesn’t apply</span>
-          ) : (
-            <>
-              <span className="pill">{step.priority === 'high' ? 'High priority' : 'Normal priority'}</span>
-              <span className="pill is-plain">
-                <Clock size={14} /> About {step.minutes} min
-              </span>
-            </>
-          )}
-        </p>
+        <div className="health-line">
+          <h3 className="health-title">
+            {step.title}
+            <span className="visually-hidden">{done ? ' (done)' : na ? ' (doesn’t apply)' : ' (not done)'}</span>
+          </h3>
+          <span className="health-minutes">{done ? 'Done' : na ? 'Doesn’t apply' : `About ${step.minutes} min`}</span>
+        </div>
         {done && step.saved?.note ? <p className="health-why">Saved: {step.saved.note}</p> : !done && !na && <p className="health-why">{step.why}</p>}
         {done && step.auto && <p className="health-why">Done because it’s already in Homebase.</p>}
         <div className="health-actions">
           {!done && !na && (
-            <button type="button" className="button is-primary is-small" onClick={onStart}>
-              {step.action.label}
+            <button type="button" className="text-button is-strong" onClick={onStart}>
+              {step.action.label} <span aria-hidden="true">›</span>
             </button>
           )}
           {!done && !na && step.optional && (
-            <button type="button" className="button is-quiet is-small" onClick={() => void run(() => markNotApplicable(store, step.id), 'Marked as not applying to this home')}>
+            <button type="button" className="text-button" onClick={() => void run(() => markNotApplicable(store, step.id), 'Marked as not applying to this home')}>
               {step.optional.label}
             </button>
           )}

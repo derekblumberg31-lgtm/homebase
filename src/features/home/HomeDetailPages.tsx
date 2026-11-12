@@ -8,8 +8,6 @@ import { alertsFor, currentSeason, seasonalTipsFor, snapshotFor, timelineFor } f
 
 const back = { to: '/home', label: 'Home' };
 
-const PROPERTY_TYPE: Record<string, string> = { house: 'House', townhouse: 'Townhouse', condo: 'Condo', apartment: 'Apartment', other: 'Home' };
-
 /** Home Health Check: the starter safety checklist, the home's snapshot, then the record steps. */
 export function HomeHealthPage() {
   const data = useData();
@@ -17,7 +15,6 @@ export function HomeHealthPage() {
   const starter = useMemo(() => starterCheckFor(data), [data]);
   const facts = useMemo(() => snapshotFor(data, now), [data, now]);
   const alerts = useMemo(() => alertsFor(data, now).filter((a) => a.tone !== 'overdue'), [data, now]);
-  const place = [data.property?.nickname, data.property?.type ? PROPERTY_TYPE[data.property.type] : null].filter(Boolean).join(' · ');
   return (
     <Page
       title="Home Health Check"
@@ -25,8 +22,7 @@ export function HomeHealthPage() {
       back={back}
     >
       <StarterChecklist />
-      <h2 className="page-subhead">Your home at a glance</h2>
-      <HomeOverview headline="Your home" place={place || undefined} facts={facts} alerts={alerts} />
+      <HomeOverview facts={facts} alerts={alerts} />
     </Page>
   );
 }
