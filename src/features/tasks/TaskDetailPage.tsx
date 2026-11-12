@@ -78,11 +78,51 @@ export function TaskDetailPage() {
               <Row title="Last done" value={lastDoneKnown(task) ? formatDate(task.lastDoneAt) : 'Not recorded yet'} />
               <Row title={info.status === 'overdue' ? 'Was due' : 'Due'} value={formatDate(info.dueDate)} />
               {task.nextDue && <Row title="Moved" sub="Snoozed or rescheduled. The usual rhythm returns after you mark it done." value={formatDate(task.nextDue)} wrap />}
-              <Row title="Repeats" value={formatEvery(task.intervalDays)} />
             </>
           ) : (
             <Row title={task.status === 'done' ? 'Finished' : 'Do by'} value={formatDate(task.status === 'done' ? task.lastDoneAt : info.dueDate)} />
           )}
+        </Group>
+      </Section>
+
+      {task.status === 'open' && (
+        <div className="button-stack task-actions">
+          <button type="button" className="button is-primary is-block" onClick={() => setCompleting(true)}>
+            <Check size={18} />
+            Mark done
+          </button>
+          <div className="button-row">
+            <button
+              type="button"
+              className="button is-secondary"
+              onClick={async () => {
+                try {
+                  const { nextDue, undo } = await snoozeTask(store, task, 7, now);
+                  toast(`Snoozed to ${formatDate(nextDue, false)}`, { action: { label: 'Undo', run: () => undoMove(undo) } });
+                } catch {
+                  toast('That wasn’t saved. Try again.', { tone: 'error' });
+                }
+              }}
+            >
+              <Clock size={18} /> Snooze a week
+            </button>
+            <button
+              type="button"
+              className="button is-secondary"
+              onClick={() => {
+                setNewDate(toDateInput(addDays(info.dueDate, 7)));
+                setRescheduling(true);
+              }}
+            >
+              <Calendar size={18} /> Reschedule
+            </button>
+          </div>
+        </div>
+      )}
+
+      <Section>
+        <Group>
+          {task.recurring && <Row title="Repeats" value={formatEvery(task.intervalDays)} />}
           {task.cost != null && <Row title={task.recurring ? 'Cost each time' : 'Estimated cost'} value={formatCurrency(task.cost)} />}
           {yearly > 0 && <Row title="Per year" value={formatCurrency(Math.round(yearly))} />}
           <Row title="Priority" value={PRIORITY_LABEL[taskPriority(task)].replace(' priority', '')} />
@@ -122,36 +162,6 @@ export function TaskDetailPage() {
       <div className="button-stack">
         {task.status === 'open' && (
           <>
-            <button type="button" className="button is-primary is-block" onClick={() => setCompleting(true)}>
-              <Check size={18} />
-              Mark done
-            </button>
-            <div className="button-row">
-              <button
-                type="button"
-                className="button is-secondary"
-                onClick={async () => {
-                  try {
-                    const { nextDue, undo } = await snoozeTask(store, task, 7, now);
-                    toast(`Snoozed to ${formatDate(nextDue, false)}`, { action: { label: 'Undo', run: () => undoMove(undo) } });
-                  } catch {
-                    toast('That wasn’t saved. Try again.', { tone: 'error' });
-                  }
-                }}
-              >
-                <Clock size={18} /> Snooze a week
-              </button>
-              <button
-                type="button"
-                className="button is-secondary"
-                onClick={() => {
-                  setNewDate(toDateInput(addDays(info.dueDate, 7)));
-                  setRescheduling(true);
-                }}
-              >
-                <Calendar size={18} /> Reschedule
-              </button>
-            </div>
             <button type="button" className="button is-quiet" onClick={exportCalendar}>
               Add to my calendar (.ics file)
             </button>
