@@ -1328,6 +1328,7 @@ select.input {
 }
 
 .chip {
+  min-width: 44px;
   min-height: 44px;
   padding: 0 12px;
   border-radius: var(--r-sm);
