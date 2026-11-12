@@ -119,7 +119,7 @@ export function SystemPage() {
   return (
     <Page
       title={system.name}
-      subtitle={[SYSTEM_LABEL[system.kind], where].filter(Boolean).join(' · ')}
+      subtitle={[SYSTEM_LABEL[system.kind].toLowerCase() === system.name.trim().toLowerCase() ? null : SYSTEM_LABEL[system.kind], where].filter(Boolean).join(' · ') || undefined}
       back={back}
       actions={<button type="button" className="button is-quiet" onClick={() => setEditing(true)}>Edit</button>}
     >
