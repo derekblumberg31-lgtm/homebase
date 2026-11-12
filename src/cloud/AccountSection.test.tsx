@@ -1,4 +1,5 @@
 import { renderToStaticMarkup } from 'react-dom/server';
+import { MemoryRouter } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { CloudContext, type CloudApi } from './cloudContext';
 import { CLOUD_COPY, pick, statusDetail, statusLabel, tooBigMessage, OFFLINE_MESSAGE } from './copy';
@@ -21,6 +22,8 @@ const api = (patch: Partial<CloudApi> = {}): CloudApi => ({
   verifyCode: async () => {},
   signInWithGoogle: async () => {},
   signOut: async () => {},
+  feed: { phase: 'none' },
+  makeCalendarLink: async () => {},
   deleteAccount: async () => {},
   beforeErase: async () => {},
   ...patch,
@@ -28,9 +31,11 @@ const api = (patch: Partial<CloudApi> = {}): CloudApi => ({
 
 const render = (value: CloudApi | null) =>
   renderToStaticMarkup(
-    <CloudContext.Provider value={value}>
-      <AccountSection />
-    </CloudContext.Provider>,
+    <MemoryRouter>
+      <CloudContext.Provider value={value}>
+        <AccountSection />
+      </CloudContext.Provider>
+    </MemoryRouter>,
   );
 
 const decode = (html: string) => html.replace(/&#x27;/g, "'").replace(/&amp;/g, '&');
@@ -132,5 +137,56 @@ describe('Google on an installed iPhone', () => {
     expect(googleAvailable({ ua: iphone, platform: 'iPhone', maxTouchPoints: 5, standalone: true })).toBe(false);
     expect(googleAvailable({ ua: iphone, platform: 'iPhone', maxTouchPoints: 5, standalone: false })).toBe(true);
     expect(GOOGLE_FALLBACK_LINE).toBe('To use Google, open Homebase in Safari, or sign in with an email code.');
+  });
+});
+
+describe('calendar link (signed-in guide section)', async () => {
+  const { CalendarLinkSection, NEW_LINK_MESSAGE, LINK_KEPT_LINE } = await import('./CalendarLinkSection');
+  const { FEED_PRIVACY_LINE, FEED_GUIDES } = await import('../features/settings/calendarGuide');
+  const renderLink = (value: CloudApi | null, platform: 'iphone' | 'mac' | 'google' = 'google') =>
+    decode(
+      renderToStaticMarkup(
+        <MemoryRouter>
+          <CloudContext.Provider value={value}>
+            <CalendarLinkSection platform={platform} />
+          </CloudContext.Provider>
+        </MemoryRouter>,
+      ),
+    );
+  const signedIn = (feed: CloudApi['feed']) => api({ phase: 'signed-in', user: { id: 'u', email: 'a@b.co' }, feed });
+
+  it('is absent when signed out or with no project', () => {
+    expect(renderLink(null)).toBe('');
+    expect(renderLink(api())).toBe('');
+  });
+
+  it('offers to make a link before one exists', () => {
+    const html = renderLink(signedIn({ phase: 'none' }));
+    expect(html).toContain('Make a calendar link');
+    expect(html).toContain(FEED_PRIVACY_LINE);
+    expect(html).toContain('Next to Other calendars, click Add other calendars, then From URL.');
+  });
+
+  it('shows the link, the copy button and the webcal subscribe right after it is made', () => {
+    const html = renderLink(signedIn({ phase: 'ready', url: 'https://abc.supabase.co/functions/v1/calendar-feed/ff.ics' }), 'mac');
+    expect(html).toContain('value="https://abc.supabase.co/functions/v1/calendar-feed/ff.ics"');
+    expect(html).toContain('Copy link');
+    expect(html).toContain('href="webcal://abc.supabase.co/functions/v1/calendar-feed/ff.ics"');
+    expect(html).toContain('Subscribe on this iPhone or Mac');
+    expect(html).toContain('Get a new link');
+    expect(html).toContain('Then set Auto-refresh in the calendar’s Get Info.');
+  });
+
+  it('later visits never show the secret', () => {
+    const html = renderLink(signedIn({ phase: 'ready' }));
+    expect(html).toContain(LINK_KEPT_LINE);
+    expect(html).not.toContain('calendar-feed');
+    expect(LINK_KEPT_LINE).toBe('Your link is set up. To add it to another calendar, get a new link.');
+  });
+
+  it('uses the exact copy from the spec', () => {
+    expect(NEW_LINK_MESSAGE).toBe('Calendars using the old link stop updating until you add the new one.');
+    expect(FEED_PRIVACY_LINE).toBe('Anyone with this link can see your job names and dates, nothing else. Don’t share it. Apple Calendar checks it regularly. Google Calendar can take a day to show changes.');
+    expect(FEED_GUIDES.google.note).toBe('You can’t subscribe in the Google Calendar phone app. Once added on a computer, it shows on your phone.');
   });
 });

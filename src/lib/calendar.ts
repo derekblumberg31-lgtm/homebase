@@ -48,7 +48,15 @@ function rrule(days: number): string {
   return `FREQ=DAILY;INTERVAL=${days}`;
 }
 
-export function taskEvent(task: Task, now = new Date()): string[] {
+export interface CalendarOptions {
+  /**
+   * For the subscription link, which anyone holding the URL can read: drops the place and the notes,
+   * leaving the job name, its date, how it repeats, the alarm and a line saying where it came from.
+   */
+  private?: boolean;
+}
+
+export function taskEvent(task: Task, now = new Date(), options: CalendarOptions = {}): string[] {
   const dueDate = toDateInput(dueDateOf(task));
   const today = toDateInput(now);
   // A job that is already overdue starts today, so its alert still fires and the series isn't planted in the past.
@@ -58,9 +66,9 @@ export function taskEvent(task: Task, now = new Date()): string[] {
   next.setDate(next.getDate() + 1);
   const description = [
     overdue ? `Was due ${formatDate(dueDate)}.` : null,
-    task.location ? `Where: ${task.location}` : null,
-    task.notes ?? null,
-    'From Homebase. This entry doesn’t move when you mark the job done; export again after big changes.',
+    !options.private && task.location ? `Where: ${task.location}` : null,
+    !options.private ? (task.notes ?? null) : null,
+    options.private ? 'From Homebase. This calendar updates when your jobs change.' : 'From Homebase. This entry doesn’t move when you mark the job done; export again after big changes.',
   ]
     .filter(Boolean)
     .join('\n');
@@ -82,9 +90,11 @@ export function taskEvent(task: Task, now = new Date()): string[] {
   ].map(fold);
 }
 
-export function buildCalendar(tasks: Task[], now = new Date()): string {
+export function buildCalendar(tasks: Task[], now = new Date(), options: CalendarOptions = {}): string {
   const lines = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Homebase//Home maintenance//EN', 'CALSCALE:GREGORIAN', 'X-WR-CALNAME:Homebase'];
-  for (const task of tasks.filter((t) => t.status === 'open')) lines.push(...taskEvent(task, now));
+  // A subscribed calendar is re-read by the calendar app; ask it to look about hourly.
+  if (options.private) lines.push('REFRESH-INTERVAL;VALUE=DURATION:PT1H', 'X-PUBLISHED-TTL:PT1H');
+  for (const task of tasks.filter((t) => t.status === 'open')) lines.push(...taskEvent(task, now, options));
   lines.push('END:VCALENDAR');
   return lines.join('\r\n') + '\r\n';
 }

@@ -67,3 +67,32 @@ describe('buildCalendar', () => {
     expect(uids(buildCalendar([task()], new Date('2027-01-01T00:00:00')))).toEqual(['UID:t1@homebase']);
   });
 });
+
+describe('buildCalendar with private: true (the subscription link)', () => {
+  const detailed = task({ location: 'Behind the water heater', notes: 'Gate code 4417, ask the neighbour', name: 'Flush the water heater', dueDate: '2026-12-01' });
+
+  it('drops where the job is and the notes, and keeps name, date, repeat, alarm and the source line', () => {
+    const ics = unfold(buildCalendar([detailed], NOW, { private: true }));
+    expect(ics).not.toContain('Where:');
+    expect(ics).not.toContain('Behind the water heater');
+    expect(ics).not.toContain('4417');
+    expect(ics).toContain('SUMMARY:Flush the water heater');
+    expect(ics).toContain('DTSTART;VALUE=DATE:20261201');
+    expect(ics).toContain('RRULE:FREQ=MONTHLY;INTERVAL=3');
+    expect(ics).toContain('BEGIN:VALARM');
+    expect(ics).toContain('From Homebase.');
+  });
+
+  it('keeps "Was due" for an overdue job, and still leaves out done jobs', () => {
+    const ics = unescape(unfold(buildCalendar([task({ recurring: false, dueDate: '2026-09-10', location: 'Garage' }), task({ id: 'done', status: 'done', name: 'Already done' })], NOW, { private: true })));
+    expect(ics).toContain('Was due Sep 10, 2026');
+    expect(ics).not.toContain('Garage');
+    expect(ics).not.toContain('Already done');
+  });
+
+  it('the file download still carries the place and notes', () => {
+    const ics = unfold(buildCalendar([detailed], NOW));
+    expect(ics).toContain('Where: Behind the water heater');
+    expect(ics).toContain('Gate code 4417');
+  });
+});

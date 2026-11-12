@@ -74,6 +74,17 @@ class FakeRemote implements CloudRemote {
     this.objects.clear();
     this.row = null;
   }
+  feed: { secret: string; ics: string } | null = null;
+  async hasCalendarFeed() {
+    return this.feed !== null;
+  }
+  async resetCalendarToken() {
+    this.feed = { secret: `secret-${Math.random().toString(16).slice(2)}`, ics: '' };
+    return this.feed.secret;
+  }
+  async putCalendarFeed(ics: string) {
+    if (this.feed) this.feed.ics = ics;
+  }
   /** Another device saves a document. */
   async setCloud(text: string, label = 'iPhone') {
     const revision = (this.row?.revision ?? 0) + 1;

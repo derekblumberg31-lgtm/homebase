@@ -11,7 +11,7 @@ export const SIGN_OUT_MESSAGE = 'Your home stays on this device. Changes made he
 export const DELETE_MESSAGE = 'This deletes your account and the copy of your home stored in it. Your home on this device isn’t touched. This can’t be undone.';
 
 /** Settings › Account and sync. Renders nothing unless the build has a Supabase project. */
-export function AccountSection({ calendarLink }: { calendarLink?: React.ReactNode }) {
+export function AccountSection() {
   const cloud = useCloud();
   const toast = useToast();
   const [signIn, setSignIn] = useState(false);
@@ -44,7 +44,7 @@ export function AccountSection({ calendarLink }: { calendarLink?: React.ReactNod
         <Row title="Signed in" value={cloud.user.email} />
         <Row title="Sync" sub={detail} value={statusLabel(cloud)} onClick={needsChoice ? cloud.openConflict : undefined} chevron={needsChoice} wrap />
         <Row title="Sync now" tone="action" onClick={cloud.syncNow} />
-        {calendarLink}
+        <Row title="Calendar link" value={cloud.feed.phase === 'ready' ? 'Set up' : 'Not set up'} to="/settings/calendar#link" />
         <Row title="Sign out" onClick={() => setConfirm('out')} />
         <Row title="Delete my account and cloud copy" tone="danger" onClick={() => setConfirm('delete')} />
       </Group>

@@ -31,6 +31,12 @@ export interface CloudRemote {
   remove(paths: string[]): Promise<void>;
   /** Removes every stored backup, then the account itself. */
   deleteAccount(): Promise<void>;
+  /** Whether a calendar link has been made for this account. */
+  hasCalendarFeed(): Promise<boolean>;
+  /** Makes a new calendar secret (or replaces the old one, which stops working at once). Returned once. */
+  resetCalendarToken(): Promise<string>;
+  /** Stores the calendar text the link serves. */
+  putCalendarFeed(ics: string): Promise<void>;
 }
 
 const BUCKET = 'backups';
@@ -96,6 +102,24 @@ export class SupabaseRemote implements CloudRemote {
   async remove(paths: string[]): Promise<void> {
     if (paths.length === 0) return;
     const { error } = await this.client.storage.from(BUCKET).remove(paths);
+    if (error) throw error;
+  }
+
+  async hasCalendarFeed(): Promise<boolean> {
+    const { data, error } = await this.client.from('calendar_feeds').select('user_id').eq('user_id', this.userId).maybeSingle();
+    if (error) throw error;
+    return Boolean(data);
+  }
+
+  async resetCalendarToken(): Promise<string> {
+    const { data, error } = await this.client.rpc('reset_calendar_token');
+    if (error) throw error;
+    if (typeof data !== 'string' || !data) throw new Error('No calendar secret returned.');
+    return data;
+  }
+
+  async putCalendarFeed(ics: string): Promise<void> {
+    const { error } = await this.client.from('calendar_feeds').update({ ics, updated_at: new Date().toISOString() }).eq('user_id', this.userId);
     if (error) throw error;
   }
 

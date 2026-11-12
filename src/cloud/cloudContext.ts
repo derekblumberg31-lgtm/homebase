@@ -26,10 +26,19 @@ export interface CloudApi {
   verifyCode: (email: string, code: string) => Promise<void>;
   signInWithGoogle: () => Promise<void>;
   signOut: () => Promise<void>;
+  feed: FeedState;
+  /** Makes the calendar link, or replaces it with a new one (the old one stops working at once). Throws when it didn't finish. */
+  makeCalendarLink: () => Promise<void>;
   /** Removes the cloud copy and the account. Throws when it didn't finish. */
   deleteAccount: () => Promise<void>;
   /** Signs out and forgets what was synced, before "Erase everything", so an empty home is never pushed. */
   beforeErase: () => Promise<void>;
+}
+
+/** The private calendar link. `url` is held in memory only, right after it is made, and is never stored. */
+export interface FeedState {
+  phase: 'unknown' | 'none' | 'ready';
+  url?: string;
 }
 
 export const CloudContext = createContext<CloudApi | null>(null);

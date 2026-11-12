@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { CalendarLinkSection } from '../../cloud/CalendarLinkSection';
 import { useData } from '../../data/DataProvider';
 import { exportSchedule } from '../../lib/calendar';
 import { readDeviceEnv } from '../../lib/dataSafety';
@@ -15,6 +16,10 @@ export function CalendarGuidePage() {
   const openTasks = data.tasks.filter((t) => t.status === 'open');
   const empty = openTasks.length === 0;
   const guide = CALENDAR_GUIDES[platform];
+  // Settings' Calendar link row lands on the signed-in section.
+  useEffect(() => {
+    if (window.location.hash === '#link') window.setTimeout(() => document.getElementById('link')?.scrollIntoView({ block: 'start' }), 50);
+  }, []);
 
   function download() {
     if (empty) return;
@@ -49,6 +54,8 @@ export function CalendarGuidePage() {
         </ol>
         {guide.note && <p className="section-foot">{guide.note}</p>}
       </Section>
+
+      <CalendarLinkSection platform={platform} />
     </Page>
   );
 }

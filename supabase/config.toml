@@ -1,0 +1,6 @@
+# Supabase CLI settings for Homebase. `project_id` only names the local dev containers; it is not a project ref.
+project_id = "homebase"
+
+# Calendar apps send no sign-in header, so this function checks the secret in the address instead.
+[functions.calendar-feed]
+verify_jwt = false

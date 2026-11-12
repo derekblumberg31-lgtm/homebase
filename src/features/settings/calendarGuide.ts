@@ -70,3 +70,37 @@ export function defaultPlatform(env: DeviceEnv): CalendarPlatform {
   if (label === 'Mac') return 'mac';
   return 'google';
 }
+
+/**
+ * Signed-in tier: the steps for the private link, which calendar apps subscribe to and keep refreshing.
+ * Google's are verified against its "Subscribe to someone's calendar" page; the Apple subscribe buttons
+ * (a webcal link) and the iPhone Settings path are not, and need a real-device test.
+ */
+export const FEED_GUIDES: Record<CalendarPlatform, PlatformGuide> = {
+  iphone: {
+    label: 'iPhone',
+    steps: [
+      { text: 'Tap Subscribe on this iPhone, then Subscribe.', verified: false },
+      { text: 'If that doesn’t open, go to Settings > Apps > Calendar > Calendar Accounts > Add Account > Other > Add Subscribed Calendar, and paste the link.', verified: false },
+    ],
+  },
+  mac: {
+    label: 'Mac',
+    steps: [
+      { text: 'Click Subscribe on this Mac.', verified: false },
+      { text: 'Then set Auto-refresh in the calendar’s Get Info.', verified: true },
+    ],
+  },
+  google: {
+    label: 'Google Calendar',
+    steps: [
+      { text: 'On a computer, open calendar.google.com.', verified: true },
+      { text: 'Next to Other calendars, click Add other calendars, then From URL.', verified: true },
+      { text: 'Paste the link and click Add calendar.', verified: true },
+    ],
+    note: 'You can’t subscribe in the Google Calendar phone app. Once added on a computer, it shows on your phone.',
+  },
+};
+
+export const FEED_PRIVACY_LINE =
+  'Anyone with this link can see your job names and dates, nothing else. Don’t share it. Apple Calendar checks it regularly. Google Calendar can take a day to show changes.';

@@ -4,13 +4,16 @@ import { deliverBackup, deviceLabel, readDeviceEnv } from '../lib/dataSafety';
 import { browserDeliverCaps } from '../features/settings/importing';
 import { useToast } from '../ui/overlays';
 import * as auth from './auth';
-import { CloudContext, type CloudApi, type CloudUser } from './cloudContext';
+import { CloudContext, type CloudApi, type CloudUser, type FeedState } from './cloudContext';
+import { cloudConfig } from './config';
+import { buildFeedIcs, feedUrl, sameFeed } from './feed';
 import { getClient, hasStoredSession } from './client';
 import { ConflictSheet, DecisionSheet } from './ConflictSheet';
 import { fromDevice, syncCoversBackup } from './copy';
 import { getDeviceId, deviceSyncState } from './deviceState';
 import { SupabaseRemote, type CloudRemote } from './remote';
 import { SyncEngine, type SyncState } from './syncEngine';
+import type { HomeData } from '../data/store';
 
 const NO_ENGINE: SyncState = { status: 'idle', canUndo: false };
 const noopSubscribe = () => () => {};
@@ -37,6 +40,9 @@ export function CloudProvider({ children }: { children: ReactNode }) {
   const remoteRef = useRef<CloudRemote | null>(null);
   const watching = useRef(false);
   const engineRef = useRef<SyncEngine | null>(null);
+  const [feed, setFeed] = useState<FeedState>({ phase: 'unknown' });
+  const feedReady = useRef(false);
+  const lastIcs = useRef<string | null>(null);
   const [sheet, setSheet] = useState<'conflict' | 'confirm' | 'reset' | null>(null);
 
   const sync = useSyncExternalStore(engine ? engine.subscribe : noopSubscribe, engine ? engine.getState : () => NO_ENGINE);
@@ -73,9 +79,26 @@ export function CloudProvider({ children }: { children: ReactNode }) {
     };
   }, [applyUser, watch]);
 
+  // The calendar text is stored again after each sync, but only when it changed.
+  const pushFeed = useCallback(async (data: HomeData) => {
+    const remote = remoteRef.current;
+    if (!feedReady.current || !remote) return;
+    const ics = buildFeedIcs(data);
+    if (sameFeed(lastIcs.current, ics)) return;
+    try {
+      await remote.putCalendarFeed(ics);
+      lastIcs.current = ics;
+    } catch {
+      // The next sync tries again.
+    }
+  }, []);
+
   // One engine per signed-in person.
   useEffect(() => {
     if (!user) {
+      feedReady.current = false;
+      lastIcs.current = null;
+      setFeed({ phase: 'unknown' });
       setEngine(null);
       engineRef.current = null;
       remoteRef.current = null;
@@ -88,6 +111,14 @@ export function CloudProvider({ children }: { children: ReactNode }) {
       if (!live) return;
       const remote = new SupabaseRemote(client, user.id);
       remoteRef.current = remote;
+      remote
+        .hasCalendarFeed()
+        .then((has) => {
+          if (!live) return;
+          feedReady.current = has;
+          setFeed({ phase: has ? 'ready' : 'none' });
+        })
+        .catch(() => undefined);
       made = new SyncEngine({
         store,
         remote,
@@ -97,7 +128,10 @@ export function CloudProvider({ children }: { children: ReactNode }) {
         deliverFile,
         syncState: deviceSyncState,
         onEvent: (event) => {
-          if (event.kind !== 'pulled') return;
+          if (event.kind === 'synced') {
+            void pushFeed(event.data);
+            return;
+          }
           toast(`Updated with changes from ${fromDevice(event.deviceLabel)}`, event.canUndo ? { action: { label: 'Undo', run: () => void engineRef.current?.undoPull() } } : undefined);
         },
       });
@@ -109,7 +143,7 @@ export function CloudProvider({ children }: { children: ReactNode }) {
       live = false;
       made?.stop();
     };
-  }, [user, store, toast]);
+  }, [user, store, toast, pushFeed]);
 
   // A choice that is needed opens its sheet once. "Decide later" and "Not now" close it; Settings reopens it.
   const lastStatus = useRef(sync.status);
@@ -159,6 +193,17 @@ export function CloudProvider({ children }: { children: ReactNode }) {
           applyUser(null);
         }
       },
+      feed,
+      makeCalendarLink: async () => {
+        const remote = remoteRef.current;
+        const config = cloudConfig();
+        if (!remote || !config) throw new Error('Not signed in.');
+        const secret = await remote.resetCalendarToken();
+        feedReady.current = true;
+        lastIcs.current = null;
+        await pushFeed(store.getSnapshot());
+        setFeed({ phase: 'ready', url: feedUrl(config.url, secret) });
+      },
       deleteAccount: async () => {
         const remote = remoteRef.current;
         if (!remote) throw new Error('Not signed in.');
@@ -174,7 +219,7 @@ export function CloudProvider({ children }: { children: ReactNode }) {
         applyUser(null);
       },
     }),
-    [phase, user, sync, watch, applyUser],
+    [phase, user, sync, watch, applyUser, feed, store, pushFeed],
   );
 
   return (
