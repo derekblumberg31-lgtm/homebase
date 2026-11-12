@@ -7,7 +7,7 @@ import type { IssueSubject } from './issueContext';
 
 /**
  * Turns an Assistant answer into home records: a repair task, a note, a shopping list, a
- * follow-up reminder, or a resolved entry in Service History. Everything the homeowner told the
+ * follow-up reminder, or a resolved entry in Service history. Everything the homeowner told the
  * Assistant (their question and answers) goes into the notes, so the next person, or the
  * plumber, sees the whole story.
  */
@@ -93,7 +93,7 @@ export async function createShoppingList(store: HomeStore, issue: Issue) {
   return record;
 }
 
-/** Fixed: kept in Service History with what happened, and in recent activity. */
+/** Fixed: kept in Service history with what happened, and in recent activity. */
 export async function resolveIssue(store: HomeStore, issue: Issue, input: { provider?: string; notes?: string; cost?: number } = {}) {
   const event: ServiceEvent = {
     id: uid(),

@@ -7,7 +7,7 @@ import { EmptyState, Group, Page, Row, Section } from '../../ui/layout';
 import { useToast } from '../../ui/overlays';
 import { LogJobSheet } from './LogJobSheet';
 
-/** Service History: every time something was done around the home, newest first, by year. */
+/** Service history: every time something was done around the home, newest first, by year. */
 export function ServiceHistoryPage() {
   const { serviceEvents, tasks } = useData();
   const toast = useToast();
@@ -25,7 +25,7 @@ export function ServiceHistoryPage() {
   }, [serviceEvents]);
 
   return (
-    <Page title="Service History" subtitle="Jobs done around the home, newest first." back={{ to: '/records', label: 'Records' }}>
+    <Page title="Service history" subtitle="Jobs done around the home, newest first." back={{ to: '/records', label: 'Records' }}>
       {years.length === 0 ? (
         <div className="section">
           <EmptyState

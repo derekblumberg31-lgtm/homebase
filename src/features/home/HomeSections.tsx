@@ -247,7 +247,7 @@ export function SeasonalSection({ season, tips, snoozed }: { season: string; tip
                   <p className="tip-title">{tip.title}</p>
                   <p className="tip-why">
                     {state === 'done'
-                      ? 'Done this season. Logged in Service History.'
+                      ? 'Done this season. Logged in Service history.'
                       : state === 'planned'
                         ? task
                           ? `Planned · due ${formatDateShort(getTaskInfo(task, Date.now()).dueDate)}`
@@ -287,7 +287,7 @@ export function SeasonalSection({ season, tips, snoozed }: { season: string; tip
                             {
                               id: 'done',
                               label: 'Already done',
-                              hint: 'Log it in Service History',
+                              hint: 'Log it in Service history',
                               icon: Check,
                               onSelect: () =>
                                 void act(async () => {
@@ -370,7 +370,7 @@ export function ActivityFeed({ now, limit = 5 }: { now: number; limit?: number }
         </h2>
         {data.serviceEvents.length > 0 && (
           <Link className="module-aside is-link" to="/records/service-history">
-            Service History
+            Service history
           </Link>
         )}
       </header>

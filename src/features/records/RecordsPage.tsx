@@ -34,7 +34,7 @@ const FILTERS: { value: Filter; label: string }[] = [
   { value: 'notes', label: 'Notes' },
 ];
 
-/** Records: the Warranty Vault, paperwork, contractors and household notes, plus Service History. */
+/** Records: the Warranty vault, paperwork, contractors and household notes, plus Service history. */
 export function RecordsPage() {
   const data = useData();
   const toast = useToast();
@@ -79,7 +79,7 @@ export function RecordsPage() {
   const sections: { id: Exclude<Filter, 'all'>; title: string; rows: HomeRecord[]; empty: { title: string; body: string; kind: RecordKind; action: string } }[] = [
     {
       id: 'warranties',
-      title: 'Warranty Vault',
+      title: 'Warranty vault',
       rows: warranties,
       empty: { title: 'No warranties yet', body: 'Save warranties and insurance with their end dates. Homebase reminds you two months before one runs out.', kind: 'warranty', action: 'Add a warranty' },
     },
@@ -179,7 +179,7 @@ export function RecordsPage() {
         </>
       )}
 
-      <Section title="Service History">
+      <Section title="Service history">
         <Group>
           <Row
             title="Everything done around the home"

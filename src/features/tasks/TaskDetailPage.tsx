@@ -100,7 +100,7 @@ export function TaskDetailPage() {
         </Section>
       )}
 
-      <Section title="Service History" aside={history.length ? <Link to="/records/service-history">All</Link> : undefined}>
+      <Section title="Service history" aside={history.length ? <Link to="/records/service-history">All</Link> : undefined}>
         {history.length === 0 ? (
           <div className="group">
             <EmptyState inline title="Not done in Homebase yet" body="Each time you mark it done, the date, cost and note are kept here." />

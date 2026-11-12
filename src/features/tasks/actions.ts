@@ -14,7 +14,7 @@ export interface CompletionInput {
 
 /**
  * Mark a task done: recurring tasks start their next run from the given date; one-off repairs and
- * projects close. Either way the visit is kept in Service History and shown in recent activity.
+ * projects close. Either way the visit is kept in Service history and shown in recent activity.
  * Returns an undo function and the confirmation text.
  */
 export async function completeTask(store: HomeStore, task: Task, input: CompletionInput = {}) {

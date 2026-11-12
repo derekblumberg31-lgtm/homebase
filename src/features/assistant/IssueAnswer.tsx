@@ -269,12 +269,12 @@ export function IssueAnswer({ answer, state, onChange, go }: Props) {
             <p className="issue-done">
               <CircleCheck size={17} /> Marked resolved and saved in{' '}
               <button type="button" className="text-button" onClick={() => go('/records/service-history')}>
-                Service History
+                Service history
               </button>
             </p>
           ) : (
             <button type="button" className="button is-secondary is-block" onClick={() => setResolving(true)}>
-              <Check size={18} /> It’s fixed: save to Service History
+              <Check size={18} /> It’s fixed: save to Service history
             </button>
           )}
         </div>
@@ -289,7 +289,7 @@ export function IssueAnswer({ answer, state, onChange, go }: Props) {
             setResolving(false);
             await act('resolved', async () => {
               await resolveIssue(store, issue, input);
-              return { label: `${guide.title} saved to Service History`, href: '/records/service-history' };
+              return { label: `${guide.title} saved to Service history`, href: '/records/service-history' };
             });
           }}
         />
@@ -365,7 +365,7 @@ function ResolveSheet({ title, onClose, onSave }: { title: string; onClose: () =
         </button>
       }
     >
-      <p className="sheet-lead">Saved in Service History with your answers, so next time you know what happened and who fixed it.</p>
+      <p className="sheet-lead">Saved in Service history with your answers, so next time you know what happened and who fixed it.</p>
       <div className="form-group form-gap">
         <TextField label="Who fixed it?" optional value={provider} onChange={(e) => setProvider(e.target.value)} placeholder="Me, or Rivera Plumbing" />
         <TextField label="What was the fix?" optional value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Replaced the supply line under the sink" />

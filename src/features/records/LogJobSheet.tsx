@@ -49,7 +49,7 @@ export function LogJobSheet({ itemId = '', onClose, onLogged }: { itemId?: strin
       }
     >
       <SaveFailed show={save.failed} />
-      <p className="muted">For a job that had no task. It’s kept in Service History.</p>
+      <p className="muted">For a job that had no task. It’s kept in Service history.</p>
       <div className="section">
         <FormGroup>
           <TextField label="What was done" data-autofocus value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Fixed the kitchen tap…" error={errors.title} />

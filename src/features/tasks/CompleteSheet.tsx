@@ -5,7 +5,7 @@ import { FormGroup, TextArea, TextField } from '../../ui/controls';
 import { Sheet } from '../../ui/overlays';
 import type { CompletionInput } from './actions';
 
-/** Confirm a completion with its date, who did it and a note; it's kept in Service History. */
+/** Confirm a completion with its date, who did it and a note; it's kept in Service history. */
 export function CompleteSheet({ task, onClose, onConfirm }: { task: Task; onClose: () => void; onConfirm: (input: CompletionInput) => void }) {
   const [date, setDate] = useState(toDateInput());
   const [provider, setProvider] = useState('');
@@ -37,7 +37,7 @@ export function CompleteSheet({ task, onClose, onConfirm }: { task: Task; onClos
         </button>
       }
     >
-      <p className="muted">{task.recurring ? 'The countdown starts again from this date.' : 'This closes the task and keeps it in Service History.'}</p>
+      <p className="muted">{task.recurring ? 'The countdown starts again from this date.' : 'This closes the task and keeps it in Service history.'}</p>
       <div className="section">
         <FormGroup>
           <TextField label="Done on" type="date" value={date} max={toDateInput()} onChange={(e) => setDate(e.target.value)} error={error} />

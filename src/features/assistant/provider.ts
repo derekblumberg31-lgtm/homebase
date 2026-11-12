@@ -138,12 +138,12 @@ function answerFromData(question: string, data: HomeData, now: number): Answer |
       const latest = events[0].e;
       return {
         text: `${latest.title} was last done on ${formatDate(latest.date)}${latest.provider ? ` by ${latest.provider}` : ''}${latest.cost ? `, for ${formatCurrency(latest.cost)}` : ''}.`,
-        source: 'Service History',
-        actions: [{ label: 'Open Service History', href: '/records/service-history' }],
+        source: 'Service history',
+        actions: [{ label: 'Open Service history', href: '/records/service-history' }],
       };
     }
     if (subject.length) {
-      return { text: `I don’t see “${subject.join(' ')}” in your Service History yet. Mark the task done next time and it’ll be recorded.`, source: 'Service History', actions: [{ label: 'Open Service History', href: '/records/service-history' }] };
+      return { text: `I don’t see “${subject.join(' ')}” in your Service history yet. Mark the task done next time and it’ll be recorded.`, source: 'Service history', actions: [{ label: 'Open Service history', href: '/records/service-history' }] };
     }
   }
 
@@ -188,8 +188,8 @@ function answerFromData(question: string, data: HomeData, now: number): Answer |
       return { text: 'You haven’t saved any warranties yet. Add one with its end date and Homebase reminds you two months before it runs out.', source: 'Your records', actions: [{ label: 'Add a warranty', href: '/records?new=warranty' }] };
     }
     return ending.length
-      ? { title: `${ending.length} ending in the next 90 days`, text: 'Check what’s covered before they end:', steps: ending.map((r) => `${r.title}: ends ${formatDate(r.expiresAt!)}`), source: 'Your records', actions: [{ label: 'Open the Warranty Vault', href: '/records' }] }
-      : { text: 'No warranties end in the next 90 days.', source: 'Your records', actions: [{ label: 'Open the Warranty Vault', href: '/records' }] };
+      ? { title: `${ending.length} ending in the next 90 days`, text: 'Check what’s covered before they end:', steps: ending.map((r) => `${r.title}: ends ${formatDate(r.expiresAt!)}`), source: 'Your records', actions: [{ label: 'Open the warranty vault', href: '/records' }] }
+      : { text: 'No warranties end in the next 90 days.', source: 'Your records', actions: [{ label: 'Open the warranty vault', href: '/records' }] };
   }
 
   if (/(how much|spend|spending|upkeep cost|yearly cost|budget for upkeep)/.test(q)) {

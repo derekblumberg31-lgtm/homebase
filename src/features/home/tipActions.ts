@@ -55,7 +55,7 @@ export async function hideTip(store: HomeStore, tip: SeasonalTip) {
   return undo;
 }
 
-/** Done already: logged in Service History like any other job. */
+/** Done already: logged in Service history like any other job. */
 export async function completeTip(store: HomeStore, tip: SeasonalTip) {
   const undoState = undoTo(store, tip.id);
   const event: ServiceEvent = { id: uid(), date: toDateInput(), title: tip.taskName, notes: 'Seasonal recommendation', createdAt: new Date().toISOString() };

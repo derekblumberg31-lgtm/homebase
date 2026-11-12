@@ -42,7 +42,7 @@ export async function saveLocation(store: HomeStore, id: StarterStepId, where: s
 }
 
 /**
- * Alarms tested: logged in Service History, and a monthly reminder is added unless one exists.
+ * Alarms tested: logged in Service history, and a monthly reminder is added unless one exists.
  * Returns the reminder (new or existing) so the screen can link to it.
  */
 export async function markTested(store: HomeStore, id: StarterStepId) {

@@ -22,7 +22,7 @@ export function QuickAdd({ variant = 'sidebar' }: { variant?: 'sidebar' | 'heade
       items={[
         { id: 'task', label: 'Task or repair', hint: 'A one-off job with a due date', icon: Wrench, onSelect: () => navigate('/tasks?new=1&kind=repair') },
         { id: 'reminder', label: 'Maintenance reminder', hint: 'Repeats on a schedule', icon: Bell, onSelect: () => navigate('/tasks?new=1&kind=maintenance') },
-        { id: 'log', label: 'Log something done', hint: 'A job with no task, for Service History', icon: CircleCheck, onSelect: () => navigate('/records/service-history?log=1') },
+        { id: 'log', label: 'Log something done', hint: 'A job with no task, for service history', icon: CircleCheck, onSelect: () => navigate('/records/service-history?log=1') },
         { id: 'record', label: 'Record', hint: 'Warranty, manual or document', icon: FileText, onSelect: () => navigate('/records?new=warranty') },
         { id: 'receipt', label: 'Receipt', hint: 'With a photo or PDF', icon: Receipt, onSelect: () => navigate('/records?new=receipt') },
         { id: 'note', label: 'Household note', hint: 'Codes, contacts, where things are', icon: NotePad, onSelect: () => navigate('/records?new=note') },

@@ -200,7 +200,7 @@ describe('action-oriented Assistant', () => {
     expect((await LocalGuideProvider.answer('Problem with my furnace', data, now)).issue?.guide.id).toBe('no-heat');
   });
 
-  it('turns an answer into a repair task and a resolved Service History entry', async () => {
+  it('turns an answer into a repair task and a resolved Service history entry', async () => {
     const store = await freshStore();
     const guide = GUIDES.find((g) => g.id === 'water-leak')!;
     const issue = { guide, question: 'Leak under the sink', answers: ['Is water still coming out? Stopped after closing a valve'] };
