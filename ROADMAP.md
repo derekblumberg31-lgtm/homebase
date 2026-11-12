@@ -25,13 +25,17 @@ Homebase ships local-first with offline guided help. Each future feature below n
 - Home tells the whole picture: one status line, the next jobs, and alert rows that can be hidden.
 - Data safety at first value: Storage and install guidance, a save-a-backup option before Erase, and a plain message when a save fails.
 - Accessibility floor: 44px hit areas, a "Messages" region for toasts, native-style radio keys and focus that is never lost.
+- Home Health Check: eight safety steps (water, electrical and gas shut-offs, alarms, systems, an emergency contact), reached from Home, with progress that never counts "0 overdue".
+- Your own shut-off in emergency guides: the location saved in the Health Check shows up in the Assistant's answer.
+- Assistant answers turn into records: a repair task, a follow-up check, a note, a shopping list, a damage report or a resolved Service History entry.
+- Snooze and reschedule a job, and add jobs to your calendar as a .ics file (calendar entries don't move when a job is marked done).
+- A page for each home system, with its paperwork, jobs and history, and its warranty on Home.
 
 ## Next
 
 - Onboarding that asks for nothing: get to a useful Home without a form.
 - Typography and spacing tokens, so sizes and gaps stop being set one by one.
 - Coming back after a long gap: what Home says when nothing was opened for months.
-- The user's own shut-off in emergency guides: let people record where their water, gas and power shut-offs are and show it in the guide.
 - Real-iPhone verification: installed-app storage, share-sheet backup, 44px targets against swipe, VoiceOver and Reduce Motion.
 - A DOM test environment for component tests, so components can be tested without rendering to strings.
 - Seasonal tasks saved before this release that still carry an estimated last-done date.
@@ -49,3 +53,5 @@ Homebase ships local-first with offline guided help. Each future feature below n
 
 - Offline: on the live site the service worker installs and precaches the app shell (index.html, JS, CSS, icons). A reload with the network turned off hasn't been run yet.
 - Identify a key needs a camera or a photo file; it wasn't run end to end against a real key photo in this build.
+- Reminders only fire while Homebase is open (no server, no push). Settings explains this and offers a calendar (.ics) export. Exported events don't update when dates change in the app.
+- Optional fields added without a schema bump: `Settings.healthSteps`, `hasGas`, `lastBackupAt`; `HomeSystem.serial`, `installDate`, `location`, `warrantyExpires`, `contractorId`, `photos`; `Item.contractorId`; `Task.systemId`, `nextDue`; `ServiceEvent.systemId`; `HomeRecord.systemId`. Older backups restore unchanged; older app versions ignore the new fields.

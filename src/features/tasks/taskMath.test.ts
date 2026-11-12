@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { Task } from '../../data/types';
 import { toDateInput } from '../../lib/dates';
 import { presetCostHint } from './presets';
-import { annualCost, compareUrgency, countdownText, getTaskInfo, lastDoneKnown, withInfo } from './taskMath';
+import { annualCost, compareUrgency, countdownText, dueDateOf, getTaskInfo, lastDoneKnown, withInfo } from './taskMath';
 
 const now = new Date(2026, 9, 27, 12).getTime();
 const daysAgo = (n: number) => toDateInput(new Date(2026, 9, 27 - n));
@@ -109,5 +109,32 @@ describe('presetCostHint', () => {
     expect(presetCostHint('gutters', '')).toBe('Often about $25');
     expect(presetCostHint('gutters', '40')).toBeUndefined();
     expect(presetCostHint('custom', '')).toBeUndefined();
+  });
+});
+
+describe('dueDateOf', () => {
+  it('prefers a moved date, then the first-due date, then last done plus the interval', () => {
+    const base = { lastDoneAt: '2026-10-01', intervalDays: 90 };
+    expect(toDateInput(dueDateOf(task({ ...base, dueDate: '2026-11-05', nextDue: '2026-11-12' })))).toBe('2026-11-12');
+    expect(toDateInput(dueDateOf(task({ ...base, dueDate: '2026-11-05' })))).toBe('2026-11-05');
+    expect(toDateInput(dueDateOf(task(base)))).toBe('2026-12-30');
+  });
+
+  it('keeps a recurring first-due date instead of pushing it a full interval away', () => {
+    const notSure = task({ lastDoneAt: daysAgo(0), intervalDays: 365, dueDate: '2026-11-03' });
+    expect(toDateInput(dueDateOf(notSure))).toBe('2026-11-03');
+    expect(getTaskInfo(notSure, now).daysLeft).toBe(7);
+  });
+
+  it('uses a one-off due date, and a snooze moves a one-off too', () => {
+    const repair = task({ recurring: false, kind: 'repair', dueDate: '2026-11-01' });
+    expect(toDateInput(dueDateOf(repair))).toBe('2026-11-01');
+    expect(toDateInput(dueDateOf({ ...repair, nextDue: '2026-11-08' }))).toBe('2026-11-08');
+  });
+
+  it('keeps last done unknown after a snooze', () => {
+    const snoozed = task({ dueDate: '2026-11-03', nextDue: '2026-11-10' });
+    expect(lastDoneKnown(snoozed)).toBe(false);
+    expect(getTaskInfo(snoozed, now).percentUsed).toBe(0);
   });
 });

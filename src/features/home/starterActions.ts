@@ -1,69 +1,119 @@
+import { uid } from '../../data/ids';
 import type { HomeStore } from '../../data/store';
-import { clearFlag, writeFlag } from '../../lib/deviceFlags';
-import { newEntryId } from '../records/serviceLog';
-import { buildStarterTask, type StarterJob } from './starter';
-import type { LastDoneChoice } from '../tasks/lastDone';
+import type { HealthStepState, HomeRecord, ServiceEvent, Task } from '../../data/types';
+import { toDateInput } from '../../lib/dates';
+import { STARTER_STEPS, type StarterStepId } from './starter';
 
-export interface StarterPick {
-  job: StarterJob;
-  choice: LastDoneChoice;
+/**
+ * What the starter Health Check's buttons do. Each saves real data (a household note, a Service
+ * History entry, a recurring task) so the step is useful later, not just ticked. Each returns undo.
+ */
+
+async function setStep(store: HomeStore, id: StarterStepId, state: HealthStepState | undefined) {
+  const healthSteps = { ...(store.getSnapshot().settings.healthSteps ?? {}) };
+  if (state) healthSteps[id] = state;
+  else delete healthSteps[id];
+  await store.updateSettings({ healthSteps });
+}
+
+function previous(store: HomeStore, id: StarterStepId) {
+  return store.getSnapshot().settings.healthSteps?.[id];
+}
+
+/** "The main water shutoff is in the basement": saved as a household note and on the step. */
+export async function saveLocation(store: HomeStore, id: StarterStepId, where: string) {
+  const def = STARTER_STEPS.find((s) => s.id === id);
+  if (def?.action.type !== 'locate') throw new Error('Not a location step');
+  const before = previous(store, id);
+  const now = new Date().toISOString();
+  const title = def.action.noteTitle.toLowerCase();
+  const existing = store.getSnapshot().records.find((r) => r.kind === 'note' && r.title.toLowerCase().startsWith(title));
+  const note: HomeRecord = existing
+    ? { ...existing, notes: where, updatedAt: now }
+    : { id: uid(), kind: 'note', title: def.action.noteTitle, notes: where, fileIds: [], createdAt: now, updatedAt: now };
+  await store.put('records', note);
+  await setStep(store, id, { state: 'done', at: now, note: where });
+  await store.log('record-added', `Health Check: ${def.action.noteTitle.toLowerCase()} saved`, `/records/${note.id}`);
+  return async () => {
+    if (existing) await store.put('records', existing);
+    else await store.remove('records', note.id);
+    await setStep(store, id, before);
+  };
 }
 
 /**
- * Saves the ticked jobs as recurring tasks in one write. Once it succeeds, a failure in the extras
- * (tip state, activity entries) is swallowed, because reporting "not saved" would invite a duplicate.
+ * Alarms tested: logged in Service History, and a monthly reminder is added unless one exists.
+ * Returns the reminder (new or existing) so the screen can link to it.
  */
-export async function addStarterJobs(store: HomeStore, picks: StarterPick[], now = Date.now()) {
-  const tasks = picks.map(({ job, choice }) => buildStarterTask(job, choice, now));
-  const before = store.getSnapshot();
-  const previousTipStates = before.settings.tipStates;
-  const activityBefore = new Set(before.activity.map((a) => a.id));
+export async function markTested(store: HomeStore, id: StarterStepId) {
+  const def = STARTER_STEPS.find((s) => s.id === id);
+  if (def?.action.type !== 'test') throw new Error('Not a test step');
+  const before = previous(store, id);
+  const now = new Date().toISOString();
+  const today = toDateInput();
+  const { taskName, intervalDays } = def.action;
+  const event: ServiceEvent = { id: uid(), date: today, title: taskName, notes: 'Home Health Check', createdAt: now };
+  await store.put('serviceEvents', event);
 
-  await store.putMany('tasks', tasks);
-
-  const stamp = new Date(now).toISOString();
-  const planned = Object.fromEntries(
-    picks.flatMap(({ job }, i) => (job.tipId ? [[job.tipId, { state: 'planned' as const, taskId: tasks[i].id, at: stamp }]] : [])),
-  );
-  if (Object.keys(planned).length > 0) {
-    await store.updateSettings({ tipStates: { ...(previousTipStates ?? {}), ...planned } }).catch(() => {});
+  const words = taskName.toLowerCase().includes('carbon') ? /(carbon|\bco\b)/ : /smoke/;
+  const existing = store.getSnapshot().tasks.find((t) => t.status === 'open' && t.recurring && words.test(t.name.toLowerCase()));
+  let created: Task | undefined;
+  if (existing) {
+    await store.put('tasks', { ...existing, lastDoneAt: today, dueDate: undefined, nextDue: undefined, updatedAt: now });
+  } else {
+    created = {
+      id: uid(),
+      kind: 'maintenance',
+      name: taskName,
+      typeId: 'custom',
+      location: 'Every level',
+      lastDoneAt: today,
+      intervalDays,
+      recurring: true,
+      status: 'open',
+      priority: 'high',
+      category: 'safety',
+      notes: def.action.type === 'test' ? def.action.how.join('\n') : undefined,
+      createdAt: now,
+      updatedAt: now,
+    };
+    await store.put('tasks', created);
   }
-
-  const entries: { id: string; taskId: string }[] = [];
-  for (const [i, task] of tasks.entries()) {
-    const text = `${picks[i].job.seasonal ? 'Planned' : 'Added'}: ${task.name}`;
-    const href = `/tasks/${task.id}`;
-    try {
-      await store.log('task-added', text, href);
-      const id = newEntryId(activityBefore, store.getSnapshot().activity, { kind: 'task-added', text, href });
-      if (id) entries.push({ id, taskId: task.id });
-    } catch {
-      /* the activity line is optional */
-    }
-  }
-
-  writeFlag('homebase:starter-dismissed', '1');
-
+  await setStep(store, id, { state: 'done', at: now });
+  await store.log('task-done', `Health Check: ${taskName.toLowerCase()}`, '/records/service-history');
   return {
-    count: tasks.length,
+    task: created ?? existing!,
     undo: async () => {
-      // First, so the starter block that returns when the last task goes reads the flag as cleared.
-      clearFlag('homebase:starter-dismissed');
-      // Only tasks still as they were added: one done or edited since is the user's now.
-      const current = store.getSnapshot().tasks;
-      const removable = tasks.filter((task) => current.some((t) => t.id === task.id && t.updatedAt === task.updatedAt));
-      const removedIds = new Set(removable.map((t) => t.id));
-      for (const task of removable) await store.remove('tasks', task.id);
-      const undoneTips = Object.keys(planned).filter((tipId) => removedIds.has(planned[tipId].taskId!));
-      if (undoneTips.length > 0) {
-        const tipStates = { ...(store.getSnapshot().settings.tipStates ?? {}) };
-        for (const tipId of undoneTips) {
-          if (previousTipStates?.[tipId]) tipStates[tipId] = previousTipStates[tipId];
-          else delete tipStates[tipId];
-        }
-        await store.updateSettings({ tipStates });
-      }
-      for (const entry of entries) if (removedIds.has(entry.taskId)) await store.remove('activity', entry.id);
+      await store.remove('serviceEvents', event.id);
+      if (created) await store.remove('tasks', created.id);
+      else if (existing) await store.put('tasks', existing);
+      await setStep(store, id, before);
     },
   };
+}
+
+/** Gas shutoff in a home without gas. */
+export async function markNotApplicable(store: HomeStore, id: StarterStepId) {
+  const before = previous(store, id);
+  await setStep(store, id, { state: 'not-applicable', at: new Date().toISOString() });
+  if (id === 'gas-shutoff') await store.updateSettings({ hasGas: false });
+  return async () => {
+    await setStep(store, id, before);
+    if (id === 'gas-shutoff') await store.updateSettings({ hasGas: undefined });
+  };
+}
+
+/** Tick a step done without extra details (used after a system or contact is saved elsewhere). */
+export async function markDone(store: HomeStore, id: StarterStepId) {
+  const before = previous(store, id);
+  await setStep(store, id, { state: 'done', at: new Date().toISOString() });
+  return () => setStep(store, id, before);
+}
+
+/** Back to not done. Notes, tasks and history it created stay. */
+export async function reopenStep(store: HomeStore, id: StarterStepId) {
+  const before = previous(store, id);
+  await setStep(store, id, undefined);
+  if (id === 'gas-shutoff' && store.getSnapshot().settings.hasGas === false) await store.updateSettings({ hasGas: undefined });
+  return () => setStep(store, id, before);
 }

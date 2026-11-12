@@ -2,7 +2,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { MemoryRouter } from 'react-router-dom';
 import { describe, expect, it } from 'vitest';
 import { emptyData } from '../../data/store';
-import { starterJobsFor } from './starter';
+import { starterJobsFor } from './firstJobs';
 import { StarterList } from './StarterJobs';
 
 const NOW = new Date('2026-10-27T19:00:00').getTime();

@@ -7,8 +7,8 @@ import { nextRadioIndex } from '../../ui/radioKeys';
 import { EmptyState } from '../../ui/layout';
 import { useToast } from '../../ui/overlays';
 import { LAST_DONE_OPTIONS, type LastDoneChoice } from '../tasks/lastDone';
-import { chooseStarter, starterJobsFor, starterSubLine, toggleStarter, type StarterJob, type StarterPicks } from './starter';
-import { addStarterJobs } from './starterActions';
+import { chooseStarter, starterJobsFor, starterSubLine, toggleStarter, type StarterJob, type StarterPicks } from './firstJobs';
+import { addStarterJobs } from './firstJobActions';
 
 interface StarterListProps {
   jobs: StarterJob[];

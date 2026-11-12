@@ -4,6 +4,7 @@ import { PRODUCT } from '../../app/areas';
 import { useData, useStore } from '../../data/DataProvider';
 import { uid } from '../../data/ids';
 import type { Member, Settings, ThemePreference } from '../../data/types';
+import { downloadCalendar } from '../../lib/calendar';
 import { formatRelativeTime } from '../../lib/dates';
 import { deviceLabel, installMatters, isStandalone, readDeviceEnv, storageCopy, storageCopyOptions, storageStatus } from '../../lib/dataSafety';
 import { clearHomeFlags } from '../../lib/deviceFlags';
@@ -61,6 +62,21 @@ export function SettingsPage() {
   }, []);
   const notificationsSupported = typeof Notification !== 'undefined';
   const household = data.household;
+  const openTasks = data.tasks.filter((t) => t.status === 'open');
+  // Links like /settings#data (from Home's backup reminder) land on that section.
+  useEffect(() => {
+    const id = window.location.hash.slice(1);
+    if (id) window.setTimeout(() => document.getElementById(id)?.scrollIntoView({ block: 'start' }), 50);
+  }, []);
+
+  function exportCalendar() {
+    try {
+      downloadCalendar(openTasks);
+      toast('Calendar file saved. Open it to import.');
+    } catch {
+      toast('The calendar file couldn’t be saved. Try again.', { tone: 'error' });
+    }
+  }
 
   // Instant settings have no sheet to hold a notice, so a failed write is a toast. The control reads the stored value, so it stays put.
   async function saveSetting(patch: Partial<Settings>): Promise<boolean> {
@@ -112,7 +128,7 @@ export function SettingsPage() {
           ))}
           <Row title="Add someone" tone="action" onClick={() => setMemberSheet('new')} />
         </Group>
-        <p className="section-foot">Everyone shares this device’s Homebase. Sharing across devices will come with sign-in.</p>
+        <p className="section-foot">Everyone shares this device’s Homebase. There’s no syncing between devices; to move to a new one, save a backup here and restore it there.</p>
       </Section>
 
       <Section title="Property">
@@ -139,33 +155,71 @@ export function SettingsPage() {
         </Group>
       </Section>
 
-      <Section title="Notifications" foot="Homebase checks once a day while it’s open and lets you know about due and overdue tasks.">
-        <Group>
-          <div className="row">
-            <span className="row-main">
-              <span className="row-title">Task reminders</span>
-              <span className="row-sub">{notificationsSupported ? 'A notification when something is due' : 'Not available in this browser'}</span>
-            </span>
-            <Switch checked={data.settings.reminders} onChange={toggleReminders} label="Task reminders" />
-          </div>
-        </Group>
+      <Section title="Reminders and notifications" id="reminders">
+        <div className="callout">
+          <p>
+            <b>How reminders work.</b> Homebase has no server, so it can only notify you while it’s open in a browser tab or as an installed app. It checks once a day when you open it. It
+            can’t send anything while it’s closed.
+          </p>
+          <p className="form-gap">For reminders you can count on, add your tasks to the calendar you already use. Recurring tasks repeat there too.</p>
+        </div>
+        <div className="section">
+          <Group>
+            <div className="row">
+              <span className="row-main">
+                <span className="row-title">Notify me while Homebase is open</span>
+                <span className="row-sub">{notificationsSupported ? 'Once a day: what’s due, overdue or ending soon' : 'Not available in this browser'}</span>
+              </span>
+              <Switch checked={data.settings.reminders} onChange={toggleReminders} label="Notify me while Homebase is open" />
+            </div>
+            <Row
+              title="Add all tasks to my calendar"
+              sub={openTasks.length ? `Downloads a calendar file with ${openTasks.length} open ${openTasks.length === 1 ? 'task' : 'tasks'}. Open it to add them to Apple, Google or Outlook Calendar.` : 'Add a task first'}
+              tone="action"
+              wrap
+              onClick={openTasks.length ? exportCalendar : undefined}
+            />
+          </Group>
+          <p className="section-foot">Calendar entries don’t update themselves, and they won’t move when you mark a job done. After you change a lot of dates, export again and remove the old ones.</p>
+        </div>
       </Section>
 
-      <Section title="Integrations" foot="Smart-home, calendar and utility connections will appear here. Homebase works fully on its own.">
+      <Section title="Integrations" foot="There are no connected services. Homebase works fully on its own and doesn’t connect to smart-home devices or accounts.">
         <Group>
           <Row title="Connected services" value="None" />
         </Group>
       </Section>
 
-      <Section title="Data and privacy" foot="Everything you add stays on this device. A backup file is the only copy that leaves it, and only when you save one. If this device is lost or its browser data is cleared, a backup is how you get your home back.">
-        <Group>
-          {/* The row is always there; its line fills in when the browser answers, so nothing below jumps. */}
-          <Row title="Storage" sub={<StorageLine persisted={persisted} installMatters={tabMatters} />} wrap />
-          <Row title="Last backup" value={data.settings.lastBackupAt ? formatRelativeTime(data.settings.lastBackupAt) : 'Never'} />
-          <Row title={savingBackup ? 'Saving…' : 'Save a backup'} tone="action" onClick={() => void saveBackup()} />
-          <ImportButton label="Restore from a backup" />
-          <Row title="Erase everything on this device" tone="danger" onClick={() => setEraseOpen(true)} />
-        </Group>
+      <Section title="Your data and privacy" id="data">
+        <div className="group">
+          <dl className="privacy-list">
+            <div>
+              <dt>Stored on this device</dt>
+              <dd>Everything you add: your home, tasks, systems, inventory, records, attached photos and PDFs, and activity. It lives in this browser’s storage for this site.</dd>
+            </div>
+            <div>
+              <dt>What leaves the device</dt>
+              <dd>Nothing, unless you save a backup or calendar file yourself. There’s no account, no sync and no analytics. The Assistant runs on the device; questions aren’t sent anywhere.</dd>
+            </div>
+            <div>
+              <dt>If browser data is cleared</dt>
+              <dd>
+                Clearing this site’s data, uninstalling the app, or some private-browsing modes delete everything here. Your other devices don’t have a copy. A backup file is the only way to get it back.
+              </dd>
+            </div>
+          </dl>
+        </div>
+        <div className="section">
+          <Group>
+            {/* The row is always there; its line fills in when the browser answers, so nothing below jumps. */}
+            <Row title="Storage" sub={<StorageLine persisted={persisted} installMatters={tabMatters} />} wrap />
+            <Row title="Last backup" value={data.settings.lastBackupAt ? formatRelativeTime(data.settings.lastBackupAt) : 'Never'} />
+            <Row title={savingBackup ? 'Saving…' : 'Save a backup'} tone="action" onClick={() => void saveBackup()} />
+            <ImportButton label="Restore from a backup" />
+            <Row title="Erase everything on this device" tone="danger" onClick={() => setEraseOpen(true)} />
+          </Group>
+          <p className="section-foot">Restoring shows what’s in the file and what it will replace before anything changes.</p>
+        </div>
       </Section>
 
       <Section title="App">

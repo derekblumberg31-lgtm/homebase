@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { Task } from '../../data/types';
 import { freshStore } from '../../test/freshStore';
-import { addTask, completeTask, removeTask } from './actions';
+import { addTask, completeTask, removeTask, rescheduleTask, snoozeTask } from './actions';
 
 const task = (over: Partial<Task>): Task => ({
   id: 't1',
@@ -148,5 +148,64 @@ describe('addTask', () => {
     const log = vi.spyOn(store, 'log');
     await expect(addTask(store, task({ id: 'new2' }))).rejects.toThrow('put failed');
     expect(log).not.toHaveBeenCalled();
+  });
+});
+
+describe('dates that move a task', () => {
+  it('clears both the first-due date and a snooze on done, and records no previous date', async () => {
+    const store = await freshStore();
+    const planned = task({ dueDate: '2026-11-10', nextDue: '2026-11-17' });
+    await store.put('tasks', planned);
+    await completeTask(store, planned, { date: '2026-11-11' });
+    const saved = store.getSnapshot().tasks[0];
+    expect(saved.dueDate).toBeUndefined();
+    expect(saved.nextDue).toBeUndefined();
+    expect(saved.lastDoneAt).toBe('2026-11-11');
+    expect(store.getSnapshot().serviceEvents[0].previousDoneAt).toBeUndefined();
+  });
+
+  it('closes a snoozed one-off and clears the snooze', async () => {
+    const store = await freshStore();
+    const repair = task({ id: 'r1', recurring: false, kind: 'repair', dueDate: '2026-11-01', nextDue: '2026-11-08' });
+    await store.put('tasks', repair);
+    await completeTask(store, repair, { date: '2026-11-09' });
+    expect(store.getSnapshot().tasks[0]).toMatchObject({ status: 'done', nextDue: undefined });
+  });
+
+  it('copies the home system to the history entry', async () => {
+    const store = await freshStore();
+    const forSystem = task({ systemId: 'sys-1' });
+    await store.put('tasks', forSystem);
+    await completeTask(store, forSystem, { date: '2026-11-11' });
+    expect(store.getSnapshot().serviceEvents[0].systemId).toBe('sys-1');
+    expect(store.getSnapshot().tasks[0].systemId).toBe('sys-1');
+  });
+
+  it('snoozes, and Undo puts the task back exactly as it was', async () => {
+    const store = await freshStore();
+    const planned = task({ dueDate: '2026-11-10' });
+    await store.put('tasks', planned);
+    const { nextDue, undo } = await snoozeTask(store, planned, 7, new Date('2026-11-11T12:00:00').getTime());
+    expect(nextDue).toBe('2026-11-18');
+    expect(store.getSnapshot().tasks[0].nextDue).toBe('2026-11-18');
+    expect(store.getSnapshot().tasks[0].dueDate).toBe('2026-11-10');
+    await undo();
+    expect(store.getSnapshot().tasks[0]).toEqual(planned);
+  });
+
+  it('reschedules a one-off by its due date and a recurring task by a moved date, and Undo restores either', async () => {
+    const store = await freshStore();
+    const repair = task({ id: 'r1', recurring: false, kind: 'repair', dueDate: '2026-11-01' });
+    const recurring = task({ id: 't2' });
+    await store.putMany('tasks', [repair, recurring]);
+    const a = await rescheduleTask(store, repair, '2026-11-20');
+    const b = await rescheduleTask(store, recurring, '2026-12-01');
+    const byId = (id: string) => store.getSnapshot().tasks.find((t) => t.id === id)!;
+    expect(byId('r1')).toMatchObject({ dueDate: '2026-11-20', nextDue: undefined });
+    expect(byId('t2')).toMatchObject({ nextDue: '2026-12-01' });
+    await a.undo();
+    await b.undo();
+    expect(byId('r1')).toEqual(repair);
+    expect(byId('t2')).toEqual(recurring);
   });
 });

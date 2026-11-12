@@ -69,6 +69,17 @@ export interface HomeSystem {
   brand?: string;
   model?: string;
   installYear?: number;
+  /** Optional, newer fields. Older systems and backups simply don't have them. */
+  serial?: string;
+  /** Exact install or purchase date when known; installYear stays the lifespan source. */
+  installDate?: DateString;
+  /** Free-text spot when there's no room, e.g. "Basement, behind the stairs". */
+  location?: string;
+  warrantyExpires?: DateString;
+  /** The contractor record (kind 'contractor') who installs or services it. */
+  contractorId?: ID;
+  /** Photo data URLs. */
+  photos?: string[];
   roomId?: ID;
   notes?: string;
   createdAt: Timestamp;
@@ -125,6 +136,8 @@ export interface Item {
   /** Photo data URLs. */
   photos: string[];
   key?: KeyDetails;
+  /** The contractor record (kind 'contractor') who services it. Optional, newer field. */
+  contractorId?: ID;
   createdAt: Timestamp;
   updatedAt: Timestamp;
 }
@@ -156,6 +169,13 @@ export interface Task {
   location: string;
   roomId?: ID;
   itemId?: ID;
+  /** The home system it's for. Optional, newer field. */
+  systemId?: ID;
+  /**
+   * Snoozed or rescheduled: the next due date, overriding the usual one until the task is marked
+   * done. Optional, newer field; older versions ignore it and use the normal schedule.
+   */
+  nextDue?: DateString;
   /** Recurring tasks: the last time it was done, and how often it repeats. */
   lastDoneAt: DateString;
   intervalDays: number;
@@ -182,6 +202,8 @@ export interface ServiceEvent {
   title: string;
   taskId?: ID;
   itemId?: ID;
+  /** Optional, newer field. */
+  systemId?: ID;
   /** For recurring tasks: when it had last been done before this. */
   previousDoneAt?: DateString;
   cost?: number;
@@ -216,6 +238,8 @@ export interface HomeRecord {
   phone?: string;
   email?: string;
   itemId?: ID;
+  /** The home system it covers (water heater manual, furnace warranty). Optional, newer field. */
+  systemId?: ID;
   taskId?: ID;
   notes?: string;
   fileIds: ID[];
@@ -270,8 +294,19 @@ export interface Settings {
   tipStates?: Record<string, TipState>;
   /** KeyFinder's debug view. */
   keyDebug: boolean;
+  /** Starter Home Health Check: what the homeowner did with each step, by step id. Optional, newer field. */
+  healthSteps?: Record<string, HealthStepState>;
+  /** Whether the home has gas service, asked during onboarding. Undefined means not sure. */
+  hasGas?: boolean;
   /** When a backup file was last saved from this device. */
   lastBackupAt?: Timestamp;
+}
+
+export interface HealthStepState {
+  state: 'done' | 'skipped' | 'not-applicable';
+  at: Timestamp;
+  /** What the homeowner noted, e.g. where the shut-off is. */
+  note?: string;
 }
 
 export const STORES = [

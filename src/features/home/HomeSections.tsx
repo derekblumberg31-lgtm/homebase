@@ -203,10 +203,10 @@ export function HealthModule({ health }: { health: HealthCheck }) {
   const complete = health.done === health.total;
 
   return (
-    <section className="module" id="home-health" aria-labelledby="health-title" tabIndex={-1}>
+    <section className="module" id="home-record" aria-labelledby="record-title" tabIndex={-1}>
       <header className="module-head">
-        <h2 id="health-title" className="module-title">
-          Home Health Check
+        <h2 id="record-title" className="module-title">
+          Complete your home’s record
         </h2>
         <span className="module-aside">
           {health.done} of {health.total} steps
@@ -220,7 +220,7 @@ export function HealthModule({ health }: { health: HealthCheck }) {
         </div>
       </div>
       <p className="module-lead">
-        {complete ? 'Your home’s record is complete. Homebase has what it needs to remind you at the right time.' : 'Each step helps Homebase remind you about the right things at the right time.'}
+        {complete ? 'Your home’s record is complete. Homebase has what it needs to remind you at the right time.' : 'Beyond the safety basics: each of these helps Homebase remind you about the right things at the right time.'}
       </p>
 
       {steps.length > 0 && (

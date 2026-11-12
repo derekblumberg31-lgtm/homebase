@@ -2,22 +2,31 @@ import { useMemo } from 'react';
 import { useData, useNow } from '../../data/DataProvider';
 import { Page } from '../../ui/layout';
 import { ActivityFeed, HealthModule, HomeOverview, MaintenanceTimeline, SeasonalSection } from './HomeSections';
+import { StarterChecklist } from './HealthCheck';
+import { starterCheckFor } from './starter';
 import { alertsFor, currentSeason, healthCheckFor, seasonalTipsFor, snapshotFor, timelineFor } from './insights';
 
 const back = { to: '/home', label: 'Home' };
 
 const PROPERTY_TYPE: Record<string, string> = { house: 'House', townhouse: 'Townhouse', condo: 'Condo', apartment: 'Apartment', other: 'Home' };
 
-/** Home Health Check: the snapshot of the home, then the setup steps. */
+/** Home Health Check: the starter safety checklist, the home's snapshot, then the record steps. */
 export function HomeHealthPage() {
   const data = useData();
   const now = useNow();
+  const starter = useMemo(() => starterCheckFor(data), [data]);
   const health = useMemo(() => healthCheckFor(data, now), [data, now]);
   const facts = useMemo(() => snapshotFor(data, now, health), [data, now, health]);
   const alerts = useMemo(() => alertsFor(data, now).filter((a) => a.tone !== 'overdue'), [data, now]);
   const place = [data.property?.nickname, data.property?.type ? PROPERTY_TYPE[data.property.type] : null].filter(Boolean).join(' · ');
   return (
-    <Page title="Home Health Check" subtitle="How complete your home’s record is, and what to add next." back={back}>
+    <Page
+      title="Home Health Check"
+      subtitle={starter.complete ? 'Your starter checklist is done.' : `${starter.total - starter.done} steps left, about ${starter.minutesLeft} minutes. High-priority safety steps come first.`}
+      back={back}
+    >
+      <StarterChecklist />
+      <h2 className="page-subhead">Your home at a glance</h2>
       <HomeOverview headline={health.done === health.total ? 'Your home’s record is complete' : `${health.score}% set up`} place={place || undefined} facts={facts} alerts={alerts} />
       <HealthModule health={health} />
     </Page>

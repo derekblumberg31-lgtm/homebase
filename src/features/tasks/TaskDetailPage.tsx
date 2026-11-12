@@ -2,10 +2,14 @@ import { useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useData, useNow, useStore } from '../../data/DataProvider';
 import { formatCurrency, formatDate, formatInterval } from '../../lib/dates';
-import { Check } from '../../ui/Icons';
+import { Calendar, Check, Clock } from '../../ui/Icons';
 import { EmptyState, Group, Page, Row, Section } from '../../ui/layout';
 import { Confirm, useToast } from '../../ui/overlays';
-import { removeTask } from './actions';
+import { removeTask, rescheduleTask, snoozeTask } from './actions';
+import { downloadCalendar } from '../../lib/calendar';
+import { TextField } from '../../ui/controls';
+import { Sheet } from '../../ui/overlays';
+import { toDateInput, addDays } from '../../lib/dates';
 import { CompleteSheet } from './CompleteSheet';
 import { Countdown, DayStrip } from './components';
 import { TaskForm } from './TaskForm';
@@ -25,6 +29,8 @@ export function TaskDetailPage() {
   const [editing, setEditing] = useState(false);
   const [completing, setCompleting] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [rescheduling, setRescheduling] = useState(false);
+  const [newDate, setNewDate] = useState('');
 
   const task = data.tasks.find((t) => t.id === taskId);
   if (!task) {
@@ -42,6 +48,21 @@ export function TaskDetailPage() {
   const room = data.rooms.find((r) => r.id === task.roomId);
   const item = data.items.find((i) => i.id === task.itemId);
   const yearly = annualCost(task);
+
+  function undoMove(undo: () => Promise<unknown>) {
+    undo().then(
+      () => toast('Undone'),
+      () => toast('That wasn’t undone. Try again.', { tone: 'error' }),
+    );
+  }
+
+  function exportCalendar() {
+    try {
+      downloadCalendar([task!], `${task!.name.replace(/[^\w]+/g, '-').toLowerCase()}.ics`);
+    } catch {
+      toast('The calendar file couldn’t be saved. Try again.', { tone: 'error' });
+    }
+  }
   const kindLabel = task.kind === 'maintenance' ? 'Maintenance' : task.kind === 'repair' ? 'Repair' : 'Project';
 
   return (
@@ -56,6 +77,7 @@ export function TaskDetailPage() {
             <>
               <Row title="Last done" value={lastDoneKnown(task) ? formatDate(task.lastDoneAt) : 'Not recorded yet'} />
               <Row title={info.status === 'overdue' ? 'Was due' : 'Due'} value={formatDate(info.dueDate)} />
+              {task.nextDue && <Row title="Moved" sub="Snoozed or rescheduled. The usual rhythm returns after you mark it done." value={formatDate(task.nextDue)} wrap />}
               <Row title="Repeats" value={`Every ${formatInterval(task.intervalDays)}`} />
             </>
           ) : (
@@ -99,10 +121,42 @@ export function TaskDetailPage() {
 
       <div className="button-stack">
         {task.status === 'open' && (
-          <button type="button" className="button is-primary is-block" onClick={() => setCompleting(true)}>
-            <Check size={18} />
-            Mark done
-          </button>
+          <>
+            <button type="button" className="button is-primary is-block" onClick={() => setCompleting(true)}>
+              <Check size={18} />
+              Mark done
+            </button>
+            <div className="button-row">
+              <button
+                type="button"
+                className="button is-secondary"
+                onClick={async () => {
+                  try {
+                    const { nextDue, undo } = await snoozeTask(store, task, 7, now);
+                    toast(`Snoozed to ${formatDate(nextDue, false)}`, { action: { label: 'Undo', run: () => undoMove(undo) } });
+                  } catch {
+                    toast('That wasn’t saved. Try again.', { tone: 'error' });
+                  }
+                }}
+              >
+                <Clock size={18} /> Snooze a week
+              </button>
+              <button
+                type="button"
+                className="button is-secondary"
+                onClick={() => {
+                  setNewDate(toDateInput(addDays(info.dueDate, 7)));
+                  setRescheduling(true);
+                }}
+              >
+                <Calendar size={18} /> Reschedule
+              </button>
+            </div>
+            <button type="button" className="button is-quiet" onClick={exportCalendar}>
+              Add to my calendar (.ics file)
+            </button>
+            <p className="section-foot">The calendar entry won’t move when you mark it done.</p>
+          </>
         )}
         <button type="button" className="button is-danger-quiet" onClick={() => setDeleting(true)}>
           Delete task
@@ -129,6 +183,35 @@ export function TaskDetailPage() {
             await complete(task, input);
           }}
         />
+      )}
+      {rescheduling && (
+        <Sheet
+          title="Reschedule"
+          onClose={() => setRescheduling(false)}
+          leading={<button type="button" className="sheet-action" onClick={() => setRescheduling(false)}>Cancel</button>}
+          trailing={
+            <button
+              type="button"
+              className="sheet-action is-strong"
+              onClick={async () => {
+                if (!newDate) return;
+                try {
+                  const { undo } = await rescheduleTask(store, task, newDate);
+                  setRescheduling(false);
+                  toast(`Moved to ${formatDate(newDate)}`, { action: { label: 'Undo', run: () => undoMove(undo) } });
+                } catch {
+                  toast('That wasn’t saved. Try again.', { tone: 'error' });
+                }
+              }}
+            >
+              Save
+            </button>
+          }
+        >
+          <div className="form-group">
+            <TextField label="New due date" type="date" value={newDate} onChange={(e) => setNewDate(e.target.value)} hint={task.recurring ? `After this, it repeats every ${formatInterval(task.intervalDays)} from the day you mark it done.` : undefined} />
+          </div>
+        </Sheet>
       )}
       {deleting && (
         <Confirm

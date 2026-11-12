@@ -47,6 +47,7 @@ export function RecordPage() {
   }
 
   const item = data.items.find((i) => i.id === record.itemId);
+  const system = data.systems.find((s) => s.id === record.systemId);
   const today = toDateInput();
 
   function open(file: StoredFile) {
@@ -94,6 +95,15 @@ export function RecordPage() {
             <Row title={item.name} sub={[item.brand, item.model].filter(Boolean).join(' ') || 'Add the brand and model in Home Inventory'} wrap to={`/property/items/${item.id}`} />
             {item.serial && <Row title="Serial number" value={item.serial} />}
             {item.purchaseDate && <Row title="Bought" value={formatDate(item.purchaseDate)} />}
+          </Group>
+        </Section>
+      )}
+
+      {system && (
+        <Section title="Covers" aside={<Link to={`/property/systems/${system.id}`}>Open system</Link>}>
+          <Group>
+            <Row title={system.name} sub={[system.brand, system.model].filter(Boolean).join(' ') || 'Add the brand and model in Home Systems'} wrap to={`/property/systems/${system.id}`} />
+            {system.serial && <Row title="Serial number" value={system.serial} />}
           </Group>
         </Section>
       )}

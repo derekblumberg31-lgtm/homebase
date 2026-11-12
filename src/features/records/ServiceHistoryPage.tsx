@@ -56,6 +56,7 @@ export function ServiceHistoryPage() {
                         sub={[formatDate(event.date), event.provider, event.notes].filter(Boolean).join(' · ')}
                         value={event.cost != null ? formatCurrency(event.cost) : undefined}
                         to={live ? `/tasks/${event.taskId}` : undefined}
+                        wrap
                       />
                     );
                   })}

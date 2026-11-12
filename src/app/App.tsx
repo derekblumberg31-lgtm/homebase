@@ -17,7 +17,7 @@ import { PropertyDetailsPage } from '../features/property/PropertyDetailsPage';
 import { RoomPage } from '../features/property/RoomPage';
 import { InventoryPage } from '../features/property/InventoryPage';
 import { ItemPage } from '../features/property/ItemPage';
-import { SystemsPage } from '../features/property/SystemsPage';
+import { SystemPage, SystemsPage } from '../features/property/SystemsPage';
 import { KeysPage } from '../features/property/keys/KeysPage';
 import { KeyPage } from '../features/property/keys/KeyPage';
 import { TasksPage } from '../features/tasks/TasksPage';
@@ -117,6 +117,7 @@ export function App() {
                     <Route path="/property/details" element={<PropertyDetailsPage />} />
                     <Route path="/property/rooms/:roomId" element={<RoomPage />} />
                     <Route path="/property/systems" element={<SystemsPage />} />
+                    <Route path="/property/systems/:systemId" element={<SystemPage />} />
                     <Route path="/property/inventory" element={<InventoryPage />} />
                     <Route path="/property/items/:itemId" element={<ItemPage />} />
                     <Route path="/property/keys" element={<KeysPage />} />

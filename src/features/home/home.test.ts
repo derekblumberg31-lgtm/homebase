@@ -8,8 +8,8 @@ import { taskCategory, taskMetaParts } from '../tasks/meta';
 import { getTaskInfo } from '../tasks/taskMath';
 import { alertsFor, comingUpSub, arrangeAttention, attentionFor, endingSoon, healthCheckFor, homeStatusFor, seasonalTipsFor, snapshotFor, timelineFor } from './insights';
 import { completeTip, hideTip, planDraftFor, planTip, snoozeTip } from './tipActions';
-import { buildStarterTask, chooseStarter, starterJobsFor, starterSubLine, toggleStarter } from './starter';
-import { addStarterJobs } from './starterActions';
+import { buildStarterTask, chooseStarter, starterJobsFor, starterSubLine, toggleStarter } from './firstJobs';
+import { addStarterJobs } from './firstJobActions';
 import { completeTask } from '../tasks/actions';
 
 // A fixed autumn evening, so the seasonal list and dates are predictable.
@@ -259,6 +259,37 @@ describe('what needs a look', () => {
     expect(attentionFor(data, NOW, '2026-10-20T00:00:00.000Z').map((i) => i.id)).not.toContain('backup');
     const saved = home({ ...data, settings: { ...emptyData().settings, lastBackupAt: '2026-10-21T00:00:00.000Z' } });
     expect(attentionFor(saved, NOW, '2026-10-20T00:00:00.000Z').map((i) => i.id)).not.toContain('backup');
+  });
+});
+
+describe('a home system\'s warranty', () => {
+  // NOW is Oct 27, so Nov 16 is 20 days out and Nov 5 is 9 days out.
+  const sys = { id: 's9', kind: 'heating' as const, name: 'Furnace', warrantyExpires: '2026-11-16', createdAt: '', updatedAt: '' };
+  const data = home({ systems: [sys], records: [record({ id: 'r1', expiresAt: '2026-11-05' }), record({ id: 'r2', title: 'Roof warranty', expiresAt: '2026-12-01' })] });
+
+  it('is a warranty row, sorted with record warranties soonest first', () => {
+    const items = attentionFor(data, NOW).filter((i) => i.kind !== 'backup');
+    expect(items.map((i) => i.id)).toEqual(['record-r1', 'system-warranty-s9', 'record-r2']);
+    expect(items[1]).toMatchObject({ kind: 'warranty', title: 'Furnace warranty', href: '/property/systems/s9', dismissKey: 'system-warranty-s9:2026-11-16' });
+  });
+
+  it('reads as one warranty ending soon in the status sentence', () => {
+    const only = home({ systems: [sys] });
+    const counted = arrangeAttention(attentionFor(only, NOW), new Set()).counted;
+    expect(homeStatusFor(only, NOW, counted).text).toBe('1 warranty ends soon');
+  });
+
+  it('is hidden by its dismiss key and comes back when the end date changes', () => {
+    const only = home({ systems: [sys] });
+    const key = 'system-warranty-s9:2026-11-16';
+    expect(arrangeAttention(attentionFor(only, NOW), new Set([key])).counted).toHaveLength(0);
+    const moved = home({ systems: [{ ...sys, warrantyExpires: '2026-11-20' }] });
+    expect(arrangeAttention(attentionFor(moved, NOW), new Set([key])).counted).toHaveLength(1);
+  });
+
+  it('keeps out warranties that are over or far off', () => {
+    expect(attentionFor(home({ systems: [{ ...sys, warrantyExpires: '2026-10-26' }] }), NOW)).toHaveLength(0);
+    expect(attentionFor(home({ systems: [{ ...sys, warrantyExpires: '2027-03-01' }] }), NOW)).toHaveLength(0);
   });
 });
 

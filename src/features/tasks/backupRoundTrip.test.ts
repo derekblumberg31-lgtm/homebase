@@ -5,8 +5,8 @@ import type { Task } from '../../data/types';
 import { freshStore } from '../../test/freshStore';
 import { planDraftFor, planTip } from '../home/tipActions';
 import { seasonalTipsFor } from '../home/insights';
-import { starterJobsFor } from '../home/starter';
-import { addStarterJobs } from '../home/starterActions';
+import { starterJobsFor } from '../home/firstJobs';
+import { addStarterJobs } from '../home/firstJobActions';
 import { completeTask } from './actions';
 import { LAST_DONE_OPTIONS } from './lastDone';
 import { TASK_PRESETS } from './presets';
@@ -79,6 +79,22 @@ describe('every task this build can save passes backup validation (intervalDays 
     await store.put('tasks', task);
     await completeTask(store, task, { date: '2026-11-11' });
     expect((await roundTrip(store)).data.tasks[0].intervalDays).toBe(90);
+  });
+
+  it('a recurring job with a first-due date, a snooze and a home system', async () => {
+    const store = await freshStore();
+    const moved = oneOff({ id: 'moved', kind: 'maintenance', recurring: true, intervalDays: 365, dueDate: '2026-11-20', nextDue: '2026-11-27', systemId: 'sys-1' });
+    await store.put('tasks', moved);
+    const { data } = await roundTrip(store);
+    expect(data.tasks[0]).toMatchObject({ dueDate: '2026-11-20', nextDue: '2026-11-27', systemId: 'sys-1', recurring: true });
+  });
+
+  it('the Health Check steps and the gas answer', async () => {
+    const store = await freshStore();
+    await store.updateSettings({ hasGas: false, healthSteps: { 'water-shutoff': { state: 'done', at: '2026-11-10T00:00:00.000Z', note: 'Basement' } } });
+    const { data } = await roundTrip(store);
+    expect(data.settings.hasGas).toBe(false);
+    expect(data.settings.healthSteps?.['water-shutoff']).toMatchObject({ state: 'done', note: 'Basement' });
   });
 
   it('every preset the form or the starter block can pick has a positive interval', () => {

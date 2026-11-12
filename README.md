@@ -11,10 +11,10 @@ Homebase replaces two earlier apps and keeps everything they did:
 
 | Area | What's there |
 |---|---|
-| Home | Greeting, Needs attention, Up next, seasonal recommendations, Home Health Check, recent activity |
+| Home | Needs attention (overdue, urgent, ending warranties, aging systems), Due this month, the starter Home Health Check, quick actions, your home's records, backup reminder, recent activity |
 | Property | Home details, rooms, systems (with typical lifespans), Home Inventory, Keys and locks, Identify a key |
 | Tasks | Maintenance Planner, Schedule and Costs; maintenance, repairs and projects |
-| Assistant | Offline guided help (leaks, no heat, breakers, smoke alarms, lockouts and more) with actions into the app |
+| Assistant | Offline guided help: emergency limits, safe homeowner steps vs professional-only work, follow-up questions, facts from your home, and actions (repair task, note, warranty, contractor, shopping list, damage report, follow-up, resolve to Service History) |
 | Records | Warranty Vault, receipts, manuals and other documents with attached files, Service History |
 | Settings | Household members, property, appearance, notifications, integrations, data and privacy, backup and restore |
 

@@ -26,6 +26,7 @@ export function Onboarding() {
   const [address, setAddress] = useState('');
   const [type, setType] = useState<PropertyType>('house');
   const [ownership, setOwnership] = useState<'own' | 'rent'>('own');
+  const [gas, setGas] = useState<'yes' | 'no' | 'unsure'>('unsure');
   const [yearBuilt, setYearBuilt] = useState('');
   const [error, setError] = useState('');
   const [installOpen, setInstallOpen] = useState(false);
@@ -69,6 +70,8 @@ export function Onboarding() {
         ownership,
         yearBuilt: yearBuilt ? year : undefined,
       });
+      // Gas decides whether the Health Check's gas-shutoff step applies; "Not sure" saves nothing.
+      await store.updateSettings({ hasGas: gas === 'yes' ? true : gas === 'no' ? false : undefined });
       const household = store.getSnapshot().household;
       if (household) await store.saveHousehold({ ...household, onboardedAt: new Date().toISOString() });
     });
@@ -88,7 +91,7 @@ export function Onboarding() {
             <p className="lead">
               One place for your home: what needs doing, what you own, where the paperwork is, and help when something breaks.
             </p>
-            <p className="lead">Everything stays on this device. No account needed.</p>
+            <p className="lead">Everything stays on this device. No account, no sync. Save a backup file from Settings to keep a copy.</p>
             {tabMatters && (
               <>
                 <p className="lead">
@@ -120,6 +123,20 @@ export function Onboarding() {
                 <TextField label="Household name" optional value={householdName} onChange={(e) => setHouseholdName(e.target.value)} placeholder={name ? `${name}’s home` : 'The Rivera household'} />
               </FormGroup>
             </div>
+            <div className="section">
+              <p className="field-label is-standalone" aria-hidden="true">Does it have gas service?</p>
+              <Segmented
+                label="Does it have gas service?"
+                value={gas}
+                onChange={setGas}
+                options={[
+                  { value: 'yes', label: 'Has gas' },
+                  { value: 'no', label: 'No gas' },
+                  { value: 'unsure', label: 'Not sure' },
+                ]}
+              />
+              <p className="section-foot">A gas stove, furnace, water heater or dryer means yes. This decides whether your checklist includes the gas shutoff.</p>
+            </div>
             <div className="button-stack">
               <button type="submit" className="button is-primary is-block" aria-disabled={saver.saving || undefined} aria-busy={saver.saving || undefined}>
                 Continue
@@ -148,6 +165,7 @@ export function Onboarding() {
               </FormGroup>
             </div>
             <div className="section">
+              <p className="field-label is-standalone" aria-hidden="true">Own or rent</p>
               <Segmented
                 label="Own or rent"
                 value={ownership}
@@ -157,6 +175,20 @@ export function Onboarding() {
                   { value: 'rent', label: 'I rent it' },
                 ]}
               />
+            </div>
+            <div className="section">
+              <p className="field-label is-standalone" aria-hidden="true">Does it have gas service?</p>
+              <Segmented
+                label="Does it have gas service?"
+                value={gas}
+                onChange={setGas}
+                options={[
+                  { value: 'yes', label: 'Has gas' },
+                  { value: 'no', label: 'No gas' },
+                  { value: 'unsure', label: 'Not sure' },
+                ]}
+              />
+              <p className="section-foot">A gas stove, furnace, water heater or dryer means yes. This decides whether your checklist includes the gas shutoff.</p>
             </div>
             <div className="button-stack">
               <button type="submit" className="button is-primary is-block" aria-disabled={saver.saving || undefined} aria-busy={saver.saving || undefined}>

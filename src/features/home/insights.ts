@@ -51,11 +51,14 @@ export interface HealthCheck {
   next: HealthStep[];
 }
 
+/** Id prefix of a system's warranty row, so it is counted as a warranty and not as an aging system. */
+const SYSTEM_WARRANTY_PREFIX = 'system-warranty-';
+
 export type AttentionKind = 'warranty' | 'system' | 'backup';
 
 /** A fact about the home or this device that deserves a look, before it becomes a problem. */
 export interface AttentionItem {
-  /** 'record-<id>' | 'system-<id>' | 'backup' */
+  /** 'record-<id>' | 'system-warranty-<id>' | 'system-<id>' | 'backup' */
   id: string;
   kind: AttentionKind;
   title: string;
@@ -98,16 +101,38 @@ export function backupAttention(data: HomeData, now: number, backupDismissedAt?:
   };
 }
 
-/** Everything that needs a look, uncapped: warranties ending, systems past their life, then backup. */
+/** Everything that needs a look, uncapped: warranties ending (records and systems, soonest first), systems past their life, then backup. */
 export function attentionFor(data: HomeData, now: number, backupDismissedAt?: string): AttentionItem[] {
-  const items: AttentionItem[] = endingSoon(data.records, now).map((record) => ({
-    id: `record-${record.id}`,
-    kind: 'warranty' as const,
-    title: record.title,
-    detail: endsText(record.expiresAt!, now),
-    href: `/records/${record.id}`,
-    dismissKey: `record-${record.id}:${record.expiresAt}`,
+  const warranties: { endsAt: string; item: AttentionItem }[] = endingSoon(data.records, now).map((record) => ({
+    endsAt: record.expiresAt!,
+    item: {
+      id: `record-${record.id}`,
+      kind: 'warranty' as const,
+      title: record.title,
+      detail: endsText(record.expiresAt!, now),
+      href: `/records/${record.id}`,
+      dismissKey: `record-${record.id}:${record.expiresAt}`,
+    },
   }));
+  const today = toDateInput(new Date(now));
+  const soon = toDateInput(addDays(new Date(now), EXPIRY_WARNING_DAYS));
+  for (const system of data.systems) {
+    if (!system.warrantyExpires || system.warrantyExpires < today || system.warrantyExpires > soon) continue;
+    warranties.push({
+      endsAt: system.warrantyExpires,
+      item: {
+        id: `${SYSTEM_WARRANTY_PREFIX}${system.id}`,
+        kind: 'warranty',
+        title: `${system.name} warranty`,
+        detail: endsText(system.warrantyExpires, now),
+        href: `/property/systems/${system.id}`,
+        dismissKey: `${SYSTEM_WARRANTY_PREFIX}${system.id}:${system.warrantyExpires}`,
+      },
+    });
+  }
+  // Stable sort: records stay ahead of systems when two end on the same day.
+  warranties.sort((a, b) => a.endsAt.localeCompare(b.endsAt));
+  const items: AttentionItem[] = warranties.map((w) => w.item);
 
   const year = new Date(now).getFullYear();
   const systems: { item: AttentionItem; over: number }[] = [];
@@ -123,7 +148,7 @@ export function attentionFor(data: HomeData, now: number, backupDismissedAt?: st
         kind: 'system',
         title: system.name,
         detail: `${age} years old, past its usual ${life}`,
-        href: '/property/systems',
+        href: `/property/systems/${system.id}`,
         dismissKey: `system-${system.id}:${system.installYear}`,
       },
     });
@@ -186,7 +211,7 @@ function alertClause(data: HomeData, counted: AttentionItem[], afterOverdue: boo
   const n = counted.length;
   const systems = counted.filter((item) => item.kind === 'system').length;
   const records = counted.filter((item) => item.kind === 'warranty');
-  const allWarranties = records.every((item) => data.records.find((r) => `record-${r.id}` === item.id)?.kind === 'warranty');
+  const allWarranties = records.every((item) => item.id.startsWith(SYSTEM_WARRANTY_PREFIX) || data.records.find((r) => `record-${r.id}` === item.id)?.kind === 'warranty');
   if (systems === 0) {
     return allWarranties ? (n === 1 ? '1 warranty ends soon' : `${n} warranties end soon`) : n === 1 ? '1 end date is coming up' : `${n} end dates are coming up`;
   }
@@ -369,7 +394,7 @@ export function snapshotFor(data: HomeData, now: number, health: HealthCheck): S
     next
       ? { id: 'next', label: 'Next maintenance', value: next.info.status === 'overdue' || next.info.daysLeft <= 1 ? countdownText(next.info) : formatDateShort(next.info.dueDate, now), detail: next.task.name, href: `/tasks/${next.task.id}`, tone: next.info.status === 'overdue' ? 'overdue' : undefined }
       : { id: 'next', label: 'Next maintenance', value: 'Nothing planned', detail: 'Add your first task', href: '/tasks?new=1', tone: 'muted' },
-    { id: 'health', label: 'Home health', value: `${health.score}%`, detail: `${health.done} of ${health.total} steps`, href: '#home-health', tone: health.score >= 75 ? 'good' : undefined },
+    { id: 'health', label: 'Home record', value: `${health.score}%`, detail: `${health.done} of ${health.total} steps`, href: '#home-record', tone: health.score >= 75 ? 'good' : undefined },
   ];
 }
 
@@ -415,6 +440,12 @@ export function timelineFor(data: HomeData, now: number): TimelineMonth[] {
     const date = new Date(`${r.expiresAt}T12:00:00`);
     if (date.getTime() > horizon) continue;
     entries.push({ id: `record-${r.id}`, date, title: `${r.title} ends`, detail: 'Check what’s still covered', href: `/records/${r.id}`, kind: 'warranty', overdue: false });
+  }
+  for (const s of data.systems) {
+    if (!s.warrantyExpires || s.warrantyExpires < today) continue;
+    const date = new Date(`${s.warrantyExpires}T12:00:00`);
+    if (date.getTime() > horizon) continue;
+    entries.push({ id: `system-${s.id}`, date, title: `${s.name} warranty ends`, detail: 'Book any covered repairs first', href: `/property/systems/${s.id}`, kind: 'warranty', overdue: false });
   }
   entries.sort((a, b) => Number(b.overdue) - Number(a.overdue) || a.date.getTime() - b.date.getTime());
 

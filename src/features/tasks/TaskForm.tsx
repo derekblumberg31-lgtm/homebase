@@ -2,15 +2,17 @@ import { useEffect, useMemo, useState } from 'react';
 import { useData } from '../../data/DataProvider';
 import { uid } from '../../data/ids';
 import type { Task, TaskCategory, TaskKind, TaskPriority } from '../../data/types';
-import { daysBetween, formatDate, isRealDate, startOfDay, toDateInput } from '../../lib/dates';
+import { addDays, daysBetween, formatCurrency, formatDate, formatInterval, isRealDate, startOfDay, toDateInput } from '../../lib/dates';
 import { Chips, FormGroup, Segmented, SelectField, Switch, TextArea, TextField } from '../../ui/controls';
+import { ChevronDown, Sparkles } from '../../ui/Icons';
 import { Section } from '../../ui/layout';
 import { Sheet } from '../../ui/overlays';
-import { taskCategory } from './meta';
-import { CATEGORY_META, CATEGORY_ORDER, TASK_PRESETS, findType, presetCostHint } from './presets';
-import { firstDueFor, LAST_DONE_OPTIONS, resolveLastDone, type LastDoneChoice } from './lastDone';
-import { dueDateOf } from './taskMath';
 import { SaveFailed, useSave } from '../../ui/save';
+import { COMMON_JOBS, guessFields, guessForJob, inferTask, type TaskGuess } from './infer';
+import { PRIORITY_LABEL, taskCategory } from './meta';
+import { firstDueFor, LAST_DONE_OPTIONS, resolveLastDone, type LastDoneChoice } from './lastDone';
+import { CATEGORY_META, CATEGORY_ORDER, TASK_PRESETS, findType, presetCostHint } from './presets';
+import { dueDateOf } from './taskMath';
 
 const INTERVALS = [
   { value: 7, label: '1 wk' },
@@ -21,20 +23,38 @@ const INTERVALS = [
   { value: 730, label: '2 yr' },
 ];
 
+type When = 'today' | 'week' | 'month' | 'date';
+const WHEN_OPTIONS: { value: When; label: string }[] = [
+  { value: 'today', label: 'Today' },
+  { value: 'week', label: 'This week' },
+  { value: 'month', label: 'This month' },
+  { value: 'date', label: 'Pick a date' },
+];
+
+function whenToDate(when: When, picked: string): string {
+  const today = new Date();
+  if (when === 'today') return toDateInput(today);
+  if (when === 'week') return toDateInput(addDays(today, 7));
+  if (when === 'month') return toDateInput(addDays(today, 30));
+  return picked;
+}
+
 export interface TaskDraft {
   name?: string;
   kind?: TaskKind;
   itemId?: string;
+  systemId?: string;
   roomId?: string;
+  location?: string;
   notes?: string;
   category?: TaskCategory;
   seasonal?: boolean;
   priority?: TaskPriority;
+  /** First due date: a one-off's due date, or a recurring job's when the last-done date is not known. */
+  dueDate?: string;
   /** Recurring drafts: when it was last done and how often, e.g. a yearly seasonal job due soon. */
   lastDoneAt?: string;
   intervalDays?: number;
-  /** First due date when the last-done date is not known. */
-  dueDate?: string;
 }
 
 interface TaskFormProps {
@@ -44,30 +64,45 @@ interface TaskFormProps {
   onSave: (task: Task) => void | Promise<void>;
 }
 
-/** Add or edit a task: recurring maintenance, a one-off repair, or a project. */
+type Field = 'kind' | 'typeId' | 'interval' | 'priority' | 'category' | 'seasonal' | 'notes' | 'cost';
+
+/**
+ * Add or edit a task. The first step asks only what, where and when; Homebase fills in the kind,
+ * category, repeat interval, priority, seasonal flag and notes from what was typed. Everything
+ * else is under "More options".
+ */
 export function TaskForm({ initial, draft, onClose, onSave }: TaskFormProps) {
-  const { rooms, items } = useData();
+  const { rooms, items, systems } = useData();
   const [kind, setKind] = useState<TaskKind>(initial?.kind ?? draft?.kind ?? 'maintenance');
   const [typeId, setTypeId] = useState(initial?.typeId ?? 'custom');
   const [name, setName] = useState(initial?.name ?? draft?.name ?? '');
   const [roomId, setRoomId] = useState(initial?.roomId ?? draft?.roomId ?? '');
-  const [location, setLocation] = useState(initial?.location ?? '');
+  const [location, setLocation] = useState(initial?.location ?? draft?.location ?? '');
   const [itemId, setItemId] = useState(initial?.itemId ?? draft?.itemId ?? '');
+  const [systemId, setSystemId] = useState(initial?.systemId ?? draft?.systemId ?? '');
   // Set when the last-done date is not known: the job is first due on this date.
   const firstDue = initial?.recurring ? initial.dueDate : draft?.dueDate;
   // No silent "today": a new job starts with nothing chosen. A draft that carries a real date opens on "Pick a date".
   const [lastDone, setLastDone] = useState<LastDoneChoice | 'date' | undefined>(!initial && !firstDue && draft?.lastDoneAt ? 'date' : undefined);
   const [lastDoneDate, setLastDoneDate] = useState(!initial && !firstDue ? draft?.lastDoneAt ?? '' : '');
   const [interval, setInterval] = useState(String(initial?.intervalDays ?? draft?.intervalDays ?? 90));
-  const [dueDate, setDueDate] = useState(initial?.dueDate ?? '');
   const [cost, setCost] = useState(initial?.cost != null ? String(initial.cost) : '');
   const [notes, setNotes] = useState(initial?.notes ?? draft?.notes ?? '');
   const [priority, setPriority] = useState<TaskPriority>(initial?.priority ?? draft?.priority ?? 'normal');
   const [category, setCategory] = useState<TaskCategory>(initial ? taskCategory(initial) : draft?.category ?? 'other');
   const [seasonal, setSeasonal] = useState(initial?.seasonal ?? draft?.seasonal ?? false);
+  // Editing shows every field; adding starts with the three questions.
+  const [advanced, setAdvanced] = useState(Boolean(initial));
+  const [touched, setTouched] = useState<Set<Field>>(() => new Set(initial ? (['kind', 'typeId', 'interval', 'priority', 'category', 'seasonal', 'notes', 'cost'] as Field[]) : draft?.intervalDays ? (['interval', 'kind'] as Field[]) : []));
+  const [guess, setGuess] = useState<TaskGuess | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [failedSaves, setFailedSaves] = useState(0);
   const saver = useSave();
+
+  // For one-offs, when: an existing task's due date, a draft's, or "this week" for something new.
+  const initialDue = initial ? (initial.recurring ? '' : toDateInput(dueDateOf(initial))) : draft?.dueDate ?? '';
+  const [when, setWhen] = useState<When>(initialDue ? 'date' : 'week');
+  const [pickedDate, setPickedDate] = useState(initialDue);
 
   // A failed Add can leave its message below the fold: bring the first problem into view and put focus on it.
   useEffect(() => {
@@ -79,8 +114,36 @@ export function TaskForm({ initial, draft, onClose, onSave }: TaskFormProps) {
 
   const recurring = kind === 'maintenance';
   const belongings = useMemo(() => items.filter((item) => item.kind !== 'key'), [items]);
+  const touch = (field: Field) => setTouched((t) => new Set(t).add(field));
+
+  /** Fill every field the homeowner hasn't set themselves. A typical cost is only ever shown as a hint, never filled in. */
+  function apply(next: TaskGuess | null) {
+    setGuess(next);
+    if (!next) return;
+    const fields = guessFields(next, touched);
+    if (fields.kind) setKind(fields.kind);
+    if (fields.typeId) setTypeId(fields.typeId);
+    if (fields.intervalDays) setInterval(String(fields.intervalDays));
+    if (fields.priority) setPriority(fields.priority);
+    if (fields.category) setCategory(fields.category);
+    if (fields.seasonal !== undefined) setSeasonal(fields.seasonal);
+    if (fields.notes) setNotes(fields.notes);
+  }
+
+  function changeName(value: string) {
+    setName(value);
+    if (!initial) apply(inferTask(value));
+  }
+
+  function pickJob(id: string) {
+    const g = guessForJob(id);
+    if (!g) return;
+    if (g.name) setName(g.name);
+    apply(g);
+  }
 
   function choosePreset(id: string) {
+    touch('typeId');
     setTypeId(id);
     const preset = findType(id);
     if (id !== 'custom') {
@@ -111,20 +174,23 @@ export function TaskForm({ initial, draft, onClose, onSave }: TaskFormProps) {
     const next: Record<string, string> = {};
     const days = Math.round(Number(interval));
     const price = cost.trim() ? Number(cost) : undefined;
-    if (!name.trim()) next.name = 'Give the task a name.';
+    const due = whenToDate(when, pickedDate);
+    if (!name.trim()) next.name = 'Say what needs doing, like “Replace the furnace filter”.';
+    if (!recurring && when === 'date' && !isRealDate(due)) next.when = 'Pick a date.';
     if (recurring && !(days >= 1 && days <= 3650)) next.interval = 'Use a number of days between 1 and 3650.';
     const schedule = recurring ? resolveLastDone({ choice: lastDone, date: lastDoneDate, intervalDays: days, now: Date.now(), initial: initial ?? undefined, draftDueDate: draft?.dueDate }) : null;
     if (schedule && 'error' in schedule) next.lastDoneAt = schedule.error;
-    if (!recurring && dueDate && !isRealDate(dueDate)) next.dueDate = 'Pick a real date.';
     if (price !== undefined && !(price >= 0)) next.cost = 'Use a positive amount, or leave it empty.';
     setErrors(next);
     if (Object.keys(next).length) {
+      if (next.interval || next.cost) setAdvanced(true);
       setFailedSaves((n) => n + 1);
       return;
     }
 
     const room = rooms.find((r) => r.id === roomId);
     const now = new Date().toISOString();
+    const resolved = schedule && !('error' in schedule) ? schedule : null;
     const task: Task = {
       id: initial?.id ?? uid(),
       kind,
@@ -133,10 +199,14 @@ export function TaskForm({ initial, draft, onClose, onSave }: TaskFormProps) {
       location: room?.name ?? location.trim(),
       roomId: room?.id,
       itemId: itemId || undefined,
-      lastDoneAt: schedule && !('error' in schedule) ? schedule.lastDoneAt : initial?.lastDoneAt ?? toDateInput(),
+      systemId: systemId || undefined,
+      lastDoneAt: resolved ? resolved.lastDoneAt : initial?.lastDoneAt ?? toDateInput(),
       intervalDays: recurring ? days : initial?.intervalDays ?? 30,
       recurring,
-      dueDate: schedule && !('error' in schedule) ? schedule.dueDate : dueDate || toDateInput(),
+      // Recurring: set only when last done is not recorded (its first due date). One-off: the chosen date.
+      dueDate: resolved ? resolved.dueDate : due,
+      // A snoozed date stays unless the user gives a new last-done answer.
+      nextDue: recurring && !lastDone ? initial?.nextDue : undefined,
       status: initial?.status === 'done' && !recurring ? 'done' : 'open',
       cost: price,
       priority,
@@ -148,6 +218,13 @@ export function TaskForm({ initial, draft, onClose, onSave }: TaskFormProps) {
     };
     void saver.run(() => Promise.resolve(onSave(task)));
   }
+
+  const summary = [
+    kind === 'maintenance' ? `Repeats every ${formatInterval(Number(interval) || 90)}` : kind === 'repair' ? 'One-off repair' : 'Project',
+    CATEGORY_META[category].label,
+    PRIORITY_LABEL[priority],
+    seasonal ? 'Seasonal' : null,
+  ].filter(Boolean);
 
   return (
     <Sheet
@@ -165,40 +242,30 @@ export function TaskForm({ initial, draft, onClose, onSave }: TaskFormProps) {
       }
     >
       <SaveFailed show={saver.failed} />
-      <Segmented<TaskKind>
-        label="Kind of task"
-        value={kind}
-        onChange={setKind}
-        options={[
-          { value: 'maintenance', label: 'Maintenance' },
-          { value: 'repair', label: 'Repair' },
-          { value: 'project', label: 'Project' },
-        ]}
-      />
+      <FormGroup>
+        <TextField
+          label="What needs doing?"
+          value={name}
+          onChange={(e) => changeName(e.target.value)}
+          placeholder="Replace the furnace filter"
+          error={errors.name}
+          autoFocus={!initial}
+          autoComplete="off"
+        />
+      </FormGroup>
+      {!initial && !name && (
+        <div className="chips form-chips" role="group" aria-label="Common jobs">
+          {COMMON_JOBS.map((job) => (
+            <button key={job.id} type="button" className="chip" onClick={() => pickJob(job.id)}>
+              {job.label}
+            </button>
+          ))}
+        </div>
+      )}
 
-      <Section title="The task">
+      <Section title="Where is it?">
         <FormGroup>
-          {recurring && (
-            <SelectField label="Common jobs" value={typeId} onChange={(e) => choosePreset(e.target.value)} hint={typeId !== 'custom' ? `Usually every ${findType(typeId).lifespanDays} days` : undefined}>
-              <option value="custom">Something else</option>
-              {CATEGORY_ORDER.map((category) => (
-                <optgroup key={category} label={CATEGORY_META[category].label}>
-                  {TASK_PRESETS.filter((p) => p.category === category && p.id !== 'custom').map((preset) => (
-                    <option key={preset.id} value={preset.id}>
-                      {preset.label}
-                    </option>
-                  ))}
-                </optgroup>
-              ))}
-            </SelectField>
-          )}
-          <TextField
-            label="Name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder={kind === 'repair' ? 'Fix the dripping kitchen tap' : kind === 'project' ? 'Repaint the guest room' : 'Swap the HVAC filter'}
-            error={errors.name}
-          />
+          {!roomId && <TextField label="Place" optional value={location} onChange={(e) => setLocation(e.target.value)} placeholder="Hallway return, under the kitchen sink" />}
           {rooms.length > 0 && (
             <SelectField label="Room" optional value={roomId} onChange={(e) => setRoomId(e.target.value)}>
               <option value="">Not in a room</option>
@@ -209,97 +276,174 @@ export function TaskForm({ initial, draft, onClose, onSave }: TaskFormProps) {
               ))}
             </SelectField>
           )}
-          {!roomId && <TextField label="Where" optional value={location} onChange={(e) => setLocation(e.target.value)} placeholder={kind === 'maintenance' ? 'Hallway return' : 'Kitchen'} />}
-          {belongings.length > 0 && (
-            <SelectField label="For an item" optional value={itemId} onChange={(e) => setItemId(e.target.value)}>
-              <option value="">None</option>
-              {belongings.map((item) => (
-                <option key={item.id} value={item.id}>
-                  {item.name}
-                </option>
-              ))}
-            </SelectField>
-          )}
         </FormGroup>
       </Section>
 
-      <Section title={recurring ? 'Schedule' : 'When'}>
-        <FormGroup>
-          {recurring ? (
-            <>
-              <div className="field">
-                <span className="field-label" aria-hidden="true">
-                  Last done
-                </span>
-                <Chips<LastDoneChoice | 'date'>
-                  label="Last done"
-                  single
-                  value={lastDone}
-                  onChange={pickLastDone}
-                  options={[...LAST_DONE_OPTIONS, { value: 'date', label: 'Pick a date' }]}
-                  describedBy={lastDone === 'date' ? undefined : 'last-done-note'}
-                  invalid={lastDone !== 'date' && Boolean(errors.lastDoneAt)}
-                />
-                {lastDone === 'date' ? (
-                  <TextField label="Date" type="date" value={lastDoneDate} max={toDateInput()} onChange={(e) => setLastDoneDate(e.target.value)} error={errors.lastDoneAt} />
-                ) : errors.lastDoneAt ? (
-                  <p className="field-error" id="last-done-note" role="alert">
-                    {errors.lastDoneAt}
-                  </p>
-                ) : (
-                  lastDoneHint && (
-                    <p className="field-hint" id="last-done-note">
-                      {lastDoneHint}
-                    </p>
-                  )
-                )}
-              </div>
-              <div className="field">
-                <TextField label="Repeat every" inputMode="numeric" value={interval} onChange={(e) => setInterval(e.target.value)} suffix="days" error={errors.interval} />
-                <Chips label="Common intervals" value={Number(interval)} onChange={(v) => setInterval(String(v))} options={INTERVALS} />
-              </div>
-            </>
-          ) : (
-            <TextField label="Do by" optional type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} error={errors.dueDate} hint="Leave empty for today." />
-          )}
-          <TextField label={recurring ? 'Cost each time' : 'Estimated cost'} optional inputMode="decimal" prefix="$" value={cost} onChange={(e) => setCost(e.target.value)} error={errors.cost} hint={presetCostHint(typeId, cost)} />
-          <TextArea label="Notes" optional value={notes} onChange={(e) => setNotes(e.target.value)} placeholder={recurring ? 'Filter size, part number…' : 'What needs doing, who to call…'} />
-        </FormGroup>
-      </Section>
-
-      <Section title="Details">
-        <div className="form-segment">
-          <span className="field-label" aria-hidden="true">
-            Priority
-          </span>
-          <Segmented<TaskPriority>
-            label="Priority"
-            value={priority}
-            onChange={setPriority}
-            options={[
-              { value: 'low', label: 'Low' },
-              { value: 'normal', label: 'Normal' },
-              { value: 'high', label: 'High' },
-            ]}
-          />
-        </div>
-        <FormGroup>
-          <SelectField label="Category" value={category} onChange={(e) => setCategory(e.target.value as TaskCategory)}>
-            {CATEGORY_ORDER.map((c) => (
-              <option key={c} value={c}>
-                {CATEGORY_META[c].label}
-              </option>
-            ))}
-          </SelectField>
-          <div className="field is-switch">
-            <span className="row-main">
-              <span className="field-label">Seasonal job</span>
-              <span className="field-hint">Shown with this season’s recommendations on Home.</span>
-            </span>
-            <Switch checked={seasonal} onChange={setSeasonal} label="Seasonal job" />
+      {recurring ? (
+        <Section title="When was it last done?">
+          <div className="field">
+            <Chips<LastDoneChoice | 'date'>
+              label="Last done"
+              single
+              value={lastDone}
+              onChange={pickLastDone}
+              options={[...LAST_DONE_OPTIONS, { value: 'date', label: 'Pick a date' }]}
+              describedBy={lastDone === 'date' ? undefined : 'last-done-note'}
+              invalid={lastDone !== 'date' && Boolean(errors.lastDoneAt)}
+            />
+            {lastDone === 'date' ? (
+              <TextField label="Date" type="date" value={lastDoneDate} max={toDateInput()} onChange={(e) => setLastDoneDate(e.target.value)} error={errors.lastDoneAt} />
+            ) : errors.lastDoneAt ? (
+              <p className="field-error" id="last-done-note" role="alert">
+                {errors.lastDoneAt}
+              </p>
+            ) : (
+              lastDoneHint && (
+                <p className="field-hint" id="last-done-note">
+                  {lastDoneHint}
+                </p>
+              )
+            )}
           </div>
-        </FormGroup>
-      </Section>
+        </Section>
+      ) : (
+        <Section title="When should it happen?">
+          <Chips<When>
+            label="When"
+            single
+            value={when}
+            onChange={(v) => {
+              setWhen(v);
+              if (v === 'date' && !pickedDate) setPickedDate(toDateInput(addDays(new Date(), 14)));
+            }}
+            options={WHEN_OPTIONS}
+          />
+          {when === 'date' && (
+            <div className="form-group form-gap">
+              <TextField label="Date" type="date" value={pickedDate} onChange={(e) => setPickedDate(e.target.value)} error={errors.when} />
+            </div>
+          )}
+          {when !== 'date' && <p className="section-foot">Due {formatDate(whenToDate(when, pickedDate))}.</p>}
+        </Section>
+      )}
+
+      {name.trim() && (
+        <div className="suggest-box" aria-live="polite">
+          <Sparkles size={18} />
+          <div>
+            <p className="suggest-title">{guess?.matched ? `Set up as “${guess.matched}”` : 'Homebase will save it as'}</p>
+            <p className="suggest-body">{summary.join(' · ')}</p>
+            {notes && !touched.has('notes') && <p className="suggest-note">Note added: {notes}</p>}
+          </div>
+        </div>
+      )}
+
+      <button type="button" className="disclosure" aria-expanded={advanced} aria-controls="task-more" onClick={() => setAdvanced((v) => !v)}>
+        <ChevronDown size={18} />
+        {advanced ? 'Fewer options' : 'More options: repeat, priority, cost, notes'}
+      </button>
+
+      {advanced && (
+        <div id="task-more">
+          <Section title="Kind of task">
+            <Segmented<TaskKind>
+              label="Kind of task"
+              value={kind}
+              onChange={(v) => {
+                touch('kind');
+                setKind(v);
+              }}
+              options={[
+                { value: 'maintenance', label: 'Repeats' },
+                { value: 'repair', label: 'Repair' },
+                { value: 'project', label: 'Project' },
+              ]}
+            />
+          </Section>
+
+          {recurring && (
+            <Section title="Schedule">
+              <FormGroup>
+                <SelectField label="Common jobs" value={typeId} onChange={(e) => choosePreset(e.target.value)} hint={typeId !== 'custom' ? `Usually every ${findType(typeId).lifespanDays} days` : undefined}>
+                  <option value="custom">Something else</option>
+                  {CATEGORY_ORDER.map((c) => (
+                    <optgroup key={c} label={CATEGORY_META[c].label}>
+                      {TASK_PRESETS.filter((p) => p.category === c && p.id !== 'custom').map((preset) => (
+                        <option key={preset.id} value={preset.id}>
+                          {preset.label}
+                        </option>
+                      ))}
+                    </optgroup>
+                  ))}
+                </SelectField>
+                <div className="field">
+                  <TextField label="Repeat every" inputMode="numeric" value={interval} onChange={(e) => { touch('interval'); setInterval(e.target.value); }} suffix="days" error={errors.interval} />
+                  <Chips label="Common intervals" value={Number(interval)} onChange={(v) => { touch('interval'); setInterval(String(v)); }} options={INTERVALS} />
+                </div>
+              </FormGroup>
+            </Section>
+          )}
+
+          <Section title="Details">
+            <div className="form-segment">
+              <span className="field-label" aria-hidden="true">
+                Priority
+              </span>
+              <Segmented<TaskPriority>
+                label="Priority"
+                value={priority}
+                onChange={(v) => {
+                  touch('priority');
+                  setPriority(v);
+                }}
+                options={[
+                  { value: 'low', label: 'Low' },
+                  { value: 'normal', label: 'Normal' },
+                  { value: 'high', label: 'High' },
+                ]}
+              />
+            </div>
+            <FormGroup>
+              <SelectField label="Category" value={category} onChange={(e) => { touch('category'); setCategory(e.target.value as TaskCategory); }}>
+                {CATEGORY_ORDER.map((c) => (
+                  <option key={c} value={c}>
+                    {CATEGORY_META[c].label}
+                  </option>
+                ))}
+              </SelectField>
+              <TextField label={recurring ? 'Cost each time' : 'Estimated cost'} optional inputMode="decimal" prefix="$" value={cost} onChange={(e) => { touch('cost'); setCost(e.target.value); }} error={errors.cost} hint={guess?.cost != null && !cost.trim() ? `Often about ${formatCurrency(guess.cost)}` : presetCostHint(typeId, cost)} />
+              <TextArea label="Notes" optional value={notes} onChange={(e) => { touch('notes'); setNotes(e.target.value); }} placeholder={recurring ? 'Filter size, part number…' : 'What needs doing, who to call…'} />
+              {systems.length > 0 && (
+                <SelectField label="For a home system" optional value={systemId} onChange={(e) => setSystemId(e.target.value)}>
+                  <option value="">None</option>
+                  {systems.map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {s.name}
+                    </option>
+                  ))}
+                </SelectField>
+              )}
+              {belongings.length > 0 && (
+                <SelectField label="For an item" optional value={itemId} onChange={(e) => setItemId(e.target.value)}>
+                  <option value="">None</option>
+                  {belongings.map((item) => (
+                    <option key={item.id} value={item.id}>
+                      {item.name}
+                    </option>
+                  ))}
+                </SelectField>
+              )}
+              <div className="field is-switch">
+                <span className="row-main">
+                  <span className="field-label">Seasonal job</span>
+                  <span className="field-hint">Shown with this season’s recommendations on Home.</span>
+                </span>
+                <Switch checked={seasonal} onChange={(v) => { touch('seasonal'); setSeasonal(v); }} label="Seasonal job" />
+              </div>
+            </FormGroup>
+          </Section>
+        </div>
+      )}
     </Sheet>
   );
 }

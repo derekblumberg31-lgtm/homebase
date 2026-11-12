@@ -28,8 +28,13 @@ export function lastDoneKnown(task: Pick<Task, 'recurring' | 'dueDate'>): boolea
   return !(task.recurring && task.dueDate);
 }
 
-/** When a task is due: the next repeat for recurring tasks, the due date for one-offs. */
-export function dueDateOf(task: Pick<Task, 'recurring' | 'lastDoneAt' | 'intervalDays' | 'dueDate'>): Date {
+/**
+ * When a task is due, in order: a snoozed or rescheduled date (`nextDue`), then `dueDate`
+ * (a one-off's due date, or a recurring task's first due date when last done is unknown),
+ * then the last done date plus the interval.
+ */
+export function dueDateOf(task: Pick<Task, 'recurring' | 'lastDoneAt' | 'intervalDays' | 'dueDate' | 'nextDue'>): Date {
+  if (task.nextDue) return parseDateInput(task.nextDue);
   if (task.dueDate) return parseDateInput(task.dueDate);
   return addDays(parseDateInput(task.lastDoneAt), task.intervalDays);
 }
