@@ -4006,6 +4006,20 @@ a.feed-row:focus-visible {
   margin-top: 10px;
 }
 
+/* A field that sits straight in a section, not in a grouped list, shares the page gutter with the chips above it. */
+.section > .field {
+  padding-right: 0;
+  padding-left: 0;
+}
+
+.section > .field:focus-within {
+  box-shadow: none;
+}
+
+.section > .field > .field-hint {
+  padding: 0 var(--space-4);
+}
+
 .form-gap {
   margin-top: 10px;
 }
