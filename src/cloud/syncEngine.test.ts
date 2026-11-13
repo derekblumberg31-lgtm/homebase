@@ -78,10 +78,24 @@ class FakeRemote implements CloudRemote {
     if (text === undefined) throw new RemoteObjectMissing(path);
     return text;
   }
+  /** Like the storage policy: a new file is refused once this many are stored. */
+  maxFiles = Infinity;
+  /** The upload is stored, then the reply is lost. */
+  uploadLost = false;
+  /** Removing files fails. */
+  removeFails = false;
+  created = new Map<string, number>();
   async upload(path: string, text: string) {
     this.guard();
+    if (this.objects.size >= this.maxFiles) throw new Error('new row violates row-level security policy');
     this.uploads.push(path);
     this.objects.set(path, text);
+    this.created.set(path, Date.now());
+    if (this.uploadLost) throw new Error('the reply never arrived');
+  }
+  async listBackups() {
+    this.guard();
+    return [...this.objects.keys()].map((path) => ({ path, createdAt: new Date(this.created.get(path) ?? Date.now()).toISOString() }));
   }
   async commit(args: CommitArgs) {
     this.guard();
@@ -95,6 +109,7 @@ class FakeRemote implements CloudRemote {
     return current + 1;
   }
   async remove(paths: string[]) {
+    if (this.removeFails) throw new Error('network');
     this.removed.push(...paths);
     for (const p of paths) this.objects.delete(p);
   }
@@ -601,6 +616,82 @@ describe('a commit whose reply is lost', () => {
   });
 });
 
+describe('leftover uploads', () => {
+  const OLD = Date.now() - 60 * 60_000;
+
+  it('failed uploads never pile up to the file limit', async () => {
+    await seed(store, ['A']);
+    remote.maxFiles = 6;
+    let n = 0;
+    const e = engine({ random: () => `n${String(n++).padStart(7, '0')}` });
+    remote.uploadLost = true;
+    remote.removeFails = true;
+    for (let i = 0; i < 4; i++) await e.check({ pushNow: true });
+    expect(remote.objects.size).toBe(4);
+    // Back to normal: the leftovers go before the next upload, so it is not refused.
+    remote.uploadLost = false;
+    remote.removeFails = false;
+    await e.check({ pushNow: true });
+    expect(e.getState().status).toBe('in-sync');
+    expect([...remote.objects.keys()]).toEqual([remote.row!.objectPath]);
+  });
+
+  it('an account already at the limit recovers on the next sync, and the head survives', async () => {
+    await seed(store, ['A']);
+    const first = engine();
+    await first.check({ pushNow: true });
+    const headPath = remote.row!.objectPath;
+    for (let i = 0; i < 5; i++) {
+      remote.objects.set(`${USER}/2-old${i}xxxxx.json`, '{}');
+      remote.created.set(`${USER}/2-old${i}xxxxx.json`, OLD);
+    }
+    remote.maxFiles = 6;
+    await store.put('tasks', task('t9', 'B'));
+    const e = engine({ random: () => 'newnew12' });
+    await e.check({ pushNow: true });
+    expect(e.getState().status).toBe('in-sync');
+    expect(remote.row?.revision).toBe(2);
+    expect(remote.removed).toContain(headPath); // replaced by the new head in the usual way
+    expect(remote.objects.has(remote.row!.objectPath)).toBe(true);
+    expect(remote.objects.size).toBe(1);
+  });
+
+  it('spares the head, an upload that may still commit, and a file another device just made', async () => {
+    await seed(store, ['A']);
+    const e = engine();
+    await e.check({ pushNow: true });
+    const headPath = remote.row!.objectPath;
+    remote.objects.set(`${USER}/2-fresh123.json`, '{}'); // created just now by another device
+    await store.put('tasks', task('t9', 'B'));
+    remote.lostReply = false;
+    remote.commitFails = true;
+    await e.check({ pushNow: true }); // head still at 1: the commit may land, so the upload stays
+    const uncertain = `${USER}/2-abcd1234.json`;
+    expect(remote.objects.has(uncertain)).toBe(true);
+    expect(remote.objects.has(headPath)).toBe(true);
+    remote.commitFails = false;
+    await e.check({ pushNow: true });
+    expect(remote.objects.has(`${USER}/2-fresh123.json`)).toBe(true);
+    expect(remote.objects.has(remote.row!.objectPath)).toBe(true);
+  });
+
+  it('a commit that fails at the old revision keeps its upload, and clears it once the account has moved on', async () => {
+    await seed(store, ['A']);
+    const e = engine();
+    await e.check({ pushNow: true });
+    await store.put('tasks', task('t9', 'B'));
+    remote.commitFails = true;
+    await e.check({ pushNow: true });
+    const upload = `${USER}/2-abcd1234.json`;
+    expect(remote.removed).not.toContain(upload);
+    expect(remote.objects.has(upload)).toBe(true);
+    // The late commit never arrives and another device saves revision 2.
+    await remote.setCloud(await backupOf(['A', 'Z']));
+    await e.check();
+    expect(remote.removed).toContain(upload);
+  });
+});
+
 describe('a cloud object that is missing', () => {
   async function missing() {
     await seed(store, ['A']);
@@ -624,6 +715,50 @@ describe('a cloud object that is missing', () => {
     expect(remote.row?.revision).toBe(3);
     expect(remote.objects.has(remote.row!.objectPath)).toBe(true);
     expect(e.getState().status).toBe('in-sync');
+  });
+
+  it('"Save it" reads the account again: a newer copy goes to the conflict sheet, nothing is replaced', async () => {
+    const e = await missing();
+    await remote.setCloud(await backupOf(['A', 'B']));
+    remote.objects.delete(remote.row!.objectPath);
+    await store.put('tasks', task('t9', 'Local edit'));
+    await e.check({ pushNow: true });
+    expect(e.getState().status).toBe('cloud-reset');
+    // Meanwhile another device saves revision 3, and its file is there.
+    await remote.setCloud(await backupOf(['A', 'B', 'C']));
+    const commitsBefore = remote.commits.length;
+    expect(await e.confirmCloudReset()).toBe(false);
+    expect(remote.commits.length).toBe(commitsBefore);
+    expect(remote.objects.has(remote.row!.objectPath)).toBe(true);
+    expect(e.getState().status).toBe('conflict');
+    expect(store.getSnapshot().tasks.some((t) => t.name === 'Local edit')).toBe(true);
+    await e.resolve('cloud');
+    expect(deliver).toHaveBeenCalled();
+  });
+
+  it('"Save it" with an unreachable account does nothing', async () => {
+    const e = await missing();
+    await remote.setCloud(await backupOf(['A', 'B']));
+    remote.objects.delete(remote.row!.objectPath);
+    await store.put('tasks', task('t9', 'Local edit'));
+    await e.check({ pushNow: true });
+    remote.offline = true;
+    const commitsBefore = remote.commits.length;
+    expect(await e.confirmCloudReset()).toBe(false);
+    expect(remote.commits.length).toBe(commitsBefore);
+    expect(e.getState().status).toBe('offline');
+  });
+
+  it('a download that fails for any other reason is "can’t reach your account", not a missing file', async () => {
+    const e = await missing();
+    await remote.setCloud(await backupOf(['A', 'B']));
+    const realDownload = remote.download.bind(remote);
+    remote.download = async () => {
+      throw new Error('Not Found (from a proxy)');
+    };
+    await e.check();
+    expect(e.getState().status).toBe('offline');
+    remote.download = realDownload;
   });
 
   it('a clean device that finds the file missing offers the same recovery', async () => {
@@ -800,6 +935,30 @@ describe('two tabs on one device', () => {
     expect(remote.row?.objectPath).toBe(savedPath);
     expect(remote.objects.has(savedPath)).toBe(true);
     expect(storeB.getSnapshot().tasks.map((t) => t.name)).toContain('Edited in tab A');
+    a.stop();
+    b.stop();
+  });
+});
+
+describe('a second tab’s status', () => {
+  beforeEach(() => {
+    vi.stubGlobal('document', { addEventListener: () => {}, removeEventListener: () => {}, visibilityState: 'visible' });
+    vi.stubGlobal('window', { addEventListener: () => {}, removeEventListener: () => {} });
+  });
+  afterEach(() => vi.unstubAllGlobals());
+
+  it('follows the syncing tab instead of staying on its launch state', async () => {
+    await seed(store, ['A']);
+    const locks = new FakeLocks();
+    const hub = new FakeHub();
+    const a = engine({ locks, createChannel: () => hub.create() });
+    const b = engine({ locks, createChannel: () => hub.create() });
+    a.start();
+    b.start();
+    await a.syncNow();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(b.getState().status).toBe('in-sync');
+    expect(b.getState().lastSyncedAt).toBe(a.getState().lastSyncedAt);
     a.stop();
     b.stop();
   });

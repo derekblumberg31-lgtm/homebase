@@ -35,6 +35,8 @@ export interface CloudRemote {
    * is named for a revision above the committed one.
    */
   prune?(keepPath: string, revision: number): Promise<void>;
+  /** Every file in this account's folder, with when it was stored. Used to clear the app's own leftovers. */
+  listBackups?(): Promise<Array<{ path: string; createdAt: string }>>;
   /** Removes every stored backup, then the account itself. */
   deleteAccount(): Promise<void>;
   /** Whether a calendar link has been made for this account. */
@@ -55,13 +57,17 @@ export class RemoteObjectMissing extends Error {
   }
 }
 
-/** Storage reports a missing object as a 400 or 404 whose message says "not found". */
-function isMissingObject(error: unknown): boolean {
+/**
+ * Only a definite "no such object" from Storage counts as missing: its own JSON error, with status 404
+ * (or 400 on older servers) and the message "Object not found". A bare 404 from a proxy or a captive
+ * portal, or any other failure, is not proof the file is gone, so it stays a plain error.
+ */
+export function isMissingObject(error: unknown): boolean {
   if (typeof error !== 'object' || error === null) return false;
   const e = error as { status?: unknown; statusCode?: unknown; message?: unknown };
   const code = String(e.statusCode ?? e.status ?? '');
-  const message = typeof e.message === 'string' ? e.message : '';
-  return code === '404' || /not.?found/i.test(message);
+  const message = typeof e.message === 'string' ? e.message.trim() : '';
+  return (code === '404' || code === '400') && /^object not found\.?$/i.test(message);
 }
 
 /** The revision a backup file name starts with (`<n>-<random>.json`), or null. */
@@ -141,6 +147,12 @@ export class SupabaseRemote implements CloudRemote {
       .map((entry) => `${this.userId}/${entry.name}`)
       .filter((path) => path !== keepPath && (revisionOfPath(path) ?? Infinity) <= revision);
     await this.remove(stale);
+  }
+
+  async listBackups(): Promise<Array<{ path: string; createdAt: string }>> {
+    const { data, error } = await this.client.storage.from(BUCKET).list(this.userId, { limit: 100 });
+    if (error) throw error;
+    return (data ?? []).map((entry) => ({ path: `${this.userId}/${entry.name}`, createdAt: entry.created_at ?? '' }));
   }
 
   async hasCalendarFeed(): Promise<boolean> {

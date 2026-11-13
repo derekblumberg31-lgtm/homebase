@@ -98,6 +98,8 @@ export interface EngineDeps {
 export const MAX_SYNC_BYTES = 45 * 1024 * 1024;
 export const PUSH_DELAY_MS = 60_000;
 export const CHECK_INTERVAL_MS = 15 * 60_000;
+/** A file nobody points to is only cleared once it is this old, so another device's upload in progress is spared. */
+export const ORPHAN_AGE_MS = 15 * 60_000;
 export const NOT_SAVED_MESSAGE = 'Nothing changed. The backup file wasn’t saved.';
 export const CHANGED_MESSAGE = 'Your home changed while the file was being saved, so nothing was replaced. Try again.';
 export const NEWER_VERSION_MESSAGE = 'The cloud copy came from a newer Homebase. Reload Homebase to update it, then sync again.';
@@ -208,7 +210,9 @@ export class SyncEngine {
   private peerSeen = false;
   private channel: ChannelLike | null = null;
   /** A file uploaded and committed with no answer seen; the head is looked at before anything is decided about it. */
-  private uncertain: { path: string; hash: string } | null = null;
+  private uncertain: { path: string; hash: string; expected: number } | null = null;
+  /** Files this engine uploaded and could not remove; cleared at the next chance whatever their age. */
+  private leftovers = new Set<string>();
   private releaseLock: (() => void) | null = null;
   private lockAbort: AbortController | null = null;
 
@@ -226,6 +230,7 @@ export class SyncEngine {
 
   private set(patch: Partial<SyncState>) {
     this.state = { ...this.state, ...patch };
+    if (this.leader && this.channel && !this.stopped) this.channel.postMessage({ kind: 'status', status: this.state.status, lastSyncedAt: this.state.lastSyncedAt });
     for (const listener of this.listeners) listener();
   }
 
@@ -268,7 +273,14 @@ export class SyncEngine {
 
     this.channel = (this.deps.createChannel ?? browserChannel)();
     if (this.channel) {
-      this.channel.onmessage = () => void this.onOtherTab();
+      this.channel.onmessage = (event) => {
+        const data = (event as { data?: unknown } | null)?.data;
+        if (typeof data === 'object' && data !== null && (data as { kind?: unknown }).kind === 'status') {
+          this.mirrorLeader(data as { status?: unknown; lastSyncedAt?: unknown });
+          return;
+        }
+        void this.onOtherTab();
+      };
     }
 
     const locks = this.deps.locks === undefined ? browserLocks() : this.deps.locks;
@@ -324,6 +336,17 @@ export class SyncEngine {
     this.deps.syncState.clear();
     this.undoPoint = null;
     this.set({ status: 'idle', lastSyncedAt: undefined, conflict: undefined, canUndo: false });
+  }
+
+  /**
+   * A tab that isn't syncing shows what the syncing tab reports, so Settings never claims "Up to date"
+   * from launch. States that need a choice (conflict, confirm) are shown by the syncing tab only.
+   */
+  private mirrorLeader(message: { status?: unknown; lastSyncedAt?: unknown }) {
+    if (this.leader || this.stopped) return;
+    const shown: SyncStatus[] = ['checking', 'syncing', 'in-sync', 'pending', 'offline', 'too-big'];
+    if (typeof message.status !== 'string' || !shown.includes(message.status as SyncStatus)) return;
+    this.set({ status: message.status as SyncStatus, lastSyncedAt: typeof message.lastSyncedAt === 'string' ? message.lastSyncedAt : this.state.lastSyncedAt });
   }
 
   /** Another tab changed the stored data: read it again, and push it when this is the syncing tab. */
@@ -444,7 +467,7 @@ export class SyncEngine {
 
   // ---------- push ----------
 
-  private async push(expected: number, head: RemoteHeadRow | null, data: HomeData, files: StoredFile[], hash: string, recheck = true): Promise<boolean> {
+  private async push(expected: number, head: RemoteHeadRow | null, data: HomeData, files: StoredFile[], hash: string, recheck = true, headFileGone = false): Promise<boolean> {
     const { remote, userId, deviceId, deviceLabel } = this.deps;
     if (this.stopped) return false;
     this.set({ status: 'syncing', conflict: undefined });
@@ -461,16 +484,18 @@ export class SyncEngine {
       return false;
     }
     const path = `${userId}/${expected + 1}-${(this.deps.random ?? randomId)()}.json`;
+    // The account allows only a few files per person, so earlier leftovers are cleared first.
+    await this.clearOrphans();
     try {
       await remote.upload(path, text);
     } catch {
       // The upload didn't finish, so nothing points at it.
-      await remote.remove([path]).catch(() => undefined);
+      await this.discard(path);
       this.set({ status: 'offline' });
       return false;
     }
     if (this.stopped) {
-      await remote.remove([path]).catch(() => undefined);
+      await this.discard(path);
       return false;
     }
     let revision: number | null | undefined;
@@ -479,17 +504,18 @@ export class SyncEngine {
     } catch {
       // The reply may have been lost after the account committed. Ask the account instead of guessing,
       // and never remove the file its head points to.
-      revision = await this.settleUncertainCommit(path);
+      revision = await this.settleUncertainCommit(path, expected);
     }
     if (revision === undefined) {
       // Not known whether it landed. The next check looks at the account's head and recognises the file if it did.
-      this.uncertain = { path, hash };
+      this.uncertain = { path, hash, expected };
       this.set({ status: 'offline' });
       return false;
     }
     if (revision === null) {
       // Someone else committed first. The upload is not current, so it goes; the next decision sees the new revision.
-      await remote.remove([path]).catch(() => undefined);
+      await this.discard(path);
+      await this.clearOrphans();
       if (recheck) await this.runCheck(false);
       return false;
     }
@@ -497,7 +523,7 @@ export class SyncEngine {
     this.deps.syncState.write({ userId, revision, hash, syncedAt });
     this.undoPoint = null;
     this.set({ status: 'in-sync', lastSyncedAt: syncedAt, conflict: undefined, remote: undefined, canUndo: false, message: undefined });
-    if (head && head.revision === expected && head.objectPath && head.objectPath !== path) await remote.remove([head.objectPath]).catch(() => undefined);
+    if (head && !headFileGone && head.revision === expected && head.objectPath && head.objectPath !== path) await remote.remove([head.objectPath]).catch(() => undefined);
     await remote.prune?.(path, revision).catch(() => undefined);
     this.deps.onEvent?.({ kind: 'synced', data });
     return true;
@@ -512,18 +538,56 @@ export class SyncEngine {
       const syncedAt = new Date((this.deps.now ?? Date.now)()).toISOString();
       this.deps.syncState.write({ userId: this.deps.userId, revision: head.revision, hash: earlier.hash, syncedAt });
       this.set({ lastSyncedAt: syncedAt });
+    } else if (head.revision > earlier.expected) {
+      // The account moved past the revision this save was made for, so that save can no longer land.
+      await this.discard(earlier.path);
     } else {
-      // The head points elsewhere, so the leftover file isn't referenced.
-      await this.deps.remote.remove([earlier.path]).catch(() => undefined);
+      // Still at the old revision: the commit may yet arrive, so the file stays and is looked at again.
+      this.uncertain = earlier;
+    }
+  }
+
+  /** Removes a file this engine uploaded; if that fails it is remembered and tried again later. */
+  private async discard(path: string) {
+    try {
+      await this.deps.remote.remove([path]);
+      this.leftovers.delete(path);
+    } catch {
+      this.leftovers.add(path);
+    }
+  }
+
+  /**
+   * Removes the app's own orphans: files in this account's folder that the head doesn't point to and that
+   * aren't an upload that may still be committing. Without this, failed saves pile up until the account's
+   * file limit refuses every new save. Another device's upload in progress is spared by its age.
+   */
+  private async clearOrphans() {
+    const { remote } = this.deps;
+    if (!remote.listBackups || this.stopped) return;
+    try {
+      const current = await remote.head();
+      const entries = await remote.listBackups();
+      const now = (this.deps.now ?? Date.now)();
+      const spared = new Set<string>([current?.objectPath ?? '', this.uncertain?.path ?? '']);
+      const orphans = entries
+        .filter((entry) => !spared.has(entry.path))
+        .filter((entry) => this.leftovers.has(entry.path) || now - Date.parse(entry.createdAt) > ORPHAN_AGE_MS)
+        .map((entry) => entry.path);
+      if (orphans.length === 0) return;
+      await remote.remove(orphans);
+      for (const path of orphans) this.leftovers.delete(path);
+    } catch {
+      // Best effort: the next save tries again.
     }
   }
 
   /**
    * After a commit that threw: the revision if the account's head is the file just uploaded (the commit
-   * did land), `null` if the head is provably elsewhere (the file is removed), or `undefined` when it
-   * can't be told (the file is left alone; a later push cleans up leftovers).
+   * did land), `null` if the head has provably moved past this save (the file is removed), or `undefined`
+   * when it can't be told (the file is left alone, because a late commit may still land).
    */
-  private async settleUncertainCommit(path: string): Promise<number | null | undefined> {
+  private async settleUncertainCommit(path: string, expected: number): Promise<number | null | undefined> {
     const { remote } = this.deps;
     let current: RemoteHeadRow | null;
     try {
@@ -532,9 +596,9 @@ export class SyncEngine {
       return undefined;
     }
     if (current && current.objectPath === path) return current.revision;
-    // No head at all could still be a commit on its way, so only a head that points elsewhere clears the file.
-    if (current) {
-      await remote.remove([path]).catch(() => undefined);
+    // A head still at `expected`, or none at all, could still be a commit on its way. Only a head past it clears the file.
+    if (current && current.revision > expected) {
+      await this.discard(path);
       return null;
     }
     return undefined;
@@ -689,12 +753,45 @@ export class SyncEngine {
     });
   }
 
-  /** "Save it", after the account's copy was deleted, reset or lost its file. */
+  /**
+   * "Save it", after the account's copy was deleted, reset or lost its file. The account is read again
+   * first: a newer copy, or a file that turns out to be there, goes through the normal check (and its
+   * conflict sheet with a safety file) instead of being replaced.
+   */
   confirmCloudReset(): Promise<boolean> {
     return this.enqueue(async () => {
       if (this.stopped || this.state.status !== 'cloud-reset') return false;
+      let latest: RemoteHeadRow | null;
+      try {
+        latest = await this.deps.remote.head();
+      } catch {
+        this.set({ status: 'offline' });
+        return false;
+      }
+      let fileGone = false;
+      if (latest) {
+        const seen = this.head;
+        const same = seen !== null && seen.revision === latest.revision && seen.objectPath === latest.objectPath;
+        if (same) {
+          try {
+            await this.deps.remote.download(latest.objectPath);
+          } catch (error) {
+            if (error instanceof RemoteObjectMissing) fileGone = true;
+            else {
+              this.set({ status: 'offline' });
+              return false;
+            }
+          }
+        }
+        if (!fileGone) {
+          this.head = latest;
+          await this.runCheck(false);
+          return false;
+        }
+      }
+      this.head = latest;
       const { data, files } = await this.local();
-      return this.push(this.head?.revision ?? 0, this.head, data, files, await canonicalHash(data, files));
+      return this.push(latest?.revision ?? 0, latest, data, files, await canonicalHash(data, files), true, fileGone);
     });
   }
 
