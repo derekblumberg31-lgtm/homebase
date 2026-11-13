@@ -4,8 +4,9 @@ import { useData, useNow } from '../data/DataProvider';
 import { EXPIRY_WARNING_DAYS } from '../features/records/labels';
 import { getTaskInfo } from '../features/tasks/taskMath';
 import { addDays, toDateInput } from '../lib/dates';
-import { AREAS, PRODUCT, type Area } from './areas';
+import { AREAS, type Area } from './areas';
 import { AssistantLauncher } from './AssistantLauncher';
+import { BrandLink } from './BrandLink';
 import { QuickAdd } from './QuickAdd';
 
 interface Badge {
@@ -64,12 +65,7 @@ export function AppShell() {
       </a>
 
       <nav className="sidebar" aria-label="Main">
-        <div className="brand">
-          <img src={`${import.meta.env.BASE_URL}icons/icon-192.png`} alt="" />
-          <div className="brand-text">
-            <div className="brand-name">{PRODUCT.name}</div>
-          </div>
-        </div>
+        <BrandLink />
         <div className="side-add">
           <QuickAdd />
         </div>
