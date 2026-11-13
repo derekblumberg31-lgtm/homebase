@@ -1,4 +1,6 @@
--- Homebase cloud sync. Run once in the Supabase SQL editor (see docs/CLOUD-SETUP.md).
+-- Homebase cloud sync. Run in the Supabase SQL editor (see docs/CLOUD-SETUP.md).
+-- Safe to run again: tables are created only if missing, policies are replaced, functions are
+-- replaced, and grants are repeated. Running it again never touches stored data.
 --
 -- Access rules, in one place:
 --   * `anon` (signed-out visitors) gets nothing: no table, no function, no Storage object.
@@ -10,7 +12,7 @@
 --     "permission denied for table home_sync" after setup means this file did not run completely.
 
 -- 1. Which backup is current for each user. Contents live in Storage.
-create table public.home_sync (
+create table if not exists public.home_sync (
   user_id        uuid primary key references auth.users(id) on delete cascade,
   revision       bigint not null check (revision > 0),
   object_path    text   not null,
@@ -25,6 +27,7 @@ alter table public.home_sync enable row level security;
 revoke all on table public.home_sync from anon, authenticated;
 grant select on table public.home_sync to authenticated;
 
+drop policy if exists "read own sync row" on public.home_sync;
 create policy "read own sync row" on public.home_sync for select to authenticated using ((select auth.uid()) = user_id);
 
 -- 2. Compare-and-swap commit. Returns the new revision, or NULL when someone else committed first.
@@ -64,6 +67,7 @@ insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_typ
 values ('backups', 'backups', false, 52428800, array['application/json'])
 on conflict (id) do nothing;
 
+drop policy if exists "read own backups" on storage.objects;
 create policy "read own backups" on storage.objects for select to authenticated
   using (bucket_id = 'backups' and (storage.foldername(name))[1] = (select auth.uid())::text);
 
@@ -71,6 +75,10 @@ create policy "read own backups" on storage.objects for select to authenticated
 -- The app keeps 1 (the current backup) plus at most a few leftovers, so this stops a script that
 -- uploads without end, which would otherwise fill the project's storage for everyone. There is no
 -- update policy: files are never overwritten.
+-- The app clears its own leftovers (files the head doesn't point to) before each save and after a failed
+-- one, and does so even when the person is already at the limit, so a limit reached by failed saves
+-- clears itself on the next sync. Deleting your own files stays allowed below for that reason.
+drop policy if exists "add own backup" on storage.objects;
 create policy "add own backup" on storage.objects for insert to authenticated
   with check (
     bucket_id = 'backups'
@@ -78,10 +86,13 @@ create policy "add own backup" on storage.objects for insert to authenticated
     and name ~ ('^' || (select auth.uid())::text || '/[0-9]{1,12}-[a-z0-9]{8}\.json$')
     and (
       select count(*) from storage.objects o
-       where o.bucket_id = 'backups' and (storage.foldername(o.name))[1] = (select auth.uid())::text
+       where o.bucket_id = 'backups'
+         and o.name like (select auth.uid())::text || '/%'
+         and (storage.foldername(o.name))[1] = (select auth.uid())::text
     ) < 6
   );
 
+drop policy if exists "delete own backups" on storage.objects;
 create policy "delete own backups" on storage.objects for delete to authenticated
   using (bucket_id = 'backups' and (storage.foldername(name))[1] = (select auth.uid())::text);
 

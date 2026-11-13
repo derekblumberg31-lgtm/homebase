@@ -1,11 +1,12 @@
 -- Homebase calendar subscription feed. Run after 001_sync.sql (see docs/CLOUD-SETUP.md).
+-- Safe to run again, like 001: it never changes stored calendar links or text.
 -- Needs the pgcrypto extension (Database > Extensions): extensions.gen_random_bytes and extensions.digest.
 --
 -- As in 001: `anon` gets nothing, and `authenticated` gets only what the app uses. It can read when
 -- its link was made, and replace the calendar text; it cannot change the stored secret hash, which
 -- only reset_calendar_token writes.
 
-create table public.calendar_feeds (
+create table if not exists public.calendar_feeds (
   user_id    uuid primary key references auth.users(id) on delete cascade,
   token_hash text not null unique,            -- sha256 hex of the secret; the secret itself is never stored
   -- A valid, empty calendar until the first save, so a new link never serves something calendar apps reject.
@@ -21,6 +22,8 @@ grant update (ics, updated_at) on table public.calendar_feeds to authenticated;
 -- The Edge Function reads the text by token hash with the project's secret key. Newer projects don't grant that role by default.
 grant select on table public.calendar_feeds to service_role;
 
+drop policy if exists "read own feed" on public.calendar_feeds;
+drop policy if exists "update own feed" on public.calendar_feeds;
 create policy "read own feed"   on public.calendar_feeds for select to authenticated using ((select auth.uid()) = user_id);
 create policy "update own feed" on public.calendar_feeds for update to authenticated
   using ((select auth.uid()) = user_id) with check ((select auth.uid()) = user_id);
