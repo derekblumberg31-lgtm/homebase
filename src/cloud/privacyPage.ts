@@ -4,6 +4,8 @@
  * page that describes a sign-in that isn't there, or one with a blank contact line.
  */
 
+import { parseCloudConfig } from './config';
+
 const escapeHtml = (text: string) => text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 
 /** A usable contact line: something is there, it is short, and it isn't a leftover placeholder. */
@@ -14,8 +16,9 @@ export function validContact(contact: unknown): contact is string {
 }
 
 /** The finished page, or null when it should not be published. */
-export function renderPrivacyPage(template: string, env: { supabaseUrl?: unknown; contact?: unknown }): string | null {
-  if (typeof env.supabaseUrl !== 'string' || !env.supabaseUrl.trim()) return null;
+export function renderPrivacyPage(template: string, env: { supabaseUrl?: unknown; supabaseKey?: unknown; contact?: unknown }): string | null {
+  // The same test the app uses to switch sync on, so the page exists exactly when the sign-in does.
+  if (!parseCloudConfig(env.supabaseUrl, env.supabaseKey)) return null;
   if (!validContact(env.contact)) return null;
   const page = template.replace('{{CONTACT}}', escapeHtml(env.contact.trim()));
   return page.includes('{{') ? null : page;

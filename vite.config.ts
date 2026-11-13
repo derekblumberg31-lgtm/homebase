@@ -1,5 +1,5 @@
 /// <reference types="vitest/config" />
-import { defineConfig, type Plugin } from 'vite';
+import { defineConfig, loadEnv, type Plugin } from 'vite';
 import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
 import { readFileSync } from 'node:fs';
@@ -7,9 +7,11 @@ import { renderPrivacyPage } from './src/cloud/privacyPage';
 
 // GitHub Pages serves the app from /homebase/; Netlify and local dev serve it from the root.
 const base = process.env.BASE_PATH ?? '/';
+// .env files count the same as real environment variables, like every other VITE_ value (real variables win).
+const env = loadEnv(process.env.NODE_ENV === 'test' ? 'test' : 'production', process.cwd(), 'VITE_');
 
 /**
- * Publishes /privacy.html only when the build has a Supabase project and VITE_PRIVACY_CONTACT, so the
+ * Publishes /privacy.html only when the build has a Supabase project (URL and key) and VITE_PRIVACY_CONTACT, so the
  * page never goes live describing a sign-in that isn't there, or with an empty contact line.
  */
 function privacyPage(): Plugin {
@@ -18,7 +20,7 @@ function privacyPage(): Plugin {
     apply: 'build',
     generateBundle() {
       const template = readFileSync(new URL('./supabase/privacy.template.html', import.meta.url), 'utf8');
-      const page = renderPrivacyPage(template, { supabaseUrl: process.env.VITE_SUPABASE_URL, contact: process.env.VITE_PRIVACY_CONTACT });
+      const page = renderPrivacyPage(template, { supabaseUrl: env.VITE_SUPABASE_URL, supabaseKey: env.VITE_SUPABASE_PUBLISHABLE_KEY, contact: env.VITE_PRIVACY_CONTACT });
       if (page) this.emitFile({ type: 'asset', fileName: 'privacy.html', source: page });
     },
   };

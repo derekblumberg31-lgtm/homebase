@@ -4,21 +4,28 @@ import { renderPrivacyPage, validContact } from './privacyPage';
 
 const template = readFileSync(new URL('../../supabase/privacy.template.html', import.meta.url), 'utf8');
 
+const KEY = 'sb_publishable_test';
+
 describe('the privacy page', () => {
   it('is not published without a Supabase project', () => {
-    expect(renderPrivacyPage(template, { supabaseUrl: '', contact: 'privacy@example.org' })).toBeNull();
+    expect(renderPrivacyPage(template, { supabaseUrl: '', supabaseKey: KEY, contact: 'privacy@example.org' })).toBeNull();
     expect(renderPrivacyPage(template, { contact: 'privacy@example.org' })).toBeNull();
+  });
+
+  it('is not published with a URL but no key, which would describe a sign-in the app does not have', () => {
+    expect(renderPrivacyPage(template, { supabaseUrl: 'https://abc.supabase.co', contact: 'privacy@example.org' })).toBeNull();
+    expect(renderPrivacyPage(template, { supabaseUrl: 'https://abc.supabase.co', supabaseKey: ' ', contact: 'privacy@example.org' })).toBeNull();
   });
 
   it('is not published while the contact is missing or still a placeholder', () => {
     for (const contact of [undefined, '', '   ', '[Owner: add the contact address]', 'Owner: fill in']) {
-      expect(renderPrivacyPage(template, { supabaseUrl: 'https://abc.supabase.co', contact }), String(contact)).toBeNull();
+      expect(renderPrivacyPage(template, { supabaseUrl: 'https://abc.supabase.co', supabaseKey: KEY, contact }), String(contact)).toBeNull();
     }
     expect(validContact('x'.repeat(201))).toBe(false);
   });
 
   it('is published with the contact filled in, escaped, and no placeholder left', () => {
-    const page = renderPrivacyPage(template, { supabaseUrl: 'https://abc.supabase.co', contact: 'help@example.org <b>' })!;
+    const page = renderPrivacyPage(template, { supabaseUrl: 'https://abc.supabase.co', supabaseKey: KEY, contact: 'help@example.org <b>' })!;
     expect(page).toContain('help@example.org &lt;b&gt;');
     expect(page).not.toContain('{{');
     expect(page).not.toMatch(/\[Owner/);
