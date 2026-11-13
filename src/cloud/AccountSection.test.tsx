@@ -1,12 +1,24 @@
+import type { ReactNode } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { CloudContext, type CloudApi } from './cloudContext';
 import { CLOUD_COPY, pick, statusDetail, statusLabel, tooBigMessage, OFFLINE_MESSAGE } from './copy';
 
+// The real Sheet renders into a portal on document.body, which static rendering has no document for.
+vi.mock('../ui/overlays', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../ui/overlays')>()),
+  Sheet: ({ trailing, children }: { trailing?: ReactNode; children?: ReactNode }) => (
+    <div>
+      {trailing}
+      {children}
+    </div>
+  ),
+}));
+
 vi.stubGlobal('window', {});
 const { AccountSection, DELETE_MESSAGE, SIGN_OUT_MESSAGE } = await import('./AccountSection');
-const { CODE_FAILED, SEND_FAILED } = await import('./SignInSheet');
+const { CODE_FAILED, SEND_FAILED, SignInSheet, SAFARI_ONLY_LINE } = await import('./SignInSheet');
 const { conflictLead } = await import('./ConflictSheet');
 const { GOOGLE_FALLBACK_LINE, googleAvailable } = await import('./platform');
 
@@ -137,6 +149,43 @@ describe('Google on an installed iPhone', () => {
     expect(googleAvailable({ ua: iphone, platform: 'iPhone', maxTouchPoints: 5, standalone: true })).toBe(false);
     expect(googleAvailable({ ua: iphone, platform: 'iPhone', maxTouchPoints: 5, standalone: false })).toBe(true);
     expect(GOOGLE_FALLBACK_LINE).toBe('To use Google, open Homebase in Safari, or sign in with an email code.');
+  });
+});
+
+describe('the sign-in sheet by method', () => {
+  const sheet = (methods: { email: boolean; google: boolean }, showGoogle: boolean) =>
+    decode(renderToStaticMarkup(<SignInSheet cloud={api()} onClose={() => {}} methods={methods} showGoogle={showGoogle} />));
+  const both = { email: true, google: true };
+  it('shows email and Google by default', () => {
+    const html = sheet(both, true);
+    expect(html).toContain('Send code');
+    expect(html).toContain('type="email"');
+    expect(html).toContain('Continue with Google');
+  });
+  it('google only: just the Google button, nothing about a code', () => {
+    const html = sheet({ email: false, google: true }, true);
+    expect(html).toContain('Continue with Google');
+    expect(html).not.toContain('type="email"');
+    expect(html).not.toContain('Send code');
+    expect(html).not.toContain('code');
+  });
+  it('email only: no Google button and no Safari line', () => {
+    const html = sheet({ email: true, google: false }, true);
+    expect(html).toContain('Send code');
+    expect(html).not.toContain('Google');
+    expect(html).not.toContain('Safari');
+  });
+  it('google only in an installed iPhone app: the Safari line, no empty sheet, no email', () => {
+    const html = sheet({ email: false, google: true }, false);
+    expect(SAFARI_ONLY_LINE).toBe('To use Google, open Homebase in Safari.');
+    expect(html).toContain(SAFARI_ONLY_LINE);
+    expect(html).not.toContain('Continue with Google');
+    expect(html).not.toContain('type="email"');
+    expect(html).not.toContain('Send code');
+    expect(html).not.toContain('email code');
+  });
+  it('both in an installed iPhone app: the existing line', () => {
+    expect(sheet(both, false)).toContain(GOOGLE_FALLBACK_LINE);
   });
 });
 

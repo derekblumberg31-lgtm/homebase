@@ -25,3 +25,20 @@ export function parseCloudConfig(url: unknown, key: unknown): CloudConfig | null
 export function cloudConfig(): CloudConfig | null {
   return parseCloudConfig(import.meta.env.VITE_SUPABASE_URL, import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY);
 }
+
+export interface SignInMethods {
+  email: boolean;
+  google: boolean;
+}
+
+/** Which sign-in methods the build offers. Unset, empty or nothing valid in the list means both. */
+export function parseSignInMethods(raw: unknown): SignInMethods {
+  const listed = typeof raw === 'string' ? raw.split(',').map((part) => part.trim().toLowerCase()) : [];
+  const email = listed.includes('email');
+  const google = listed.includes('google');
+  return email || google ? { email, google } : { email: true, google: true };
+}
+
+export function signInMethods(): SignInMethods {
+  return parseSignInMethods(import.meta.env.VITE_SIGNIN_METHODS);
+}

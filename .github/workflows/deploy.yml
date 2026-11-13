@@ -34,6 +34,8 @@ jobs:
           # design. Until they exist they expand to empty strings and the build is unchanged.
           VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
           VITE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.VITE_SUPABASE_PUBLISHABLE_KEY }}
+          # Which sign-in methods to offer (email, google). Leave unset for both.
+          VITE_SIGNIN_METHODS: ${{ vars.VITE_SIGNIN_METHODS }}
           # The privacy page is published only when this is set as well (see docs/CLOUD-SETUP.md).
           VITE_PRIVACY_CONTACT: ${{ vars.VITE_PRIVACY_CONTACT }}
       # Pages has no rewrite rules: serve the app for any deep link like /homebase/tasks/abc.

@@ -35,6 +35,30 @@ describe('cloudConfig', () => {
   });
 });
 
+describe('parseSignInMethods', async () => {
+  const { parseSignInMethods } = await import('./config');
+  const both = { email: true, google: true };
+  it('offers both when unset or empty', () => {
+    expect(parseSignInMethods(undefined)).toEqual(both);
+    expect(parseSignInMethods('')).toEqual(both);
+    expect(parseSignInMethods('   ')).toEqual(both);
+  });
+  it('takes one method or both', () => {
+    expect(parseSignInMethods('google')).toEqual({ email: false, google: true });
+    expect(parseSignInMethods('email')).toEqual({ email: true, google: false });
+    expect(parseSignInMethods('email,google')).toEqual(both);
+  });
+  it('ignores case and whitespace', () => {
+    expect(parseSignInMethods('  Google ')).toEqual({ email: false, google: true });
+    expect(parseSignInMethods(' EMAIL , Google ')).toEqual(both);
+  });
+  it('ignores unknown values, and falls back to both when none are valid', () => {
+    expect(parseSignInMethods('google,apple')).toEqual({ email: false, google: true });
+    expect(parseSignInMethods('apple,,sms')).toEqual(both);
+    expect(parseSignInMethods(42)).toEqual(both);
+  });
+});
+
 describe('the Supabase library stays unloaded', () => {
   it('is never imported when there is no config, whatever is asked of the client', async () => {
     vi.resetModules();
