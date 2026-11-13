@@ -4915,7 +4915,8 @@ a.feed-row:focus-visible {
   font-weight: 500;
 }
 
-/* On a phone the table fits by letting long words break; if it still can't, it scrolls inside its own box. */
+/* On a phone the type and spacing shrink. Ordinary words never break; a long unbroken string (a serial number)
+   may wrap, and if the table still can't fit, it scrolls inside its own box, never the page. */
 @media (max-width: 600px) {
   .report table {
     font-size: var(--text-footnote);
@@ -4924,7 +4925,9 @@ a.feed-row:focus-visible {
   .report th,
   .report td {
     padding-right: 6px;
-    overflow-wrap: anywhere;
+    overflow-wrap: break-word;
+    word-break: normal;
+    hyphens: manual;
   }
 }
 
