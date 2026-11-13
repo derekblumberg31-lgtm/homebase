@@ -17,6 +17,8 @@ export interface CloudApi {
   /** 'loading' only while a stored session is being picked up. */
   phase: 'loading' | 'signed-out' | 'signed-in';
   user: CloudUser | null;
+  /** Set once, when this page load was Google sending the person back: whether a session resulted. */
+  signInReturn?: 'done' | 'failed' | null;
   status: SyncStatus;
   lastSyncedAt?: string;
   conflict?: ConflictInfo;

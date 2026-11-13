@@ -28,25 +28,57 @@ function hasKey(suffix: string): boolean {
 }
 
 /**
- * Google sends the person back with `?code=`. The app's router may tidy the address (for example when
- * the person hasn't finished the welcome screen) before the library has loaded to read it, so the code
- * is taken once, when this file loads, and handed to the library explicitly.
+ * Google sends the person back with `?code=` (and the library's `sb_flow_id`, which names the stored
+ * verifier that goes with it). The app's router may tidy the address (for example when the person hasn't
+ * finished the welcome screen) before the library has loaded to read it, so both are taken once, when
+ * this file loads, and handed to the library explicitly. Without the flow id the library would guess
+ * the verifier from a fixed key, which belongs to the most recent sign-in attempt, not necessarily this one.
  */
-function readStartupCode(): string | null {
+interface StartupReturn {
+  code: string;
+  flowId: string | null;
+}
+
+function readStartupReturn(): StartupReturn | null {
   try {
-    const code = new URLSearchParams(location.search).get('code');
-    return code && hasKey('-auth-token-code-verifier') ? code : null;
+    const params = new URLSearchParams(location.search);
+    const code = params.get('code');
+    if (!code) return null;
+    const flowId = params.get('sb_flow_id');
+    const hasVerifier = hasKey('-auth-token-code-verifier') || (flowId !== null && hasKey(`-auth-token-flow-${flowId}-code-verifier`));
+    return hasVerifier ? { code, flowId } : null;
   } catch {
     return null;
   }
 }
 
-let startupCode = readStartupCode();
-const hadCodeAtStart = startupCode !== null;
+let startupReturn = readStartupReturn();
+const hadCodeAtStart = startupReturn !== null;
 
 /** True when this page load is Google returning the person, even if the address has been tidied since. */
 export function hadStartupCode(): boolean {
   return hadCodeAtStart;
+}
+
+/** How coming back from Google went, once the code has been used: `done` (a session is stored) or `failed`. */
+let returnOutcome: 'done' | 'failed' | null = null;
+
+export function signInReturnOutcome(): 'done' | 'failed' | null {
+  return returnOutcome;
+}
+
+/** Removes the one-time values from the address, so a reload never tries them again. */
+function tidyAddress() {
+  try {
+    const params = new URLSearchParams(location.search);
+    if (!params.has('code') && !params.has('sb_flow_id')) return;
+    params.delete('code');
+    params.delete('sb_flow_id');
+    const query = params.toString();
+    history.replaceState(history.state, '', location.pathname + (query ? `?${query}` : '') + location.hash);
+  } catch {
+    // The address stays as it is.
+  }
 }
 
 function loadLibrary(): Promise<typeof import('@supabase/supabase-js')> {
@@ -63,14 +95,18 @@ export function getClient(): Promise<SupabaseClient> {
     const client = createClient(config.url, config.key, {
       auth: { flowType: 'pkce', persistSession: true, autoRefreshToken: true, detectSessionInUrl: false },
     });
-    const code = startupCode;
-    startupCode = null;
-    if (code) {
+    const returned = startupReturn;
+    startupReturn = null;
+    if (returned) {
+      returnOutcome = 'failed';
       try {
-        await client.auth.exchangeCodeForSession(code);
+        const { data, error } = await client.auth.exchangeCodeForSession(returned.code, returned.flowId ? { flowId: returned.flowId } : undefined);
+        // The library reports a refused or unusable code as a result, not an exception.
+        if (!error && data?.session) returnOutcome = 'done';
       } catch {
         // No session results, and the caller finds the person signed out.
       }
+      tidyAddress();
     }
     return client;
   });

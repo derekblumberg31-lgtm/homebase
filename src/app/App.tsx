@@ -2,6 +2,7 @@ import { lazy, Suspense, useEffect, useRef, type ReactNode } from 'react';
 import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { CloudProvider } from '../cloud/CloudProvider';
 import { cloudConfig } from '../cloud/config';
+import { SignInLanding } from '../cloud/SignInLanding';
 import { DataProvider, useData } from '../data/DataProvider';
 import { SessionProvider, useSession } from '../session/session';
 import { Skeleton } from '../ui/layout';
@@ -115,6 +116,7 @@ export function App() {
               <Effects />
               <BrowserRouter basename={import.meta.env.BASE_URL.replace(/\/$/, '') || '/'}>
                 <ScrollToTop />
+                <SignInLanding />
                 <Gate>
                   <Routes>
                     <Route path="/welcome" element={<Onboarding />} />

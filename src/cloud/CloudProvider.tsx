@@ -7,7 +7,7 @@ import * as auth from './auth';
 import { CloudContext, sameUser, type CloudApi, type CloudUser, type FeedState } from './cloudContext';
 import { cloudConfig } from './config';
 import { buildFeedIcs, feedUrl, sameFeed } from './feed';
-import { getClient, hadStartupCode, hasStoredSession } from './client';
+import { getClient, hadStartupCode, hasStoredSession, signInReturnOutcome } from './client';
 import { ConflictSheet, DecisionSheet } from './ConflictSheet';
 import { fromDevice, syncCoversBackup } from './copy';
 import { getDeviceId, deviceSyncState } from './deviceState';
@@ -40,6 +40,7 @@ export function CloudProvider({ children }: { children: ReactNode }) {
   toastRef.current = toast;
   const [phase, setPhase] = useState<'loading' | 'signed-out' | 'signed-in'>(() => (hasStoredSession() ? 'loading' : 'signed-out'));
   const [user, setUser] = useState<CloudUser | null>(null);
+  const [returned, setReturned] = useState<'done' | 'failed' | null>(null);
   const [engine, setEngine] = useState<SyncEngine | null>(null);
   const remoteRef = useRef<CloudRemote | null>(null);
   const watching = useRef(false);
@@ -72,12 +73,14 @@ export function CloudProvider({ children }: { children: ReactNode }) {
         const current = await auth.currentUser();
         if (!live) return;
         applyUser(current);
-        // Google returns with ?code=; the library has used it by now, so the address can be tidy again.
-        // (Read from the load-time capture: the router may have dropped the query already.)
-        if (hadStartupCode() && new URLSearchParams(location.search).has('code')) history.replaceState(history.state, '', location.pathname + location.hash);
+        // Coming back from Google: the library has used the code by now (client.ts also tidied the address).
+        setReturned(signInReturnOutcome());
         await watch();
       } catch {
-        if (live) setPhase('signed-out');
+        if (live) {
+          setPhase('signed-out');
+          setReturned(signInReturnOutcome() ?? (hadStartupCode() ? 'failed' : null));
+        }
       }
     })();
     return () => {
@@ -169,6 +172,7 @@ export function CloudProvider({ children }: { children: ReactNode }) {
     () => ({
       phase,
       user,
+      signInReturn: returned,
       status: sync.status,
       lastSyncedAt: sync.lastSyncedAt,
       conflict: sync.conflict,
@@ -245,7 +249,7 @@ export function CloudProvider({ children }: { children: ReactNode }) {
         applyUser(null);
       },
     }),
-    [phase, user, sync, watch, applyUser, feed, store, pushFeed],
+    [phase, user, returned, sync, watch, applyUser, feed, store, pushFeed],
   );
 
   return (

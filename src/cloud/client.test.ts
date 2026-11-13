@@ -23,7 +23,7 @@ function fakeStorage(initial: Record<string, string>) {
 beforeEach(() => {
   vi.resetModules();
   exchange.mockReset();
-  exchange.mockResolvedValue({ data: {}, error: null });
+  exchange.mockResolvedValue({ data: { session: {} }, error: null });
   createClient.mockReset();
   createClient.mockImplementation(() => ({ auth: { exchangeCodeForSession: exchange, stopAutoRefresh: vi.fn() } }));
   vi.stubEnv('VITE_SUPABASE_URL', 'https://abc.supabase.co');
@@ -47,7 +47,7 @@ describe('Google sign-in returning to an app that hasn’t finished onboarding',
     expect(client.hasStoredSession()).toBe(true);
     await client.getClient();
     expect(exchange).toHaveBeenCalledTimes(1);
-    expect(exchange).toHaveBeenCalledWith('abc123');
+    expect(exchange).toHaveBeenCalledWith('abc123', undefined);
     // Asking again doesn't use the code twice.
     await client.getClient();
     expect(exchange).toHaveBeenCalledTimes(1);
